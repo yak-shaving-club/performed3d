@@ -322,6 +322,17 @@
                             </button>
                         </div>
 
+                        <!-- Expected Perfect Training Metrics (Avg Watts & TSS) -->
+                        <div id="expectedWorkoutMetricsBadge"
+                             class="flex items-center gap-1.5 bg-gray-900/90 border border-gray-800 rounded-xl px-2.5 py-1.5 text-xs whitespace-nowrap"
+                             title="Expected average watts and Training Stress Score (TSS) when the entire training is executed perfectly">
+                            <span class="text-gray-400 font-medium">Avg:</span>
+                            <span id="expectedAvgWattsLabel" class="font-mono font-bold text-amber-300">-- W</span>
+                            <span class="text-gray-600">•</span>
+                            <span class="text-gray-400 font-medium">TSS:</span>
+                            <span id="expectedTssLabel" class="font-mono font-bold text-orange-400">--</span>
+                        </div>
+
                         <!-- Donut Size & Required Accuracy Tolerance Setting (5W to 50W, configurable before Start Flight) -->
                         <div class="flex items-center gap-2 bg-gray-900/90 border border-emerald-500/40 rounded-xl px-2.5 py-1.5"
                              title="Configure 3D Donut Gate size and required absolute watt accuracy (5W to 50W) before clicking Start Flight">
@@ -1341,18 +1352,67 @@
             const startFitTs = toFitTimestamp(sessionSummary.startTimeMs);
             const endFitTs = toFitTimestamp(sessionSummary.endTimeMs);
 
+            const rawWorkoutName = (sessionSummary && sessionSummary.workoutName)
+                ? String(sessionSummary.workoutName).trim()
+                : 'Performed 3D Flight';
+            const fitTitleStr = `Indoor Cycling Game - ${rawWorkoutName}`;
+            const fitTitleRawBytes = typeof TextEncoder !== 'undefined'
+                ? Array.from(new TextEncoder().encode(fitTitleStr))
+                : Array.from(fitTitleStr).map(ch => ch.charCodeAt(0) & 0x7F);
+            // Null-terminated UTF-8 string padded to an even byte length (max 64 bytes)
+            const fitTitleMaxContent = Math.min(fitTitleRawBytes.length, 62);
+            const fitTitleFieldSize = Math.max(2, (fitTitleMaxContent + 2) & ~1);
+            const fitTitleBytes = new Uint8Array(fitTitleFieldSize);
+            for (let i = 0; i < fitTitleMaxContent; i++) {
+                fitTitleBytes[i] = fitTitleRawBytes[i];
+            }
+
+            function pushBytes(arr) {
+                for (let i = 0; i < arr.length; i++) {
+                    bytes.push(arr[i] & 0xFF);
+                }
+            }
+
             function writeFileIdMsg() {
-                pushU8(0x40 | 0); pushU8(0); pushU8(0); pushU16(0); pushU8(4);
-                pushU8(4); pushU8(4); pushU8(0x86);
-                pushU8(1); pushU8(2); pushU8(0x84);
-                pushU8(2); pushU8(2); pushU8(0x84);
-                pushU8(0); pushU8(1); pushU8(0x00);
+                pushU8(0x40 | 0); pushU8(0); pushU8(0); pushU16(0); pushU8(5);
+                pushU8(4); pushU8(4); pushU8(0x86); // time_created (uint32)
+                pushU8(1); pushU8(2); pushU8(0x84); // manufacturer (32 = Wahoo)
+                pushU8(2); pushU8(2); pushU8(0x84); // product (1)
+                pushU8(0); pushU8(1); pushU8(0x00); // type (4 = activity)
+                pushU8(8); pushU8(fitTitleBytes.length); pushU8(0x07); // product_name (string)
 
                 pushU8(0x00);
                 pushU32(startFitTs);
                 pushU16(32);
                 pushU16(1);
                 pushU8(4);
+                pushBytes(fitTitleBytes);
+            }
+
+            function writeSportMsg() {
+                pushU8(0x40 | 6); pushU8(0); pushU8(0); pushU16(12); pushU8(3);
+                pushU8(3); pushU8(fitTitleBytes.length); pushU8(0x07); // name (string)
+                pushU8(0); pushU8(1); pushU8(0x00); // sport (2 = cycling)
+                pushU8(1); pushU8(1); pushU8(0x00); // sub_sport (6 = indoor_cycling)
+
+                pushU8(0x06);
+                pushBytes(fitTitleBytes);
+                pushU8(2);
+                pushU8(6);
+            }
+
+            function writeWorkoutMsg() {
+                pushU8(0x40 | 5); pushU8(0); pushU8(0); pushU16(26); pushU8(4);
+                pushU8(8);  pushU8(fitTitleBytes.length); pushU8(0x07); // wkt_name (string)
+                pushU8(6);  pushU8(2); pushU8(0x84); // num_valid_steps (uint16)
+                pushU8(4);  pushU8(1); pushU8(0x00); // sport (2 = cycling)
+                pushU8(11); pushU8(1); pushU8(0x00); // sub_sport (6 = indoor_cycling)
+
+                pushU8(0x05);
+                pushBytes(fitTitleBytes);
+                pushU16(0);
+                pushU8(2);
+                pushU8(6);
             }
 
             function writeRecordDef() {
@@ -1402,24 +1462,29 @@
             }
 
             function writeSessionMsg() {
-                pushU8(0x40 | 3); pushU8(0); pushU8(0); pushU16(18); pushU8(17);
-                pushU8(253); pushU8(4); pushU8(0x86);
-                pushU8(2);   pushU8(4); pushU8(0x86);
-                pushU8(7);   pushU8(4); pushU8(0x86);
-                pushU8(8);   pushU8(4); pushU8(0x86);
-                pushU8(9);   pushU8(4); pushU8(0x86);
-                pushU8(48);  pushU8(4); pushU8(0x86);
-                pushU8(20);  pushU8(2); pushU8(0x84);
-                pushU8(21);  pushU8(2); pushU8(0x84);
-                pushU8(34);  pushU8(2); pushU8(0x84);
-                pushU8(35);  pushU8(2); pushU8(0x84);
-                pushU8(36);  pushU8(2); pushU8(0x84);
-                pushU8(38);  pushU8(2); pushU8(0x84);
-                pushU8(18);  pushU8(1); pushU8(0x02);
+                pushU8(0x40 | 3); pushU8(0); pushU8(0); pushU16(18); pushU8(22);
+                pushU8(253); pushU8(4); pushU8(0x86); // timestamp
+                pushU8(2);   pushU8(4); pushU8(0x86); // start_time
+                pushU8(7);   pushU8(4); pushU8(0x86); // total_elapsed_time (ms)
+                pushU8(8);   pushU8(4); pushU8(0x86); // total_timer_time (ms)
+                pushU8(9);   pushU8(4); pushU8(0x86); // total_distance (cm)
+                pushU8(48);  pushU8(4); pushU8(0x86); // total_work (J)
+                pushU8(20);  pushU8(2); pushU8(0x84); // avg_power (W)
+                pushU8(21);  pushU8(2); pushU8(0x84); // max_power (W)
+                pushU8(34);  pushU8(2); pushU8(0x84); // normalized_power (W)
+                pushU8(35);  pushU8(2); pushU8(0x84); // training_stress_score (tss * 10)
+                pushU8(36);  pushU8(2); pushU8(0x84); // intensity_factor (if * 1000)
+                pushU8(45);  pushU8(2); pushU8(0x84); // threshold_power (W)
+                pushU8(25);  pushU8(2); pushU8(0x84); // first_lap_index
+                pushU8(26);  pushU8(2); pushU8(0x84); // num_laps
+                pushU8(0);   pushU8(1); pushU8(0x00); // event (9 = session)
+                pushU8(1);   pushU8(1); pushU8(0x00); // event_type (1 = stop)
+                pushU8(18);  pushU8(1); pushU8(0x02); // avg_cadence (rpm)
                 pushU8(16);  pushU8(1); pushU8(0x02); // avg_heart_rate (bpm)
                 pushU8(17);  pushU8(1); pushU8(0x02); // max_heart_rate (bpm)
                 pushU8(5);   pushU8(1); pushU8(0x00); // sport (2 = cycling)
                 pushU8(6);   pushU8(1); pushU8(0x00); // sub_sport (6 = indoor_cycling)
+                pushU8(110); pushU8(fitTitleBytes.length); pushU8(0x07); // sport_profile_name (string)
 
                 pushU8(0x03);
                 pushU32(endFitTs);
@@ -1434,28 +1499,39 @@
                 pushU16(Math.round(sessionSummary.tss * 10));
                 pushU16(Math.round(sessionSummary.intensityFactor * 1000));
                 pushU16(Math.round(sessionSummary.ftp));
+                pushU16(0); // first_lap_index = 0
+                pushU16(1); // num_laps = 1
+                pushU8(9);  // event = session
+                pushU8(1);  // event_type = stop
                 pushU8(Math.round(sessionSummary.avgCadence));
                 pushU8(toFitHeartRateByte(sessionSummary.avgHeartRate));
                 pushU8(toFitHeartRateByte(sessionSummary.maxHeartRate));
                 pushU8(2); // cycling
                 pushU8(6); // indoor_cycling
+                pushBytes(fitTitleBytes);
             }
 
             function writeActivityMsg() {
-                pushU8(0x40 | 4); pushU8(0); pushU8(0); pushU16(34); pushU8(4);
-                pushU8(253); pushU8(4); pushU8(0x86);
-                pushU8(0);   pushU8(4); pushU8(0x86);
-                pushU8(1);   pushU8(2); pushU8(0x84);
-                pushU8(2);   pushU8(1); pushU8(0x00);
+                pushU8(0x40 | 4); pushU8(0); pushU8(0); pushU16(34); pushU8(6);
+                pushU8(253); pushU8(4); pushU8(0x86); // timestamp
+                pushU8(0);   pushU8(4); pushU8(0x86); // total_timer_time (ms)
+                pushU8(1);   pushU8(2); pushU8(0x84); // num_sessions
+                pushU8(2);   pushU8(1); pushU8(0x00); // type (0 = manual)
+                pushU8(3);   pushU8(1); pushU8(0x00); // event (26 = activity)
+                pushU8(4);   pushU8(1); pushU8(0x00); // event_type (1 = stop)
 
                 pushU8(0x04);
                 pushU32(endFitTs);
                 pushU32(Math.round(sessionSummary.durationSec * 1000));
                 pushU16(1);
                 pushU8(0);
+                pushU8(26);
+                pushU8(1);
             }
 
             writeFileIdMsg();
+            writeSportMsg();
+            writeWorkoutMsg();
             writeRecordDef();
 
             recordedSamples.forEach((sample) => {
@@ -7260,7 +7336,58 @@
             const speedEl = document.getElementById('speedDisplay');
             if (speedEl) speedEl.textContent = (Number(state.speedKmh) || 0).toFixed(1);
 
+            updateExpectedWorkoutMetricsUI();
             drawWorkoutTimeline();
+        }
+
+        function computeExpectedWorkoutMetrics(workout = state.workout, ftpInputVal = state.ftp) {
+            if (!workout || !workout.totalDuration || workout.totalDuration <= 0) {
+                return {
+                    expectedAvgWatts: 0,
+                    expectedTss: 0
+                };
+            }
+
+            const count = Math.max(1, Math.round(workout.totalDuration));
+            const ftp = Math.max(50, Number(ftpInputVal) || 250);
+            const targetWattsBySec = new Array(count);
+            let sumWatts = 0;
+            let sumFourthPower = 0;
+            let rollingSum = 0;
+            const windowSize = Math.min(30, count);
+
+            for (let i = 0; i < count; i++) {
+                const w = getTargetWattsAtSecond(workout, i, ftp);
+                targetWattsBySec[i] = w;
+                sumWatts += w;
+                rollingSum += w;
+                if (i >= windowSize) {
+                    rollingSum -= targetWattsBySec[i - windowSize];
+                }
+                const currentWindowLen = Math.min(i + 1, windowSize);
+                const rollingAvg = rollingSum / currentWindowLen;
+                sumFourthPower += Math.pow(rollingAvg, 4);
+            }
+
+            const expectedAvgWatts = sumWatts / count;
+            const normalizedPower = Math.pow(sumFourthPower / count, 0.25);
+            const intensityFactor = normalizedPower / ftp;
+            const expectedTss = ((count * normalizedPower * intensityFactor) / (ftp * 3600)) * 100;
+
+            return {
+                expectedAvgWatts,
+                expectedTss
+            };
+        }
+
+        function updateExpectedWorkoutMetricsUI() {
+            const avgEl = document.getElementById('expectedAvgWattsLabel');
+            const tssEl = document.getElementById('expectedTssLabel');
+            if (!avgEl && !tssEl) return;
+
+            const { expectedAvgWatts, expectedTss } = computeExpectedWorkoutMetrics(state.workout, state.ftp);
+            if (avgEl) avgEl.textContent = `${Math.round(expectedAvgWatts)} W`;
+            if (tssEl) tssEl.textContent = expectedTss.toFixed(1);
         }
 
         function computeTrainingMetrics() {
@@ -7478,6 +7605,7 @@
             updateLiveHud();
 
             if (state.elapsedSec >= state.workout.totalDuration) {
+                prepareWorkoutScreenshot();
                 finishWorkoutAndShowSummary();
             }
         }
@@ -7694,8 +7822,8 @@
         // =========================================================================
         // 10. EVENT LISTENERS, SPACEBAR OBSTACLE DEFENSE & INITIALIZATION
         // =========================================================================
-        document.getElementById('ftpInput').addEventListener('change', (e) => {
-            const val = parseInt(e.target.value, 10);
+        function applyFtpWatts(rawValue) {
+            const val = parseInt(rawValue, 10);
             if (!isNaN(val) && val >= 50 && val <= 600) {
                 state.ftp = val;
                 localStorage.setItem('performed_ftp', String(val));
@@ -7708,8 +7836,17 @@
                 if (dragon3D) {
                     dragon3D.gates.forEach(g => dragon3D.syncGateToDesiredWatts(g));
                 }
+                updateExpectedWorkoutMetricsUI();
                 updateLiveHud();
             }
+        }
+
+        document.getElementById('ftpInput').addEventListener('change', (e) => {
+            applyFtpWatts(e.target.value);
+        });
+
+        document.getElementById('ftpInput').addEventListener('input', (e) => {
+            applyFtpWatts(e.target.value);
         });
 
         document.getElementById('obstaclesToggleCheck').addEventListener('change', (e) => {
@@ -8226,14 +8363,12 @@
             // Draw HUD overlay badge onto the screenshot
             const workoutName = (state.workout && state.workout.name) ? state.workout.name : 'Performed 3D Flight';
             const scoreStr = formatSwissNumber(state.totalScore);
-            const streakStr = `${formatSwissNumber(state.streakSeconds)}s`;
             const wattsStr = `${formatSwissNumber(state.actualWatts)} W`;
-            const elapsedStr = formatDuration(state.elapsedSec);
 
             const scale = Math.max(1, width / 1280);
             const pad = Math.round(20 * scale);
             const boxW = Math.round(290 * scale);
-            const boxH = Math.round(92 * scale);
+            const boxH = Math.round(68 * scale);
             const boxX = width - boxW - pad;
             const boxY = pad;
 
@@ -8252,15 +8387,22 @@
 
             ctx.fillStyle = '#fde047';
             ctx.font = `900 ${Math.round(13 * scale)}px sans-serif`;
-            ctx.fillText(`PERFORMED 3D • ${workoutName}`, boxX + Math.round(14 * scale), boxY + Math.round(24 * scale));
+            const textPadX = Math.round(14 * scale);
+            const maxTitleWidth = boxW - textPadX * 2;
+            let croppedWorkoutName = workoutName;
+            if (ctx.measureText(croppedWorkoutName).width > maxTitleWidth) {
+                const ellipsis = '…';
+                let chars = Array.from(croppedWorkoutName);
+                while (chars.length > 0 && ctx.measureText(chars.join('') + ellipsis).width > maxTitleWidth) {
+                    chars.pop();
+                }
+                croppedWorkoutName = chars.join('').trimEnd() + ellipsis;
+            }
+            ctx.fillText(croppedWorkoutName, boxX + textPadX, boxY + Math.round(24 * scale));
 
             ctx.fillStyle = '#fb923c';
             ctx.font = `900 ${Math.round(22 * scale)}px monospace`;
             ctx.fillText(`POINTS: ${scoreStr}`, boxX + Math.round(14 * scale), boxY + Math.round(52 * scale));
-
-            ctx.fillStyle = '#cbd5e1';
-            ctx.font = `700 ${Math.round(12 * scale)}px monospace`;
-            ctx.fillText(`Watts: ${wattsStr}  •  Streak: ${streakStr}  •  ${elapsedStr}`, boxX + Math.round(14 * scale), boxY + Math.round(76 * scale));
             ctx.restore();
 
             state.preparedScreenshotDataUrl = outCanvas.toDataURL('image/png');
