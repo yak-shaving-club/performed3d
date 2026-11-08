@@ -1,2 +1,5 @@
 /performed3d.iml
+.env
+.env.*
+!.env.example
 /.idea/
