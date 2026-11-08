@@ -187,6 +187,17 @@
                                 <span id="bleHrmStatusDot" class="w-2 h-2 rounded-full bg-gray-300"></span>
                             </button>
 
+                            <!-- Elite Aria fan pairing button -->
+                            <button id="connectAriaBleBtn" type="button"
+                                    class="px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-orange-700/80 hover:bg-orange-600 text-white border border-orange-400/30"
+                                    title="Pair Elite Aria Smart Fan; fan speed follows heart rate (80-180 bpm)">
+                                <svg class="w-3.5 h-3.5 text-orange-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12c-1.5-2.5-2.1-5.3-.5-7.5 2.8 1.2 3.6 3.3 2.6 6.1 2.8-1 5-.3 6.1 2.5-2.1 1.7-4.9 1.2-7.1 0 1.3 2.7.7 5.1-1.8 6.9-2.1-1.7-2.3-4.5-.9-7.1-2.9.9-5.1-.2-6.1-2.8 2.1-1.5 4.9-1.2 7.7.2z"/>
+                                </svg>
+                                <span id="bleAriaStatusText">Pair Elite Aria</span>
+                                <span id="bleAriaStatusDot" class="w-2 h-2 rounded-full bg-gray-300"></span>
+                            </button>
+
                             <!-- BLE Cadence Sensor Pairing Button -->
                             <button id="connectCadenceBleBtn" type="button"
                                     class="px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-emerald-700/80 hover:bg-emerald-600 text-white border border-emerald-400/30"
@@ -1525,7 +1536,10 @@
             ELITE_STEERING_SERVICE: '347b0001-7635-408b-8918-8ff3949ce592',
             ELITE_STEERING_ANGLE_CHAR: '347b0030-7635-408b-8918-8ff3949ce592',
             ELITE_STEERING_CONTROL_CHAR: '347b0031-7635-408b-8918-8ff3949ce592',
-            ELITE_STEERING_CHALLENGE_CHAR: '347b0032-7635-408b-8918-8ff3949ce592'
+            ELITE_STEERING_CHALLENGE_CHAR: '347b0032-7635-408b-8918-8ff3949ce592',
+            ELITE_ARIA_SERVICE: '347b0001-7635-408b-8918-8ff3949ce592',
+            ELITE_ARIA_SETUP_CHAR: '347b0012-7635-408b-8918-8ff3949ce592',
+            ELITE_ARIA_CONTROL_CHAR: '347b0040-7635-408b-8918-8ff3949ce592'
         };
 
         const DEFAULT_WHEEL_CIRCUMFERENCE_METERS = 2.105; // 700x25c road wheel circumference in meters
@@ -1818,6 +1832,75 @@
                 const normalizedInput = Math.max(-1.0, Math.min(1.0, effectiveDeg / ELITE_STEER_MAX_ANGLE_DEG));
                 this.onSteeringAngle(normalizedInput, calibratedDeg);
                 return calibratedDeg;
+            }
+        }
+
+        class BleEliteAriaFan {
+            constructor(onStatusCallback) {
+                this.onStatus = onStatusCallback;
+                this.device = null;
+                this.server = null;
+                this.setupChar = null;
+                this.controlChar = null;
+                this.connected = false;
+                this.lastSpeed = null;
+                this.writeQueue = Promise.resolve();
+            }
+
+            async connect() {
+                if (!navigator.bluetooth) {
+                    throw new Error('Web Bluetooth is not supported in this browser. Use Chrome/Edge.');
+                }
+
+                this.onStatus('connecting', 'Pairing Elite Aria...');
+                this.device = await navigator.bluetooth.requestDevice({
+                    filters: [{ namePrefix: 'ARIA' }],
+                    optionalServices: [BLE_UUIDS.ELITE_ARIA_SERVICE]
+                });
+
+                this.device.addEventListener('gattserverdisconnected', () => {
+                    this.connected = false;
+                    this.setupChar = null;
+                    this.controlChar = null;
+                    this.lastSpeed = null;
+                    this.onStatus('disconnected', 'Pair Elite Aria');
+                });
+
+                try {
+                    this.server = await this.device.gatt.connect();
+                    const service = await this.server.getPrimaryService(BLE_UUIDS.ELITE_ARIA_SERVICE);
+                    this.setupChar = await service.getCharacteristic(BLE_UUIDS.ELITE_ARIA_SETUP_CHAR);
+                    this.controlChar = await service.getCharacteristic(BLE_UUIDS.ELITE_ARIA_CONTROL_CHAR);
+                    await this.setupChar.writeValueWithResponse(new Uint8Array([0x02, 0x00, 0x00, 0x3d, 0x00]));
+                    await this.controlChar.writeValueWithResponse(new Uint8Array([0x05, 0x00]));
+
+                    this.connected = true;
+                    this.lastSpeed = null;
+                    await this.setHeartRate(null);
+                } catch (err) {
+                    this.connected = false;
+                    this.setupChar = null;
+                    this.controlChar = null;
+                    if (this.device.gatt.connected) this.device.gatt.disconnect();
+                    throw err;
+                }
+            }
+
+            async setHeartRate(bpm) {
+                if (!this.connected || !this.controlChar) return;
+                const normalizedHeartRate = Number.isFinite(bpm) ? bpm : 0;
+                const speed = normalizedHeartRate <= 80
+                    ? 0
+                    : Math.min(100, Math.round(normalizedHeartRate - 80));
+                const write = this.writeQueue.catch(() => {}).then(async () => {
+                    if (!this.connected || !this.controlChar || speed === this.lastSpeed) return;
+                    await this.controlChar.writeValueWithResponse(new Uint8Array([0x03, 0x01, speed]));
+                    this.lastSpeed = speed;
+                    const name = (this.device && this.device.name) || 'Elite Aria';
+                    this.onStatus('connected', `${name} ${speed}%`);
+                });
+                this.writeQueue = write;
+                await write;
             }
         }
 
@@ -6197,6 +6280,10 @@
         const bleHrmSensor = new BleHeartRateMonitor(
             (bpm) => {
                 state.heartRate = (bpm !== null && bpm !== undefined && bpm > 0) ? Math.round(bpm) : null;
+                bleEliteAriaFan.setHeartRate(state.heartRate).catch((err) => {
+                    console.error('Could not update Elite Aria fan speed.', err);
+                    bleEliteAriaFan.onStatus('error', 'Elite Aria control error');
+                });
                 updateLiveHud();
             },
             (status, label) => {
@@ -6212,6 +6299,28 @@
                     dot.className = 'w-2 h-2 rounded-full bg-amber-300 animate-pulse';
                 } else {
                     btn.className = 'px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-rose-700/80 hover:bg-rose-600 text-white border border-rose-400/30';
+                    dot.className = 'w-2 h-2 rounded-full bg-gray-300';
+                }
+            }
+        );
+
+        const bleEliteAriaFan = new BleEliteAriaFan(
+            (status, label) => {
+                const btn = document.getElementById('connectAriaBleBtn');
+                const text = document.getElementById('bleAriaStatusText');
+                const dot = document.getElementById('bleAriaStatusDot');
+                if (text) text.textContent = label;
+                if (!btn || !dot) return;
+                if (status === 'connected') {
+                    btn.className = 'px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/40';
+                    dot.className = 'w-2 h-2 rounded-full bg-emerald-200 animate-ping';
+                } else if (status === 'connecting') {
+                    dot.className = 'w-2 h-2 rounded-full bg-amber-300 animate-pulse';
+                } else if (status === 'error') {
+                    btn.className = 'px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-rose-700/80 hover:bg-rose-600 text-white border border-rose-400/30';
+                    dot.className = 'w-2 h-2 rounded-full bg-rose-300';
+                } else {
+                    btn.className = 'px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-orange-700/80 hover:bg-orange-600 text-white border border-orange-400/30';
                     dot.className = 'w-2 h-2 rounded-full bg-gray-300';
                 }
             }
@@ -7435,6 +7544,18 @@
                     alert(err.message || 'Could not connect to BLE Heart Rate Monitor.');
                 }
                 bleHrmSensor.onStatus('disconnected', 'Pair HRM');
+            }
+        });
+
+        document.getElementById('connectAriaBleBtn').addEventListener('click', async () => {
+            try {
+                await bleEliteAriaFan.connect();
+                await bleEliteAriaFan.setHeartRate(bleHrmSensor.connected ? state.heartRate : null);
+            } catch (err) {
+                if (!isBlePairingCancelledError(err)) {
+                    alert(err.message || 'Could not connect to Elite Aria via Bluetooth.');
+                }
+                bleEliteAriaFan.onStatus('disconnected', 'Pair Elite Aria');
             }
         });
 
