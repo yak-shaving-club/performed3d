@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="performed3d-models.js"></script>
+    <script src="sterzo-challenge-codes.js"></script>
     <style type="text/tailwindcss">
         @custom-variant dark (&:where(.dark, .dark *));
     </style>
@@ -1709,6 +1710,9 @@
             }
         }
 
+        const STERZO_CHALLENGE_TABLE = Uint8Array.from(atob(STERZO_CHALLENGE_TABLE_B64), c => c.charCodeAt(0));
+        const sleepMs = (ms) => new Promise(r => setTimeout(r, ms));
+
         class BleEliteSteeringSensor {
             constructor(onSteeringAngleCallback, onStatusCallback) {
                 this.onSteeringAngle = onSteeringAngleCallback;
@@ -1758,47 +1762,45 @@
                 this.server = await this.device.gatt.connect();
                 const steeringService = await this.server.getPrimaryService(BLE_UUIDS.ELITE_STEERING_SERVICE);
                 this.steerChar = await steeringService.getCharacteristic(BLE_UUIDS.ELITE_STEERING_ANGLE_CHAR);
+                // 0x0031 = control (write), 0x0032 = indications (challenge comes back here)
+                this.controlChar = await steeringService.getCharacteristic(BLE_UUIDS.ELITE_STEERING_CONTROL_CHAR);
+                this.challengeChar = await steeringService.getCharacteristic(BLE_UUIDS.ELITE_STEERING_CHALLENGE_CHAR);
 
-                // Elite Sterzo Smart / Elite Rizer challenge-response activation handshake (if required by firmware)
-                try {
-                    this.challengeChar = await steeringService.getCharacteristic(BLE_UUIDS.ELITE_STEERING_CHALLENGE_CHAR);
-                } catch (_) {}
-                try {
-                    this.controlChar = await steeringService.getCharacteristic(BLE_UUIDS.ELITE_STEERING_CONTROL_CHAR);
-                    await this.controlChar.startNotifications();
-                    this.controlChar.addEventListener('characteristicvaluechanged', async (e) => {
-                        await this.handleChallengeIndication(e.target.value);
-                    });
-                    if (this.challengeChar) {
-                        await this.challengeChar.writeValue(new Uint8Array([0x03, 0x10]));
+                let resolveChallenge;
+                const challengePromise = new Promise(r => resolveChallenge = r);
+                this.challengeChar.addEventListener('characteristicvaluechanged', (e) => {
+                    const b = new Uint8Array(e.target.value.buffer);
+                    if (b.length >= 4 && b[0] === 0x03 && b[1] === 0x10) {
+                        resolveChallenge((b[2] << 8) | b[3]);
                     }
-                } catch (_) {}
-
-                await this.steerChar.startNotifications();
+                });
                 this.steerChar.addEventListener('characteristicvaluechanged', (e) => {
                     this.parseSteeringMeasurement(e.target.value);
                 });
 
+                // Both must be subscribed before requesting the challenge
+                await this.challengeChar.startNotifications();
+                await this.steerChar.startNotifications();
+                await sleepMs(500);
+
+                let challenge = null;
+                for (let attempt = 1; attempt <= 3 && challenge === null; attempt++) {
+                    await this.controlChar.writeValueWithResponse(new Uint8Array([0x03, 0x10]));
+                    challenge = await Promise.race([challengePromise, sleepMs(5000).then(() => null)]);
+                }
+                if (challenge === null) throw new Error('Sterzo did not send a challenge');
+
+                await this.controlChar.writeValueWithResponse(new Uint8Array([
+                    0x03, 0x11,
+                    STERZO_CHALLENGE_TABLE[challenge * 2],
+                    STERZO_CHALLENGE_TABLE[challenge * 2 + 1]
+                ]));
+                await sleepMs(1000);
+                await this.controlChar.writeValueWithResponse(new Uint8Array([0x02, 0x02]));
+
                 this.connected = true;
                 this.zeroAngleOffsetDeg = 0.0;
                 this.onStatus('connected', this.device.name || 'Sterzo / Rizer');
-            }
-
-            async handleChallengeIndication(dataView) {
-                if (!dataView || dataView.byteLength < 4 || !this.challengeChar) return;
-                try {
-                    if (dataView.getUint8(0) === 0x03 && dataView.getUint8(1) === 0x10) {
-                        const seed = dataView.getUint16(2, false);
-                        const resp = this.computeEliteChallengeResponse(seed);
-                        await this.challengeChar.writeValue(new Uint8Array([0x03, 0x11, (resp >> 8) & 0xFF, resp & 0xFF]));
-                    }
-                } catch (_) {}
-            }
-
-            computeEliteChallengeResponse(seed) {
-                let n = seed & 0xFFFF;
-                n = ((n + 0x9E3779B9) ^ (n << 6) ^ (n >>> 2)) & 0xFFFF;
-                return n;
             }
 
             recenter() {
