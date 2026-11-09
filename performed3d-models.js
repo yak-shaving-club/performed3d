@@ -6,6 +6,7 @@
  *  - Boy with Bicycle & E.T. ('et_bike')
  *  - Car from Back to the Future ('delorean')
  *  - UFO from Mars Attacks! ('mars_ufo')
+ *  - Paramotor under a Phi Maestro Light 3 paraglider ('paramotor')
  */
 window.Performed3DAvatarModels = {
     /**
@@ -1068,6 +1069,8 @@ window.Performed3DAvatarModels = {
             M.updateDeLoreanDynamics.call(this, dt, ctx);
         } else if (this.ufoRig) {
             M.updateMarsUfoDynamics.call(this, dt, ctx);
+        } else if (this.paramotorRig) {
+            M.updateParamotorDynamics.call(this, dt, ctx);
         }
     },
 
@@ -1319,13 +1322,14 @@ window.Performed3DAvatarModels = {
         this.etBikeRig = null;
         this.deloreanRig = null;
         this.ufoRig = null;
+        this.paramotorRig = null;
     },
 
     /**
      * Switches or initializes the active 3D avatar model in the scene.
      */
     buildActiveAvatar(avatarType = 'aero_wyvern') {
-        const KNOWN = ['aero_wyvern', 'fuchur', 'et_bike', 'delorean', 'mars_ufo'];
+        const KNOWN = ['aero_wyvern', 'fuchur', 'et_bike', 'delorean', 'mars_ufo', 'paramotor'];
         this.currentAvatarType = KNOWN.includes(avatarType) ? avatarType : 'aero_wyvern';
         const defaultY = typeof GROUND_NEAR_TOUCH_ALTITUDE_Y !== 'undefined' ? GROUND_NEAR_TOUCH_ALTITUDE_Y : 1.35;
         let prevPos = new THREE.Vector3(this.dragonWorldX || 0, this.dragonCurrentY || defaultY, this.flightZ || 0);
@@ -1347,6 +1351,8 @@ window.Performed3DAvatarModels = {
             this.buildBoyWithBicycleAndET();
         } else if (this.currentAvatarType === 'delorean') {
             this.buildBackToTheFutureDeLorean();
+        } else if (this.currentAvatarType === 'paramotor') {
+            window.Performed3DAvatarModels.buildParamotor.call(this);
         } else {
             this.buildMarsAttacksUfo();
         }
@@ -4447,5 +4453,863 @@ window.Performed3DAvatarModels = {
 
         this.dragonGroup.position.set(0, this.dragonCurrentY, 0);
         this.scene.add(this.dragonGroup);
+    },
+
+    /**
+     * Procedural Phi Maestro Light 3 sail texture (white cloth with lilac-magenta leading edge, tips,
+     * trailing-edge band and saw-tooth chevrons). The canvas wraps the airfoil: top half = upper surface
+     * (trailing edge at the top, leading edge in the middle), bottom half = lower surface back to the trailing edge.
+     */
+    createPhiMaestroWingTexture(cellCount = 52) {
+        const W = 4096;
+        const H = 1024;
+        const MID = H / 2;
+        const canvas = document.createElement('canvas');
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext('2d');
+        const LILA = '#b4128c';
+        const LILA_DARK = '#8a0b6b';
+        const xOf = (s) => ((s + 1) / 2) * W;
+        const yUpper = (c) => MID - c * MID; // upper surface: c = 0 at LE (y = MID), c = 1 at TE (y = 0)
+        const yLower = (c) => MID + c * MID;
+
+        const base = ctx.createLinearGradient(0, 0, 0, H);
+        base.addColorStop(0.0, '#f4f3f8');
+        base.addColorStop(0.45, '#ffffff');
+        base.addColorStop(0.55, '#fbfbfd');
+        base.addColorStop(1.0, '#e9e8f0');
+        ctx.fillStyle = base;
+        ctx.fillRect(0, 0, W, H);
+
+        // Cell billow shading between ribs + crisp rib seams (diagonal ribs show faintly through the cloth)
+        const cellW = W / cellCount;
+        for (let i = 0; i < cellCount; i++) {
+            const x0 = i * cellW;
+            const g = ctx.createLinearGradient(x0, 0, x0 + cellW, 0);
+            g.addColorStop(0.0, 'rgba(120, 115, 150, 0.16)');
+            g.addColorStop(0.18, 'rgba(255, 255, 255, 0.0)');
+            g.addColorStop(0.82, 'rgba(255, 255, 255, 0.0)');
+            g.addColorStop(1.0, 'rgba(120, 115, 150, 0.16)');
+            ctx.fillStyle = g;
+            ctx.fillRect(x0, 0, cellW, H);
+            ctx.strokeStyle = 'rgba(110, 105, 140, 0.45)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x0, 0);
+            ctx.lineTo(x0, H);
+            ctx.stroke();
+            if (i % 2 === 0) {
+                ctx.strokeStyle = 'rgba(110, 105, 140, 0.12)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(x0, yLower(0.12));
+                ctx.lineTo(x0 + cellW, yLower(0.55));
+                ctx.moveTo(x0 + cellW * 2, yLower(0.12));
+                ctx.lineTo(x0 + cellW, yLower(0.55));
+                ctx.stroke();
+            }
+        }
+        // Chordwise panel seams
+        [0.18, 0.42, 0.7].forEach((c) => {
+            ctx.strokeStyle = 'rgba(120, 115, 150, 0.22)';
+            ctx.lineWidth = 2;
+            [yUpper(c), yLower(c)].forEach((y) => {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(W, y);
+                ctx.stroke();
+            });
+        });
+
+        // Lilac leading edge band wrapping around the nose, widening toward the tips
+        ctx.fillStyle = LILA;
+        ctx.beginPath();
+        const steps = 64;
+        for (let i = 0; i <= steps; i++) {
+            const s = -1 + (2 * i) / steps;
+            const c = 0.085 + 0.05 * Math.pow(Math.abs(s), 3);
+            const x = xOf(s);
+            if (i === 0) ctx.moveTo(x, yUpper(c)); else ctx.lineTo(x, yUpper(c));
+        }
+        for (let i = steps; i >= 0; i--) {
+            const s = -1 + (2 * i) / steps;
+            ctx.lineTo(xOf(s), yLower(0.05 + 0.03 * Math.pow(Math.abs(s), 3)));
+        }
+        ctx.closePath();
+        ctx.fill();
+        // Thin white piping line inside the band (Phi detail)
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        for (let i = 0; i <= steps; i++) {
+            const s = -1 + (2 * i) / steps;
+            const y = yUpper(0.1 + 0.05 * Math.pow(Math.abs(s), 3));
+            if (i === 0) ctx.moveTo(xOf(s), y); else ctx.lineTo(xOf(s), y);
+        }
+        ctx.stroke();
+
+        // Cell intakes on the nose (dark openings just under the leading edge)
+        for (let i = 0; i < cellCount; i++) {
+            const s = -1 + ((i + 0.5) / cellCount) * 2;
+            if (Math.abs(s) > 0.9) continue;
+            ctx.fillStyle = 'rgba(40, 6, 34, 0.55)';
+            ctx.beginPath();
+            ctx.ellipse(xOf(s), yLower(0.012), cellW * 0.36, 9, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Trailing-edge bands (top and bottom)
+        ctx.fillStyle = LILA;
+        ctx.fillRect(0, 0, W, 14);
+        ctx.fillRect(0, H - 14, W, 14);
+
+        // Saw-tooth chevrons pointing forward from the trailing edge (upper surface) — 4 per side as on the Maestro
+        [0.3, 0.45, 0.6, 0.75].forEach((sa) => {
+            [-1, 1].forEach((side) => {
+                const xc = xOf(side * sa);
+                const halfW = cellW * 1.25;
+                ctx.fillStyle = LILA_DARK;
+                ctx.beginPath();
+                ctx.moveTo(xc - halfW, yUpper(0.97));
+                ctx.lineTo(xc + halfW, yUpper(0.97));
+                ctx.lineTo(xc + side * halfW * 0.6, yUpper(0.8));
+                ctx.closePath();
+                ctx.fill();
+            });
+        });
+
+        // Lilac wing tips (stabilo region) with a diagonal accent stripe
+        [-1, 1].forEach((side) => {
+            const xTip = side < 0 ? 0 : W;
+            const xIn = xOf(side * 0.9);
+            ctx.fillStyle = LILA;
+            ctx.beginPath();
+            ctx.moveTo(xTip, 0);
+            ctx.lineTo(xIn + side * cellW * 0.6, 0);
+            ctx.lineTo(xIn, MID);
+            ctx.lineTo(xIn + side * cellW * 0.6, H);
+            ctx.lineTo(xTip, H);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = LILA;
+            ctx.lineWidth = 16;
+            ctx.beginPath();
+            ctx.moveTo(xOf(side * 0.82), yUpper(0.95));
+            ctx.lineTo(xOf(side * 0.88), yUpper(0.3));
+            ctx.moveTo(xOf(side * 0.82), yLower(0.95));
+            ctx.lineTo(xOf(side * 0.88), yLower(0.3));
+            ctx.stroke();
+        });
+
+        // Lower-surface branding (flipped vertically so it reads correctly when seen from beneath)
+        ctx.save();
+        ctx.fillStyle = LILA;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(xOf(0.3), yLower(0.45));
+        ctx.scale(1, -1);
+        ctx.font = 'italic bold 150px Arial, sans-serif';
+        ctx.fillText('phi', 0, 0);
+        ctx.restore();
+        ctx.save();
+        ctx.fillStyle = LILA_DARK;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(xOf(-0.32), yLower(0.45));
+        ctx.scale(1, -1);
+        ctx.font = 'bold 84px Arial, sans-serif';
+        ctx.fillText('MAESTRO light 3', 0, 0);
+        ctx.restore();
+
+        const tex = new THREE.CanvasTexture(canvas);
+        if (this.renderer && this.renderer.capabilities) {
+            tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+        }
+        tex.needsUpdate = true;
+        return tex;
+    },
+
+    /**
+     * Writes the arched, billowed, brake-deformable paraglider canopy into `geo`'s position buffer.
+     * Coordinates are in metres in the wing-pivot frame (origin = carabiner midpoint, -Z forward).
+     * Returns per-call helpers so the line set can sample attachment points on the deformed canopy.
+     */
+    shapeParagliderCanopy(geo, w, brakeL = 0, brakeR = 0) {
+        const pos = geo.attributes.position.array;
+        const nS = w.nS;
+        const nC = w.nC;
+        const ring = 2 * nC + 1;
+        const point = (s, c, upper, out) => {
+            const as = Math.abs(s);
+            const phi = s * w.arcAngle;
+            const chord = w.chord0 * Math.sqrt(Math.max(0.0001, 1 - 0.86 * s * s));
+            const zTe = w.zTe0 - 0.32 * s * s;
+            const z = zTe - (1 - c) * chord;
+            const tr = 0.155 - 0.05 * as;
+            const tipClose = Math.pow(Math.max(0, 1 - Math.pow(as, 10)), 0.5);
+            let half = 5 * tr * chord * (0.2969 * Math.sqrt(c) - 0.126 * c - 0.3516 * c * c + 0.2843 * c * c * c - 0.1036 * c * c * c * c) * tipClose;
+            const cellPos = ((s + 1) / 2) * w.cells;
+            const billow = Math.abs(Math.sin(Math.PI * cellPos));
+            half *= upper ? 0.93 + 0.1 * billow : 0.9 + 0.08 * billow;
+            let camber = 0.045 * chord * 4 * c * (1 - c) - 0.07 * chord * c;
+            const brake = s < 0 ? brakeL : brakeR;
+            const brakeSpan = Math.max(0, Math.min(1, (as - 0.15) / 0.75));
+            if (c > 0.55) camber -= brake * brakeSpan * Math.pow((c - 0.55) / 0.45, 2) * 0.42 * chord;
+            // Trailing edge scallops between line attachments
+            if (c > 0.9) camber += 0.025 * (1 - billow) * ((c - 0.9) / 0.1) - 0.012;
+            const r = w.arcR + camber + (upper ? half : -half);
+            out[0] = r * Math.sin(phi);
+            out[1] = w.topY + r * Math.cos(phi) - w.arcR;
+            out[2] = z;
+            return out;
+        };
+        const tmp = [0, 0, 0];
+        for (let i = 0; i <= nS; i++) {
+            const t = i / nS;
+            const s = Math.sign(2 * t - 1) * (1 - Math.pow(1 - Math.abs(2 * t - 1), 1.15));
+            for (let j = 0; j < ring; j++) {
+                const upper = j > nC;
+                const k = upper ? j - nC : nC - j;
+                const c = (1 - Math.cos((Math.PI * k) / nC)) / 2;
+                point(s, c, upper, tmp);
+                const idx = (i * ring + j) * 3;
+                pos[idx] = tmp[0];
+                pos[idx + 1] = tmp[1];
+                pos[idx + 2] = tmp[2];
+            }
+        }
+        geo.attributes.position.needsUpdate = true;
+        geo.computeVertexNormals();
+        return point;
+    },
+
+    /**
+     * Builds the paramotor avatar: a pilot in a paramotor harness with a caged two-stroke engine and carbon
+     * propeller on his back, hanging under a high-resolution Phi Maestro Light 3 paraglider (white/lilac)
+     * on a full cascaded line set. The propeller spins up with watts; brakes, pendulum swing and wing
+     * surge are animated in updateParamotorDynamics.
+     */
+    buildParamotor() {
+        const M = window.Performed3DAvatarModels;
+        this.dragonGroup = new THREE.Group();
+        const SCALE = 0.85;
+        // Pilot, motor and risers are drawn 1.35x larger than true scale relative to the sail so they read well on screen
+        const PS = 1.35;
+        const rigRoot = new THREE.Group();
+        rigRoot.scale.set(SCALE, SCALE, SCALE);
+        rigRoot.position.y = -0.6;
+        this.dragonGroup.add(rigRoot);
+
+        const pilotGroup = new THREE.Group();
+        const wingPivot = new THREE.Group();
+        pilotGroup.scale.set(PS, PS, PS);
+        rigRoot.add(pilotGroup);
+        rigRoot.add(wingPivot);
+
+        // ---------- Canopy ----------
+        const w = {
+            nS: 220,
+            nC: 30,
+            cells: 52,
+            arcR: 6.3,
+            arcAngle: 5.55 / 6.3,
+            chord0: 2.5,
+            zTe0: 1.55,
+            topY: 7.0
+        };
+        const ring = 2 * w.nC + 1;
+        const vCount = (w.nS + 1) * ring;
+        const canopyGeo = new THREE.BufferGeometry();
+        canopyGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vCount * 3), 3));
+        const uvs = new Float32Array(vCount * 2);
+        for (let i = 0; i <= w.nS; i++) {
+            const t = i / w.nS;
+            const s = Math.sign(2 * t - 1) * (1 - Math.pow(1 - Math.abs(2 * t - 1), 1.15));
+            for (let j = 0; j < ring; j++) {
+                const upper = j > w.nC;
+                const k = upper ? j - w.nC : w.nC - j;
+                const c = (1 - Math.cos((Math.PI * k) / w.nC)) / 2;
+                uvs[(i * ring + j) * 2] = (s + 1) / 2;
+                // v = 1 upper TE, 0.5 LE, 0 lower TE (CanvasTexture flipY maps v = 1 to the canvas top)
+                uvs[(i * ring + j) * 2 + 1] = upper ? 0.5 + c * 0.5 : 0.5 - c * 0.5;
+            }
+        }
+        canopyGeo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+        const indices = [];
+        for (let i = 0; i < w.nS; i++) {
+            for (let j = 0; j < ring - 1; j++) {
+                const a = i * ring + j;
+                const b = (i + 1) * ring + j;
+                indices.push(a, b, a + 1, b, b + 1, a + 1);
+            }
+        }
+        canopyGeo.setIndex(indices);
+        const point = M.shapeParagliderCanopy(canopyGeo, w, 0, 0);
+        const wingTex = M.createPhiMaestroWingTexture.call(this, w.cells);
+        const canopyMat = new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            map: wingTex,
+            emissive: 0x8a8892,
+            emissiveMap: wingTex,
+            specular: 0x5a5560,
+            shininess: 38,
+            side: THREE.DoubleSide
+        });
+        const canopy = new THREE.Mesh(canopyGeo, canopyMat);
+        wingPivot.add(canopy);
+
+        // ---------- Line set (A/B/C + brakes), cascaded: canopy -> gallery knots -> main lines -> risers ----------
+        const riserTop = {
+            A: (side) => new THREE.Vector3(side * 0.25, 0.5, -0.06).multiplyScalar(PS),
+            B: (side) => new THREE.Vector3(side * 0.26, 0.52, 0.0).multiplyScalar(PS),
+            C: (side) => new THREE.Vector3(side * 0.27, 0.53, 0.07).multiplyScalar(PS),
+            K: (side) => new THREE.Vector3(side * 0.28, 0.55, 0.12).multiplyScalar(PS)
+        };
+        const rows = [
+            { key: 'A', c: 0.1, color: 0xe11d48 },
+            { key: 'B', c: 0.34, color: 0xf59e0b },
+            { key: 'C', c: 0.64, color: 0xfacc15 },
+            { key: 'K', c: 1.0, color: 0xf97316 }
+        ];
+        const attachS = [];
+        for (let k = 0; k < 15; k++) attachS.push(0.04 + (k / 14) * 0.9);
+        const lineSets = rows.map((row) => {
+            const n = attachS.length * 2 * 2 + 10 * 2;
+            const g = new THREE.BufferGeometry();
+            g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 2 * 3), 3));
+            const mat = new THREE.LineBasicMaterial({ color: row.color, transparent: true, opacity: 0.7 });
+            const seg = new THREE.LineSegments(g, mat);
+            seg.frustumCulled = false;
+            wingPivot.add(seg);
+            return { row, geo: g };
+        });
+        const galleryMat = new THREE.LineBasicMaterial({ color: 0xf1f5f9, transparent: true, opacity: 0.75 });
+        const galleryGeo = new THREE.BufferGeometry();
+        galleryGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(rows.length * attachS.length * 2 * 2 * 3), 3));
+        const gallery = new THREE.LineSegments(galleryGeo, galleryMat);
+        gallery.frustumCulled = false;
+        wingPivot.add(gallery);
+
+        const tmpP = [0, 0, 0];
+        const updateLines = (pointFn, toggles) => {
+            const gArr = galleryGeo.attributes.position.array;
+            let gi = 0;
+            lineSets.forEach(({ row, geo }) => {
+                const arr = geo.attributes.position.array;
+                let li = 0;
+                const push = (a, b) => {
+                    arr[li++] = a.x; arr[li++] = a.y; arr[li++] = a.z;
+                    arr[li++] = b.x; arr[li++] = b.y; arr[li++] = b.z;
+                };
+                [-1, 1].forEach((side) => {
+                    const top = row.key === 'K' ? toggles[side < 0 ? 0 : 1] : riserTop[row.key](side);
+                    // groups of three attachments share a gallery knot, knots share a main line
+                    for (let g0 = 0; g0 < attachS.length; g0 += 3) {
+                        const knot = new THREE.Vector3();
+                        const pts = [];
+                        for (let k = g0; k < Math.min(attachS.length, g0 + 3); k++) {
+                            const s = side * attachS[k];
+                            const c = row.key === 'K' ? 0.995 : row.c;
+                            pointFn(s, c, false, tmpP);
+                            const p = new THREE.Vector3(tmpP[0], tmpP[1], tmpP[2]);
+                            pts.push(p);
+                            knot.add(p);
+                        }
+                        knot.multiplyScalar(1 / pts.length);
+                        knot.lerp(top, 0.3);
+                        pts.forEach((p) => {
+                            gArr[gi++] = p.x; gArr[gi++] = p.y; gArr[gi++] = p.z;
+                            gArr[gi++] = knot.x; gArr[gi++] = knot.y; gArr[gi++] = knot.z;
+                        });
+                        push(knot, top);
+                    }
+                });
+                geo.attributes.position.needsUpdate = true;
+                geo.setDrawRange(0, li / 3);
+            });
+            galleryGeo.setDrawRange(0, gi / 3);
+            galleryGeo.attributes.position.needsUpdate = true;
+        };
+
+        // Risers (webbing), maillons and brake toggles live in the wing frame
+        const webbingMat = new THREE.MeshPhongMaterial({ color: 0x1f1f24, specular: 0x444444, shininess: 30 });
+        const lilaWebMat = new THREE.MeshPhongMaterial({ color: 0xb4128c, specular: 0x553355, shininess: 40 });
+        const steelMat = new THREE.MeshPhongMaterial({ color: 0xd1d5db, specular: 0xffffff, shininess: 160 });
+        const placeBetween = (mesh, a, b) => {
+            const dir = new THREE.Vector3().subVectors(b, a);
+            const len = dir.length();
+            mesh.position.copy(a).addScaledVector(dir, 0.5);
+            mesh.scale.set(1, Math.max(0.0001, len), 1);
+            mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+        };
+        const unitCyl = (r, mat, seg = 10) => new THREE.Mesh(new THREE.CylinderGeometry(r, r, 1, seg), mat);
+        [-1, 1].forEach((side) => {
+            const carabiner = new THREE.Vector3(side * 0.22, 0, 0.03).multiplyScalar(PS);
+            Object.keys(riserTop).forEach((key, idx) => {
+                const strap = new THREE.Mesh(new THREE.BoxGeometry(0.025, 1, 0.006), key === 'A' ? lilaWebMat : webbingMat);
+                placeBetween(strap, carabiner, riserTop[key](side));
+                wingPivot.add(strap);
+                const maillon = new THREE.Mesh(new THREE.TorusGeometry(0.014, 0.004, 6, 12), steelMat);
+                maillon.position.copy(riserTop[key](side));
+                maillon.rotation.y = Math.PI / 2;
+                wingPivot.add(maillon);
+                if (idx === 0) {
+                    const pulley = new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.006, 6, 14), steelMat);
+                    pulley.position.copy(riserTop.C(side)).add(new THREE.Vector3(0, -0.04, 0.02));
+                    pulley.rotation.y = Math.PI / 2;
+                    wingPivot.add(pulley);
+                }
+            });
+            const krabMesh = new THREE.Mesh(new THREE.TorusGeometry(0.04, 0.008, 8, 18), steelMat);
+            krabMesh.scale.set(PS, 1.5 * PS, PS);
+            krabMesh.position.copy(carabiner);
+            krabMesh.rotation.y = Math.PI / 2;
+            wingPivot.add(krabMesh);
+        });
+        const toggleMat = new THREE.MeshPhongMaterial({ color: 0x111827, specular: 0x666666, shininess: 50 });
+        const toggleMeshes = [-1, 1].map((side) => {
+            const t = new THREE.Group();
+            t.scale.set(PS, PS, PS);
+            const grip = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.012, 8, 18), toggleMat);
+            grip.scale.set(1, 1.4, 1);
+            grip.rotation.y = Math.PI / 2;
+            t.add(grip);
+            const tab = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.04, 0.02), lilaWebMat);
+            tab.position.y = 0.07;
+            t.add(tab);
+            wingPivot.add(t);
+            return t;
+        });
+
+        // ---------- Pilot (origin = carabiner midpoint, metres) ----------
+        const suitMat = new THREE.MeshPhongMaterial({ color: 0x2b2f3a, specular: 0x3b3f4a, shininess: 25 });
+        const suitAccentMat = new THREE.MeshPhongMaterial({ color: 0x6b2b8f, specular: 0x9b6bb0, shininess: 35 });
+        const pantsMat = new THREE.MeshPhongMaterial({ color: 0x15171c, specular: 0x2a2a2a, shininess: 18 });
+        const skinMat = new THREE.MeshPhongMaterial({ color: 0xe0ac8a, specular: 0x332211, shininess: 18 });
+        const gloveMat = new THREE.MeshPhongMaterial({ color: 0x0b0b0e, specular: 0x333333, shininess: 30 });
+        const helmetMat = new THREE.MeshPhongMaterial({ color: 0xf8fafc, specular: 0xffffff, shininess: 140 });
+        const visorMat = new THREE.MeshPhongMaterial({ color: 0x0f172a, specular: 0x93c5fd, shininess: 200, transparent: true, opacity: 0.88 });
+        const harnessMat = new THREE.MeshPhongMaterial({ color: 0x18181b, specular: 0x3f3f46, shininess: 40 });
+        const limeMat = new THREE.MeshPhongMaterial({ color: 0xa3e635, emissive: 0x1a2e05, shininess: 60 });
+        const cyanMat = new THREE.MeshPhongMaterial({ color: 0x22d3ee, emissive: 0x05303a, shininess: 60 });
+        const bootMat = new THREE.MeshPhongMaterial({ color: 0x3f2a1d, specular: 0x222222, shininess: 25 });
+
+        const hip = new THREE.Vector3(0, -0.55, 0.06);
+        // Torso, slightly reclined
+        const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.15, 0.56, 18), suitMat);
+        torso.scale.set(1.15, 1, 0.8);
+        torso.position.set(0, -0.27, 0.1);
+        torso.rotation.x = -0.18;
+        pilotGroup.add(torso);
+        const chestStripe = new THREE.Mesh(new THREE.CylinderGeometry(0.172, 0.168, 0.06, 18), suitAccentMat);
+        chestStripe.scale.set(1.15, 1, 0.8);
+        chestStripe.position.set(0, -0.12, 0.075);
+        chestStripe.rotation.x = -0.18;
+        pilotGroup.add(chestStripe);
+        const shoulders = new THREE.Mesh(new THREE.SphereGeometry(0.2, 18, 12), suitMat);
+        shoulders.scale.set(1.15, 0.45, 0.75);
+        shoulders.position.set(0, -0.04, 0.13);
+        pilotGroup.add(shoulders);
+        const pelvis = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 12), pantsMat);
+        pelvis.scale.set(1.05, 0.7, 0.95);
+        pelvis.position.copy(hip);
+        pilotGroup.add(pelvis);
+
+        // Head + helmet + visor + chin bar
+        const headGroup = new THREE.Group();
+        headGroup.position.set(0, 0.12, 0.12);
+        pilotGroup.add(headGroup);
+        const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.06, 0.1, 12), skinMat);
+        neck.position.set(0, -0.06, 0);
+        headGroup.add(neck);
+        const face = new THREE.Mesh(new THREE.SphereGeometry(0.095, 18, 14), skinMat);
+        face.scale.set(0.95, 1.1, 1.0);
+        face.position.set(0, 0.06, -0.02);
+        headGroup.add(face);
+        const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.135, 28, 20, 0, Math.PI * 2, 0, Math.PI * 0.62), helmetMat);
+        helmet.position.set(0, 0.08, 0.01);
+        headGroup.add(helmet);
+        const helmetStripe = new THREE.Mesh(new THREE.TorusGeometry(0.128, 0.012, 8, 32, Math.PI), suitAccentMat);
+        helmetStripe.rotation.y = Math.PI / 2;
+        helmetStripe.position.set(0, 0.08, 0.01);
+        headGroup.add(helmetStripe);
+        const visor = new THREE.Mesh(new THREE.SphereGeometry(0.128, 24, 12, Math.PI * 1.15, Math.PI * 0.7, Math.PI * 0.32, Math.PI * 0.26), visorMat);
+        visor.position.set(0, 0.06, 0.0);
+        headGroup.add(visor);
+        [-1, 1].forEach((side) => {
+            const earCup = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 16), harnessMat);
+            earCup.rotation.z = Math.PI / 2;
+            earCup.position.set(side * 0.125, 0.05, 0.01);
+            headGroup.add(earCup);
+        });
+        const mic = unitCyl(0.006, harnessMat, 6);
+        placeBetween(mic, new THREE.Vector3(-0.13, 0.03, 0.0), new THREE.Vector3(-0.04, -0.02, -0.11));
+        headGroup.add(mic);
+
+        // Legs: thighs forward on the seat board, shins angled down, boots
+        const legParts = [];
+        [-1, 1].forEach((side) => {
+            const h = new THREE.Vector3(side * 0.1, -0.6, 0.0);
+            const knee = new THREE.Vector3(side * 0.13, -0.66, -0.42);
+            const ankle = new THREE.Vector3(side * 0.12, -1.06, -0.52);
+            const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.07, 1, 14), pantsMat);
+            placeBetween(thigh, h, knee);
+            pilotGroup.add(thigh);
+            const kneeBall = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 10), pantsMat);
+            kneeBall.position.copy(knee);
+            pilotGroup.add(kneeBall);
+            const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.05, 1, 14), pantsMat);
+            placeBetween(shin, knee, ankle);
+            pilotGroup.add(shin);
+            const boot = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.1, 0.27), bootMat);
+            boot.position.copy(ankle).add(new THREE.Vector3(0, -0.03, -0.06));
+            boot.rotation.x = 0.5;
+            pilotGroup.add(boot);
+            legParts.push({ thigh, shin, boot });
+        });
+
+        // Harness: seat board, back protector, shoulder straps, chest strap, side stripes (lime/cyan)
+        const seat = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.06, 0.48), harnessMat);
+        seat.position.set(0, -0.7, -0.12);
+        seat.rotation.x = 0.06;
+        pilotGroup.add(seat);
+        const backPad = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.78, 0.12), harnessMat);
+        backPad.position.set(0, -0.32, 0.27);
+        backPad.rotation.x = -0.15;
+        pilotGroup.add(backPad);
+        [-1, 1].forEach((side) => {
+            const sidePod = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.26, 0.5), harnessMat);
+            sidePod.position.set(side * 0.25, -0.6, 0.02);
+            pilotGroup.add(sidePod);
+            const lime = new THREE.Mesh(new THREE.BoxGeometry(0.084, 0.03, 0.42), limeMat);
+            lime.position.set(side * 0.25, -0.56, 0.0);
+            pilotGroup.add(lime);
+            const cyan = new THREE.Mesh(new THREE.BoxGeometry(0.084, 0.022, 0.3), cyanMat);
+            cyan.position.set(side * 0.25, -0.61, -0.04);
+            pilotGroup.add(cyan);
+            const strap = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.58, 0.02), harnessMat);
+            strap.position.set(side * 0.11, -0.25, -0.02);
+            strap.rotation.x = -0.18;
+            pilotGroup.add(strap);
+            const hangStrap = unitCyl(0.014, harnessMat, 6);
+            placeBetween(hangStrap, new THREE.Vector3(side * 0.22, 0, 0.03), new THREE.Vector3(side * 0.24, -0.5, 0.05));
+            pilotGroup.add(hangStrap);
+        });
+        const chestStrap = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.035, 0.02), harnessMat);
+        chestStrap.position.set(0, -0.22, -0.045);
+        pilotGroup.add(chestStrap);
+
+        // Arms (2-bone IK each frame toward the brake toggles)
+        const arms = [-1, 1].map((side) => {
+            const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.05, 1, 12), suitMat);
+            const fore = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.04, 1, 12), suitMat);
+            const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.052, 10, 8), suitMat);
+            const hand = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 10), gloveMat);
+            hand.scale.set(0.9, 1.2, 0.9);
+            [upper, fore, elbow, hand].forEach((m) => pilotGroup.add(m));
+            return { side, shoulder: new THREE.Vector3(side * 0.2, -0.06, 0.12), upper, fore, elbow, hand, lenU: 0.3, lenF: 0.3 };
+        });
+        // Throttle in the right hand with a cable to the engine
+        const throttle = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.13, 10), new THREE.MeshPhongMaterial({ color: 0xdc2626, shininess: 80 }));
+        pilotGroup.add(throttle);
+        const throttleCableGeo = new THREE.BufferGeometry();
+        throttleCableGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
+        const throttleCable = new THREE.Line(throttleCableGeo, new THREE.LineBasicMaterial({ color: 0x111111 }));
+        throttleCable.frustumCulled = false;
+        pilotGroup.add(throttleCable);
+
+        // ---------- Paramotor unit on the back ----------
+        const motor = new THREE.Group();
+        motor.position.set(0, -0.32, 0.36);
+        pilotGroup.add(motor);
+        const aluMat = new THREE.MeshPhongMaterial({ color: 0xc7ccd4, specular: 0xffffff, shininess: 120 });
+        const carbonMat = new THREE.MeshPhongMaterial({ color: 0x1b1b1f, specular: 0x9ca3af, shininess: 110 });
+        const engineMat = new THREE.MeshPhongMaterial({ color: 0x3f3f46, specular: 0xa1a1aa, shininess: 80 });
+        const finMat = new THREE.MeshPhongMaterial({ color: 0x9ca3af, specular: 0xffffff, shininess: 100 });
+        const tankMat = new THREE.MeshPhongMaterial({ color: 0xf5f5f4, specular: 0xffffff, shininess: 60, transparent: true, opacity: 0.82 });
+        const fuelMat = new THREE.MeshPhongMaterial({ color: 0xf59e0b, emissive: 0x3a1d02, transparent: true, opacity: 0.85 });
+
+        // Cage: outer hoop, inner hoop, spokes and safety netting
+        const CAGE_R = 0.72;
+        const cageCenter = new THREE.Vector3(0, 0.12, 0.42);
+        [CAGE_R, CAGE_R - 0.05].forEach((r, i) => {
+            const hoop = new THREE.Mesh(new THREE.TorusGeometry(r, i === 0 ? 0.016 : 0.009, 10, 96), aluMat);
+            hoop.position.copy(cageCenter).add(new THREE.Vector3(0, 0, i * 0.05));
+            motor.add(hoop);
+        });
+        for (let i = 0; i < 10; i++) {
+            const a = (i / 10) * Math.PI * 2;
+            const spoke = unitCyl(0.008, aluMat, 6);
+            placeBetween(spoke,
+                new THREE.Vector3(Math.cos(a) * CAGE_R, Math.sin(a) * CAGE_R, 0).add(cageCenter),
+                new THREE.Vector3(Math.cos(a) * 0.2, Math.sin(a) * 0.2 + 0.0, -0.14).add(cageCenter));
+            motor.add(spoke);
+        }
+        const netPts = [];
+        const NET_Z = cageCenter.z + 0.08;
+        for (let i = 0; i < 36; i++) {
+            const a = (i / 36) * Math.PI * 2;
+            netPts.push(Math.cos(a) * 0.08, cageCenter.y + Math.sin(a) * 0.08, NET_Z, Math.cos(a) * CAGE_R, cageCenter.y + Math.sin(a) * CAGE_R, NET_Z);
+        }
+        [0.2, 0.34, 0.48, 0.6].forEach((r) => {
+            for (let i = 0; i < 48; i++) {
+                const a0 = (i / 48) * Math.PI * 2;
+                const a1 = ((i + 1) / 48) * Math.PI * 2;
+                netPts.push(Math.cos(a0) * r, cageCenter.y + Math.sin(a0) * r, NET_Z, Math.cos(a1) * r, cageCenter.y + Math.sin(a1) * r, NET_Z);
+            }
+        });
+        const netGeo = new THREE.BufferGeometry();
+        netGeo.setAttribute('position', new THREE.Float32BufferAttribute(netPts, 3));
+        motor.add(new THREE.LineSegments(netGeo, new THREE.LineBasicMaterial({ color: 0x27272a, transparent: true, opacity: 0.7 })));
+
+        // Main frame: J-bars to the harness, base plate and lower bars
+        [-1, 1].forEach((side) => {
+            const jBar = unitCyl(0.014, aluMat, 8);
+            placeBetween(jBar, new THREE.Vector3(side * 0.24, -0.38, -0.05), new THREE.Vector3(side * 0.42, -0.45, 0.4));
+            motor.add(jBar);
+            const upright = unitCyl(0.012, aluMat, 8);
+            placeBetween(upright, new THREE.Vector3(side * 0.42, -0.45, 0.4), new THREE.Vector3(side * 0.5, 0.45, 0.42));
+            motor.add(upright);
+            const swingArm = unitCyl(0.013, aluMat, 8);
+            placeBetween(swingArm, new THREE.Vector3(side * 0.24, 0.3, 0.02), new THREE.Vector3(side * 0.2, -0.38, -0.05));
+            motor.add(swingArm);
+        });
+        const basePlate = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.04, 0.3), carbonMat);
+        basePlate.position.set(0, -0.36, 0.2);
+        motor.add(basePlate);
+
+        // Engine: crankcase, finned cylinder, carburettor + airbox, reduction pulley and belt
+        const crank = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.18, 0.16), engineMat);
+        crank.position.set(0, -0.12, 0.18);
+        motor.add(crank);
+        const cylGroup = new THREE.Group();
+        cylGroup.position.set(0, -0.12, 0.08);
+        cylGroup.rotation.x = Math.PI / 2;
+        motor.add(cylGroup);
+        for (let i = 0; i < 9; i++) {
+            const fin = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.008, 24), finMat);
+            fin.position.y = 0.02 + i * 0.016;
+            cylGroup.add(fin);
+        }
+        const cylBody = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.16, 20), engineMat);
+        cylBody.position.y = 0.08;
+        cylGroup.add(cylBody);
+        const sparkCap = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.05, 10), new THREE.MeshPhongMaterial({ color: 0x111111 }));
+        sparkCap.position.y = 0.19;
+        cylGroup.add(sparkCap);
+        const airbox = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.12, 20), new THREE.MeshPhongMaterial({ color: 0xb4128c, specular: 0xffffff, shininess: 70 }));
+        airbox.rotation.z = Math.PI / 2;
+        airbox.position.set(-0.18, -0.08, 0.16);
+        motor.add(airbox);
+        const bigPulley = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.03, 32), aluMat);
+        bigPulley.rotation.x = Math.PI / 2;
+        bigPulley.position.set(0, cageCenter.y, 0.3);
+        motor.add(bigPulley);
+        const smallPulley = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.03, 20), aluMat);
+        smallPulley.rotation.x = Math.PI / 2;
+        smallPulley.position.set(0, -0.12, 0.3);
+        motor.add(smallPulley);
+        [-1, 1].forEach((side) => {
+            const belt = new THREE.Mesh(new THREE.BoxGeometry(0.012, 1, 0.024), carbonMat);
+            placeBetween(belt, new THREE.Vector3(side * 0.05, -0.12, 0.3), new THREE.Vector3(side * 0.15, cageCenter.y, 0.3));
+            motor.add(belt);
+        });
+        const reductionArm = unitCyl(0.02, aluMat, 8);
+        placeBetween(reductionArm, new THREE.Vector3(0, -0.1, 0.26), new THREE.Vector3(0, cageCenter.y, 0.26));
+        motor.add(reductionArm);
+
+        // Exhaust: tuned pipe curling under the engine to a silencer
+        const exhaustCurve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(0.0, -0.16, 0.0),
+            new THREE.Vector3(0.12, -0.28, -0.02),
+            new THREE.Vector3(0.26, -0.3, 0.1),
+            new THREE.Vector3(0.3, -0.22, 0.26)
+        ]);
+        motor.add(new THREE.Mesh(new THREE.TubeGeometry(exhaustCurve, 24, 0.028, 10, false), aluMat));
+        const silencer = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.22, 16), aluMat);
+        silencer.position.set(0.3, -0.12, 0.3);
+        motor.add(silencer);
+
+        // Fuel tank under the seat (translucent with fuel level)
+        const tank = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.16, 0.24), tankMat);
+        tank.position.set(0, -0.5, 0.16);
+        motor.add(tank);
+        const fuel = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.09, 0.22), fuelMat);
+        fuel.position.set(0, -0.53, 0.16);
+        motor.add(fuel);
+        const fuelCap = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.03, 12), new THREE.MeshPhongMaterial({ color: 0xdc2626 }));
+        fuelCap.position.set(0.12, -0.41, 0.16);
+        motor.add(fuelCap);
+
+        // Propeller: two twisted carbon blades with lilac tips, hub + spinner, translucent motion-blur disc
+        const propGroup = new THREE.Group();
+        propGroup.position.set(0, cageCenter.y, cageCenter.z - 0.04);
+        motor.add(propGroup);
+        const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.07, 20), carbonMat);
+        hub.rotation.x = Math.PI / 2;
+        propGroup.add(hub);
+        const spinner = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.1, 20), aluMat);
+        spinner.rotation.x = Math.PI / 2;
+        spinner.position.z = 0.08;
+        propGroup.add(spinner);
+        const propTipMat = new THREE.MeshPhongMaterial({ color: 0xb4128c, specular: 0xffffff, shininess: 90 });
+        const PROP_R = 0.63;
+        const bladeShape = new THREE.Shape();
+        bladeShape.moveTo(0.05, -0.03);
+        bladeShape.bezierCurveTo(0.25, -0.06, 0.45, -0.05, PROP_R - 0.02, -0.022);
+        bladeShape.quadraticCurveTo(PROP_R + 0.005, 0, PROP_R - 0.02, 0.02);
+        bladeShape.bezierCurveTo(0.45, 0.035, 0.25, 0.045, 0.05, 0.03);
+        bladeShape.closePath();
+        const bladeGeo = new THREE.ExtrudeGeometry(bladeShape, { depth: 0.012, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.004, bevelSegments: 2, curveSegments: 24 });
+        // Twist: higher pitch near the root
+        const bp = bladeGeo.attributes.position;
+        for (let i = 0; i < bp.count; i++) {
+            const x = bp.getX(i);
+            const twist = 0.55 - 0.4 * (x / PROP_R);
+            const y = bp.getY(i);
+            const z = bp.getZ(i) - 0.006;
+            bp.setY(i, y * Math.cos(twist) - z * Math.sin(twist));
+            bp.setZ(i, y * Math.sin(twist) + z * Math.cos(twist));
+        }
+        bladeGeo.computeVertexNormals();
+        [0, Math.PI].forEach((rot) => {
+            const blade = new THREE.Mesh(bladeGeo, carbonMat);
+            blade.rotation.z = rot;
+            propGroup.add(blade);
+            const tip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.04, 0.016), propTipMat);
+            tip.position.set(Math.cos(rot) * (PROP_R - 0.05), Math.sin(rot) * (PROP_R - 0.05), 0);
+            tip.rotation.z = rot;
+            propGroup.add(tip);
+        });
+        const blurMat = new THREE.MeshBasicMaterial({ color: 0x52525b, transparent: true, opacity: 0.0, side: THREE.DoubleSide, depthWrite: false });
+        const blurDisc = new THREE.Mesh(new THREE.RingGeometry(0.07, PROP_R, 64, 1), blurMat);
+        blurDisc.position.set(0, cageCenter.y, cageCenter.z - 0.04);
+        motor.add(blurDisc);
+
+        rigRoot.rotation.order = 'YXZ';
+        pilotGroup.rotation.order = 'YXZ';
+        wingPivot.rotation.order = 'YXZ';
+        this.avatarAnimParts = { propGroup };
+        this.paramotorRig = M.createAvatarFlightState({
+            rigRoot,
+            pilotGroup,
+            wingPivot,
+            headGroup,
+            canopyGeo,
+            wingSpec: w,
+            pilotScale: PS,
+            point,
+            updateLines,
+            toggleMeshes,
+            arms,
+            throttle,
+            throttleCableGeo,
+            propGroup,
+            blurMat,
+            propAngle: 0,
+            propSpeed: 0,
+            brakeL: 0.12,
+            brakeR: 0.12,
+            shapedBrakeL: -1,
+            shapedBrakeR: -1,
+            effortSlow: 0
+        });
+        M.updateParamotorDynamics.call(this, 0.016, {});
+
+        this.dragonGroup.position.set(0, this.dragonCurrentY, 0);
+        this.scene.add(this.dragonGroup);
+    },
+
+    /**
+     * Paramotor dynamics: propeller spins up with watts (with motion-blur disc), pilot pendulum swings forward
+     * under thrust surges and lags the wing on roll-in, the wing banks/surges on a soft spring, brakes are
+     * pulled on the inside of turns (deforming the trailing edge and lines), the hands follow the toggles
+     * via 2-bone IK and the head looks into the turn.
+     */
+    updateParamotorDynamics(dt, ctx = {}) {
+        const rig = this.paramotorRig;
+        if (!rig) return;
+        const M = window.Performed3DAvatarModels;
+        const f = M.trackAvatarFlightState(rig, dt, ctx);
+        const { step, clamp, smooth } = f;
+        rig.effortSlow = smooth(rig.effortSlow, rig.effort, 0.7);
+
+        // Propeller: idle when coasting, revs up with watts
+        const targetSpeed = f.isPedaling ? 14 + 30 * clamp(f.wattRatio, 0, 1.8) : 6;
+        rig.propSpeed = smooth(rig.propSpeed, targetSpeed, 2.5);
+        rig.propAngle = (rig.propAngle + rig.propSpeed * step) % (Math.PI * 2);
+        rig.propGroup.rotation.z = rig.propAngle;
+        rig.blurMat.opacity = clamp((rig.propSpeed - 8) / 80, 0, 0.2);
+
+        // Pendulum: pilot swings forward on throttle surges and outward/lagging when rolling in
+        const surge = rig.effort - rig.effortSlow;
+        const swingX = f.spring('swingX', clamp(0.06 + 0.35 * surge + 0.05 * rig.effort - 0.05 * rig.pitchRate, -0.25, 0.35), 2.6, 0.22);
+        const swingZ = f.spring('swingZ', clamp(0.22 * rig.rollRate + 0.05 * f.yawN, -0.3, 0.3), 2.8, 0.2);
+        rig.pilotGroup.rotation.x = swingX;
+        rig.pilotGroup.rotation.z = swingZ * 0.6;
+        // Wing: surges back slightly under power, banks ahead of the pilot, light turbulence breathing
+        const turb = 0.012 * Math.sin(rig.time * 0.9) + 0.008 * Math.sin(rig.time * 2.3 + 1.3);
+        rig.wingPivot.rotation.x = f.spring('wingPitch', clamp(-0.12 * surge + 0.04 * f.climb, -0.15, 0.15), 3.2, 0.3) + turb;
+        rig.wingPivot.rotation.z = f.spring('wingRoll', clamp(-0.12 * rig.rollRate, -0.2, 0.2), 3.5, 0.35) + turb * 0.6;
+        rig.wingPivot.rotation.y = f.spring('wingYaw', clamp(-0.06 * f.yawN, -0.1, 0.1), 3, 0.5);
+        rig.rigRoot.position.y = -0.6 + 0.06 * Math.sin(rig.time * 0.8);
+
+        // Brakes: inside brake on turns, light symmetric trim brake, a touch more when climbing
+        const base = 0.1 + 0.08 * Math.max(0, f.climb);
+        const turn = clamp(f.bank * 0.9 + f.yawN * 0.25, -1, 1);
+        rig.brakeL = smooth(rig.brakeL, clamp(base + Math.max(0, -turn) * 0.75, 0, 1), 4);
+        rig.brakeR = smooth(rig.brakeR, clamp(base + Math.max(0, turn) * 0.75, 0, 1), 4);
+        if (Math.abs(rig.brakeL - rig.shapedBrakeL) > 0.004 || Math.abs(rig.brakeR - rig.shapedBrakeR) > 0.004) {
+            rig.point = M.shapeParagliderCanopy(rig.canopyGeo, rig.wingSpec, rig.brakeL, rig.brakeR);
+            rig.shapedBrakeL = rig.brakeL;
+            rig.shapedBrakeR = rig.brakeR;
+        }
+        const toggles = [-1, 1].map((side) => {
+            const b = side < 0 ? rig.brakeL : rig.brakeR;
+            return new THREE.Vector3(side * (0.29 - 0.04 * b), 0.42 - 0.62 * b, 0.12 - 0.12 * b).multiplyScalar(rig.pilotScale);
+        });
+        rig.toggleMeshes.forEach((t, i) => t.position.copy(toggles[i]));
+        rig.updateLines(rig.point, toggles);
+
+        // Arms: 2-bone IK from shoulders to toggles (expressed in the pilot frame)
+        rig.rigRoot.updateMatrixWorld(true);
+        const up = new THREE.Vector3(0, 1, 0);
+        const placeLimb = (mesh, a, b) => {
+            const dir = new THREE.Vector3().subVectors(b, a);
+            mesh.position.copy(a).addScaledVector(dir, 0.5);
+            mesh.scale.set(1, dir.length(), 1);
+            mesh.quaternion.setFromUnitVectors(up, dir.normalize());
+        };
+        rig.arms.forEach((arm, i) => {
+            const target = rig.wingPivot.localToWorld(toggles[i].clone().add(new THREE.Vector3(0, -0.03, 0)));
+            rig.pilotGroup.worldToLocal(target);
+            const S = arm.shoulder;
+            const toT = new THREE.Vector3().subVectors(target, S);
+            const d = clamp(toT.length(), 0.05, arm.lenU + arm.lenF - 0.001);
+            toT.normalize();
+            const hand = S.clone().addScaledVector(toT, d);
+            const a = (arm.lenU * arm.lenU - arm.lenF * arm.lenF + d * d) / (2 * d);
+            const h = Math.sqrt(Math.max(0, arm.lenU * arm.lenU - a * a));
+            const pole = new THREE.Vector3(arm.side, -0.3, 0.6);
+            pole.addScaledVector(toT, -pole.dot(toT)).normalize();
+            const elbow = S.clone().addScaledVector(toT, a).addScaledVector(pole, h);
+            placeLimb(arm.upper, S, elbow);
+            placeLimb(arm.fore, elbow, hand);
+            arm.elbow.position.copy(elbow);
+            arm.hand.position.copy(hand);
+            if (arm.side > 0) {
+                rig.throttle.position.copy(hand).add(new THREE.Vector3(0.0, -0.06, -0.02));
+                const cable = rig.throttleCableGeo.attributes.position.array;
+                cable[0] = rig.throttle.position.x; cable[1] = rig.throttle.position.y - 0.06; cable[2] = rig.throttle.position.z;
+                cable[3] = 0.28; cable[4] = -0.55; cable[5] = 0.3;
+                rig.throttleCableGeo.attributes.position.needsUpdate = true;
+            }
+        });
+
+        // Head: looks into the turn and up at the wing a little when braking hard
+        rig.headGroup.rotation.y = smooth(rig.headGroup.rotation.y, -0.5 * turn, 3);
+        rig.headGroup.rotation.x = smooth(rig.headGroup.rotation.x, 0.15 * Math.max(rig.brakeL, rig.brakeR) - 0.05 * f.climb, 3);
+        rig.headGroup.rotation.z = -swingZ * 0.5;
     }
 };

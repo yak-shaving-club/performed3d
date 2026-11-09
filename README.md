@@ -76,6 +76,7 @@ Available avatars:
 - Boy with Bicycle & E.T.
 - DeLorean
 - UFO
+- Paramotor (pilot with a caged propeller under a white/lilac Phi Maestro Light 3 paraglider)
 
 There are five camera views: Chase, Far Chase, Top-Down, Front, and Front Far. Your avatar, camera, FTP, steering, and accuracy settings are saved in the browser.
 
@@ -109,6 +110,7 @@ Bluetooth devices must be powered on and within range. Start pairing from the co
 | UFO, top-down view | ![UFO from the top-down camera](docs/screenshots/04-ufo-topdown.png) |
 | Front camera | ![Front view](docs/screenshots/05-front.png) |
 | Fuchur avatar | ![Fuchur in flight](docs/screenshots/05-fuchur.png) |
+| Paramotor avatar | ![Paramotor under a Phi Maestro Light 3 wing](docs/screenshots/05-paramotor.png) |
 | Workout summary | ![Workout summary](docs/screenshots/06-summary.png) |
 
 ## Project files

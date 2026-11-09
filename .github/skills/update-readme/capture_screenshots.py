@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Capture all 8 README.md screenshots for PerFormEd 3D at 1730x1860 (865x930 @ 2x Retina).
+Capture all 9 README.md screenshots for PerFormEd 3D at 1730x1860 (865x930 @ 2x Retina).
 
 Requirements enforced for all avatar flight screenshots:
 - "START FLIGHT" (#startWorkoutBtn) has been clicked and workout is actively flying
@@ -45,6 +45,9 @@ def find_browser() -> str:
         path = shutil.which(candidate)
         if path:
             return path
+    mac_chrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    if os.path.isfile(mac_chrome):
+        return mac_chrome
     raise RuntimeError("No Chrome/Chromium binary found in PATH.")
 
 
@@ -471,23 +474,36 @@ def main():
         time.sleep(2.5)
         cdp.screenshot(out_dir / "05-fuchur.png")
 
+        # 8. 05-paramotor.png: Active flight, zero forward velocity, Paramotor (Phi Maestro Light 3), Chase cam (1)
+        print("Capturing 05-paramotor.png...")
+        configure_flight_controls(
+            cdp,
+            avatar="paramotor",
+            camera="1",
+            resistance="easy",
+            ensure_started=True,
+            freeze_forward_velocity=True,
+        )
+        time.sleep(2.5)
+        cdp.screenshot(out_dir / "05-paramotor.png")
+
         # Restore normal forward velocity before finishing workout
         configure_flight_controls(
             cdp,
-            avatar="fuchur",
+            avatar="paramotor",
             camera="1",
             resistance="easy",
             ensure_started=True,
             freeze_forward_velocity=False,
         )
 
-        # 8. 06-summary.png: Click Finish & Summary (#finishWorkoutBtn) after active flight
+        # 9. 06-summary.png: Click Finish & Summary (#finishWorkoutBtn) after active flight
         print("Capturing 06-summary.png...")
         cdp.evaluate("document.getElementById('finishWorkoutBtn')?.click()")
         time.sleep(1.5)
         cdp.screenshot(out_dir / "06-summary.png")
 
-        print("All 8 screenshots captured successfully.")
+        print("All 9 screenshots captured successfully.")
     finally:
         if cdp is not None:
             try:

@@ -117,6 +117,7 @@
                                 <option value="et_bike" class="bg-gray-900">Boy with Bicycle &amp; E.T.</option>
                                 <option value="delorean" class="bg-gray-900">DeLorean (Back to the Future)</option>
                                 <option value="mars_ufo" class="bg-gray-900">UFO (Mars Attacks!)</option>
+                                <option value="paramotor" class="bg-gray-900">Paramotor (Phi Maestro Light 3)</option>
                             </select>
                         </div>
 
@@ -425,6 +426,7 @@
                             <option value="et_bike" class="bg-gray-900">Boy with Bicycle &amp; E.T.</option>
                             <option value="delorean" class="bg-gray-900">DeLorean (Back to the Future)</option>
                             <option value="mars_ufo" class="bg-gray-900">UFO (Mars Attacks!)</option>
+                            <option value="paramotor" class="bg-gray-900">Paramotor (Phi Maestro Light 3)</option>
                         </select>
                     </div>
                     <div class="flex items-center gap-1.5 bg-gray-900/90 border border-sky-500/40 rounded-xl px-2.5 py-1 text-xs"
@@ -6344,7 +6346,7 @@
                     }
                 }
 
-                // Per-avatar flight dynamics (Aero Wyvern, Fuchur, E.T. bike, DeLorean, UFO) layered on top of the generic animation
+                // Per-avatar flight dynamics (Aero Wyvern, Fuchur, E.T. bike, DeLorean, UFO, Paramotor) layered on top of the generic animation
                 this.updateAvatarDynamics(stepDt, {
                     isPedaling: isPedalingWatts,
                     isMovingForward,
@@ -7857,7 +7859,7 @@
         });
 
         function setAvatarType(avatarType) {
-            const validAvatars = ['aero_wyvern', 'fuchur', 'et_bike', 'delorean', 'mars_ufo'];
+            const validAvatars = ['aero_wyvern', 'fuchur', 'et_bike', 'delorean', 'mars_ufo', 'paramotor'];
             // Legacy saved value 'dragon' (removed avatar) and unknown values fall back to the Aero Wyvern
             const chosen = validAvatars.includes(avatarType) ? avatarType : 'aero_wyvern';
             state.avatarType = chosen;
