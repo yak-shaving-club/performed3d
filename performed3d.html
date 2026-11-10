@@ -243,6 +243,13 @@
                             <span id="simToggleText">Sim Mode: ON</span>
                         </button>
 
+                        <!-- Mobile Tilt Control Toggle (touch devices only) -->
+                        <button id="tiltToggleBtn" type="button"
+                                class="tilt-toggle-btn hidden px-2.5 py-2 rounded-xl font-semibold text-xs bg-gray-800/90 text-gray-300 border border-gray-700 transition cursor-pointer"
+                                title="Hold the phone in landscape: tilt left/right like a steering wheel, tip forward for more power">
+                            Tilt: OFF
+                        </button>
+
                         <!-- Sound Effects Toggle -->
                         <button id="soundToggleBtn" type="button"
                                 class="p-1.5 rounded-xl bg-gray-800/90 hover:bg-gray-700 text-amber-400 border border-gray-700 transition cursor-pointer"
@@ -463,6 +470,11 @@
                             Steer Right [D / &rarr;] &#9654;
                         </button>
                     </div>
+                    <button id="compactTiltToggleBtn" type="button"
+                            class="tilt-toggle-btn hidden px-2.5 py-1.5 rounded-xl font-bold text-xs bg-gray-800/90 text-gray-300 border border-gray-700 cursor-pointer transition"
+                            title="Hold the phone in landscape: tilt left/right like a steering wheel, tip forward for more power">
+                        Tilt: OFF
+                    </button>
                     <button id="compactPauseResumeBtn" type="button"
                             class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-gray-950 font-black text-xs uppercase tracking-wide flex items-center gap-1.5 cursor-pointer shadow transition">
                         <span id="compactPauseResumeText">Pause Flight</span>
@@ -2799,6 +2811,8 @@
             steerRightPressed: false,
             bleSteerInput: 0.0,
             bleSteerAngleDeg: 0.0,
+            tiltControlActive: false,
+            tiltSteerInput: 0.0,
             dragonSteerOffsetX: 0.0,
             dragonHeadingAngle: 0.0,
             dragonWorldX: 0.0,
@@ -6019,7 +6033,9 @@
                 const keyboardSteerInput = (state.steerRightPressed ? 1 : 0) - (state.steerLeftPressed ? 1 : 0);
                 const rawSteerInput = keyboardSteerInput !== 0
                     ? keyboardSteerInput
-                    : (bleSteeringSensor.connected ? (state.bleSteerInput || 0) : 0);
+                    : (bleSteeringSensor.connected
+                        ? (state.bleSteerInput || 0)
+                        : (state.tiltControlActive ? (state.tiltSteerInput || 0) : 0));
                 const steerInput = state.steeringEnabled
                     ? Math.max(-1, Math.min(1, rawSteerInput))
                     : 0;
@@ -6716,7 +6732,7 @@
 
             const shouldHideHeader = state.isRunning;
             const shouldHideSetupOptions = state.hasStartedSession;
-            const shouldHideChrome = state.hasStartedSession && !state.simMode && !state.forceShowSetupDuringTraining;
+            const shouldHideChrome = state.hasStartedSession && (!state.simMode || state.tiltControlActive) && !state.forceShowSetupDuringTraining;
             if (headerEl) headerEl.classList.toggle('hidden', shouldHideHeader);
             if (setupOptionsEl) setupOptionsEl.classList.toggle('hidden', shouldHideSetupOptions);
             if (setupEl) setupEl.classList.toggle('hidden', shouldHideChrome);
@@ -8006,6 +8022,172 @@
             state.steerRightPressed = false;
         });
 
+        // Mobile tilt control: phone in landscape acts as a steering wheel (roll = steer)
+        // and tipping the top edge forward/away adds power in Sim Mode (pitch = throttle).
+        const tiltController = (() => {
+            const STEER_DEADZONE_DEG = 3;
+            const STEER_FULL_LOCK_DEG = 30;
+            const THROTTLE_RANGE_DEG = 30;
+            const NEUTRAL_POWER_FTP_FRACTION = 0.75;
+            const SMOOTHING = 0.25;
+            const buttons = Array.from(document.querySelectorAll('.tilt-toggle-btn'));
+            let neutralPitchDeg = null;
+            let smoothRollDeg = 0;
+            let smoothPitchDeg = null;
+            let wakeLock = null;
+
+            const isSupported = 'DeviceOrientationEvent' in window
+                && window.matchMedia('(pointer: coarse)').matches;
+
+            const toRad = (deg) => (deg || 0) * Math.PI / 180;
+            const toDeg = (rad) => rad * 180 / Math.PI;
+
+            function getScreenAngle() {
+                if (screen.orientation && typeof screen.orientation.angle === 'number') return screen.orientation.angle;
+                return typeof window.orientation === 'number' ? window.orientation : 0;
+            }
+
+            // World "up" vector expressed in screen coordinates (x right, y up, z out of the screen),
+            // reconstructed from beta/gamma so it behaves the same on iOS and Android.
+            function readUpVector(e) {
+                const b = toRad(e.beta);
+                const g = toRad(e.gamma);
+                const ux = -Math.sin(g) * Math.cos(b);
+                const uy = Math.sin(b);
+                const uz = Math.cos(g) * Math.cos(b);
+                const t = toRad(getScreenAngle());
+                return {
+                    x: ux * Math.cos(t) - uy * Math.sin(t),
+                    y: ux * Math.sin(t) + uy * Math.cos(t),
+                    z: uz
+                };
+            }
+
+            function applyThrottle(pitchDeltaDeg) {
+                if (!state.simMode || bleTrainer.connected) return;
+                const slider = document.getElementById('simWattSlider');
+                const min = parseInt(slider.min, 10) || 0;
+                const max = parseInt(slider.max, 10) || 600;
+                const neutralWatts = state.ftp * NEUTRAL_POWER_FTP_FRACTION;
+                const ratio = Math.max(-1, Math.min(1, pitchDeltaDeg / THROTTLE_RANGE_DEG));
+                const rawWatts = ratio >= 0
+                    ? neutralWatts + ratio * (state.ftp * 1.5 - neutralWatts)
+                    : neutralWatts * (1 + ratio);
+                const watts = Math.max(min, Math.min(max, Math.round(rawWatts / 5) * 5));
+                if (watts === state.actualWatts && !state.simAutoJitter) return;
+                state.simAutoJitter = false;
+                document.getElementById('simAutoFollowCheck').checked = false;
+                state.actualWatts = watts;
+                slider.value = watts;
+                document.getElementById('simWattReadout').textContent = `${watts} W`;
+            }
+
+            function onOrientation(e) {
+                if (e.beta === null || e.gamma === null) return;
+                const up = readUpVector(e);
+                const rollDeg = toDeg(Math.atan2(-up.x, Math.hypot(up.y, up.z)));
+                const pitchDeg = toDeg(Math.atan2(up.y, up.z));
+                smoothRollDeg += (rollDeg - smoothRollDeg) * SMOOTHING;
+                smoothPitchDeg = smoothPitchDeg === null ? pitchDeg : smoothPitchDeg + (pitchDeg - smoothPitchDeg) * SMOOTHING;
+                if (neutralPitchDeg === null) neutralPitchDeg = smoothPitchDeg;
+
+                const absRoll = Math.abs(smoothRollDeg);
+                state.tiltSteerInput = absRoll < STEER_DEADZONE_DEG
+                    ? 0
+                    : Math.sign(smoothRollDeg) * Math.min(1, (absRoll - STEER_DEADZONE_DEG) / (STEER_FULL_LOCK_DEG - STEER_DEADZONE_DEG));
+                applyThrottle(neutralPitchDeg - smoothPitchDeg);
+            }
+
+            function updateButtons() {
+                buttons.forEach((btn) => {
+                    btn.textContent = state.tiltControlActive ? 'Tilt: ON' : 'Tilt: OFF';
+                    btn.classList.toggle('bg-emerald-500/20', state.tiltControlActive);
+                    btn.classList.toggle('text-emerald-300', state.tiltControlActive);
+                    btn.classList.toggle('border-emerald-500/40', state.tiltControlActive);
+                    btn.classList.toggle('bg-gray-800/90', !state.tiltControlActive);
+                    btn.classList.toggle('text-gray-300', !state.tiltControlActive);
+                    btn.classList.toggle('border-gray-700', !state.tiltControlActive);
+                });
+            }
+
+            async function enterLandscapeFullscreen() {
+                try {
+                    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+                        await document.documentElement.requestFullscreen();
+                    }
+                    if (screen.orientation && screen.orientation.lock) {
+                        await screen.orientation.lock('landscape');
+                    }
+                } catch (_) {
+                    // Fullscreen/orientation lock is unsupported on iOS Safari; tilt still works.
+                }
+                try {
+                    if (navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen');
+                } catch (_) {
+                    wakeLock = null;
+                }
+            }
+
+            async function enable() {
+                if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission !== 'granted') throw new Error('Motion sensor access was denied.');
+                }
+                neutralPitchDeg = null;
+                smoothPitchDeg = null;
+                smoothRollDeg = 0;
+                window.addEventListener('deviceorientation', onOrientation);
+                state.tiltControlActive = true;
+                if (!state.steeringEnabled) setSteeringEnabled(true);
+                if (!state.simMode && !bleTrainer.connected) toggleSimMode(true);
+                updateButtons();
+                updateHeaderAndSetupVisibility();
+                enterLandscapeFullscreen();
+            }
+
+            function disable() {
+                window.removeEventListener('deviceorientation', onOrientation);
+                state.tiltControlActive = false;
+                state.tiltSteerInput = 0;
+                if (wakeLock) {
+                    wakeLock.release().catch(() => {});
+                    wakeLock = null;
+                }
+                updateButtons();
+                updateHeaderAndSetupVisibility();
+            }
+
+            function recenter() {
+                if (!state.tiltControlActive) return;
+                neutralPitchDeg = smoothPitchDeg;
+            }
+
+            if (isSupported) {
+                buttons.forEach((btn) => {
+                    btn.classList.remove('hidden');
+                    btn.addEventListener('click', async () => {
+                        if (state.tiltControlActive) {
+                            disable();
+                            return;
+                        }
+                        try {
+                            await enable();
+                        } catch (err) {
+                            disable();
+                            alert(err.message || 'Could not access the motion sensors.');
+                        }
+                    });
+                });
+                document.addEventListener('visibilitychange', () => {
+                    if (state.tiltControlActive && document.visibilityState === 'visible' && navigator.wakeLock) {
+                        navigator.wakeLock.request('screen').then((lock) => { wakeLock = lock; }).catch(() => {});
+                    }
+                });
+            }
+
+            return { recenter };
+        })();
+
         function bindSteerButton(btnId, direction) {
             const btn = document.getElementById(btnId);
             if (!btn) return;
@@ -8036,6 +8218,7 @@
                 if (bleSteeringSensor.connected) {
                     bleSteeringSensor.recenter();
                 }
+                tiltController.recenter();
                 state.dragonSteerOffsetX = 0;
                 if (dragon3D) {
                     const centerZ = dragon3D.flightZ || 0;

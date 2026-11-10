@@ -67,6 +67,16 @@ Transitions are smoothed so short power spikes don't toggle the music. The music
 
 You can turn off manual steering to have the avatar automatically steer through the gates. The left, right, and center buttons in the compact control bar are alternatives to the keyboard. Obstacles can be enabled or disabled with the corresponding option.
 
+### Mobile tilt control
+
+On phones and tablets, a **Tilt** button appears in the header and in the compact control bar. Hold the device in landscape and use it like a steering wheel:
+
+- Rotate the device left or right to steer; the steering is proportional and reaches full lock at about 30°.
+- Tip the top edge forward (away from you) to increase power; tip it back to reduce power. The angle when you turn on Tilt is the neutral position (75 % FTP). Tipping it forward 30° gives 150 % FTP, and tipping it back 30° gives 0 W.
+- Tap **Center** to make the current angle the new neutral position.
+
+Tilt sets power only in Simulation mode. If a trainer is connected, Tilt only steers. Browsers make motion sensors available only in a secure context. To use a phone, serve the app over HTTPS, for example with a reverse proxy or tunnel. Opening `http://<LAN-IP>:8000` doesn't work. On iOS, Safari asks for permission to access motion sensors when you turn on Tilt.
+
 ## Avatars and cameras
 
 Available avatars:
