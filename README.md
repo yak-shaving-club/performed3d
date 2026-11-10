@@ -82,6 +82,7 @@ There are five camera views: Chase, Far Chase, Top-Down, Front, and Front Far. Y
 Use the BLE buttons to pair supported devices:
 
 - Wahoo KICKR (power and trainer control)
+- Concept2 RowErg, SkiErg, or BikeErg via the PM5 monitor (power, stroke rate shown as cadence, speed, and heart rate from a strap paired to the PM5). The PM5 cannot be controlled, so resistance modes and ERG Lock have no effect; you set the effort yourself.
 - Heart rate monitors
 - Cadence and speed sensors
 - Elite Sterzo Smart or Elite Rizer (steering)

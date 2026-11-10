@@ -177,6 +177,17 @@
                                 <span id="bleStatusDot" class="w-2 h-2 rounded-full bg-gray-300"></span>
                             </button>
 
+                            <!-- Concept2 PM5 Rowing Ergometer Button (power source, no resistance control) -->
+                            <button id="connectRowerBleBtn" type="button"
+                                    class="px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-sky-700/80 hover:bg-sky-600 text-white border border-sky-400/30"
+                                    title="Connect Concept2 RowErg / SkiErg / BikeErg (PM5) as power source; stroke rate is shown as cadence">
+                                <svg class="w-3.5 h-3.5 text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 17c2 1.5 4 1.5 6 0s4-1.5 6 0 4 1.5 6 0M5 13l14-8M16 4l3 1-1 3"/>
+                                </svg>
+                                <span id="bleRowerStatusText">Connect Concept2</span>
+                                <span id="bleRowerStatusDot" class="w-2 h-2 rounded-full bg-gray-300"></span>
+                            </button>
+
                             <!-- BLE Heart Rate Monitor Pairing Button (e.g. Garmin HRM 200) -->
                             <button id="connectHrmBleBtn" type="button"
                                     class="px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-rose-700/80 hover:bg-rose-600 text-white border border-rose-400/30"
@@ -1987,7 +1998,13 @@
             ELITE_STEERING_CHALLENGE_CHAR: '347b0032-7635-408b-8918-8ff3949ce592',
             ELITE_ARIA_SERVICE: '347b0001-7635-408b-8918-8ff3949ce592',
             ELITE_ARIA_SETUP_CHAR: '347b0012-7635-408b-8918-8ff3949ce592',
-            ELITE_ARIA_CONTROL_CHAR: '347b0040-7635-408b-8918-8ff3949ce592'
+            ELITE_ARIA_CONTROL_CHAR: '347b0040-7635-408b-8918-8ff3949ce592',
+            // Concept2 PM5 (PM Bluetooth Smart Communications Interface Definition)
+            C2_DISCOVERY_SERVICE: 'ce060000-43e5-11e4-916c-0800200c9a66',
+            C2_ROWING_SERVICE: 'ce060030-43e5-11e4-916c-0800200c9a66',
+            C2_ADDITIONAL_STATUS_1_CHAR: 'ce060032-43e5-11e4-916c-0800200c9a66',
+            C2_SAMPLE_RATE_CHAR: 'ce060034-43e5-11e4-916c-0800200c9a66',
+            C2_ADDITIONAL_STROKE_DATA_CHAR: 'ce060036-43e5-11e4-916c-0800200c9a66'
         };
 
         const DEFAULT_WHEEL_CIRCUMFERENCE_METERS = 2.105; // 700x25c road wheel circumference in meters
@@ -2349,6 +2366,118 @@
                 });
                 this.writeQueue = write;
                 await write;
+            }
+        }
+
+        const C2_STROKE_POWER_STALE_MS = 4000;
+
+        // Concept2 rowing ergometer (RowErg, SkiErg, BikeErg) via PM5 monitor. Read-only: the PM5
+        // does not accept resistance control, so power is driven entirely by the athlete.
+        class BleConcept2Rower {
+            constructor(onTelemetryCallback, onStatusCallback) {
+                this.onTelemetry = onTelemetryCallback;
+                this.onStatus = onStatusCallback;
+                this.device = null;
+                this.server = null;
+                this.status1Char = null;
+                this.strokeChar = null;
+                this.latestWatts = null;
+                this.latestStrokeRate = null;
+                this.latestSpeedKmh = null;
+                this.latestHeartRate = null;
+                this.lastStrokePowerAt = -Infinity;
+                this.connected = false;
+            }
+
+            async connect() {
+                if (!navigator.bluetooth) {
+                    throw new Error('Web Bluetooth is not supported in this browser. Use Chrome/Edge or enable Sim Mode.');
+                }
+
+                this.onStatus('connecting', 'Pairing Concept2...');
+                this.device = await navigator.bluetooth.requestDevice({
+                    filters: [
+                        { services: [BLE_UUIDS.C2_DISCOVERY_SERVICE] },
+                        { namePrefix: 'PM5' }
+                    ],
+                    optionalServices: [BLE_UUIDS.C2_ROWING_SERVICE]
+                });
+
+                this.device.addEventListener('gattserverdisconnected', () => {
+                    this.connected = false;
+                    this.status1Char = null;
+                    this.strokeChar = null;
+                    this.latestWatts = null;
+                    this.latestStrokeRate = null;
+                    this.latestSpeedKmh = null;
+                    this.latestHeartRate = null;
+                    this.onStatus('disconnected', 'Connect Concept2');
+                });
+
+                this.server = await this.device.gatt.connect();
+                try {
+                    const rowing = await this.server.getPrimaryService(BLE_UUIDS.C2_ROWING_SERVICE);
+
+                    try {
+                        // 0 = 1 s, 1 = 500 ms, 2 = 250 ms, 3 = 100 ms
+                        const rateChar = await rowing.getCharacteristic(BLE_UUIDS.C2_SAMPLE_RATE_CHAR);
+                        await rateChar.writeValue(new Uint8Array([0x02]));
+                    } catch (_) {}
+
+                    this.status1Char = await rowing.getCharacteristic(BLE_UUIDS.C2_ADDITIONAL_STATUS_1_CHAR);
+                    await this.status1Char.startNotifications();
+                    this.status1Char.addEventListener('characteristicvaluechanged', (e) => {
+                        this.parseAdditionalStatus1(e.target.value);
+                    });
+
+                    this.strokeChar = await rowing.getCharacteristic(BLE_UUIDS.C2_ADDITIONAL_STROKE_DATA_CHAR);
+                    await this.strokeChar.startNotifications();
+                    this.strokeChar.addEventListener('characteristicvaluechanged', (e) => {
+                        this.parseAdditionalStrokeData(e.target.value);
+                    });
+                } catch (err) {
+                    this.connected = false;
+                    if (this.device.gatt.connected) this.device.gatt.disconnect();
+                    throw err;
+                }
+
+                this.connected = true;
+                this.onStatus('connected', this.device.name || 'Concept2 PM5');
+            }
+
+            // Characteristic 0x0032: elapsed time (3), speed (2, 0.001 m/s), stroke rate (1, spm),
+            // heart rate (1, bpm, 255 = invalid), current pace (2), ...
+            parseAdditionalStatus1(dataView) {
+                if (!dataView || dataView.byteLength < 7) return;
+                const speedMps = dataView.getUint16(3, true) / 1000.0;
+                const strokeRate = dataView.getUint8(5);
+                const heartRate = dataView.getUint8(6);
+                this.latestSpeedKmh = speedMps * 3.6;
+                this.latestStrokeRate = strokeRate;
+                this.latestHeartRate = (heartRate > 0 && heartRate < 255) ? heartRate : null;
+                // Stroke power only updates once per stroke; when strokes stop, derive power from
+                // the decaying boat speed using Concept2's formula P = 2.80 * v^3.
+                if (performance.now() - this.lastStrokePowerAt > C2_STROKE_POWER_STALE_MS) {
+                    this.latestWatts = Math.max(0, Math.round(2.8 * speedMps * speedMps * speedMps));
+                }
+                this.emitTelemetry();
+            }
+
+            // Characteristic 0x0036: elapsed time (3), stroke power (2, W), stroke calories (2), ...
+            parseAdditionalStrokeData(dataView) {
+                if (!dataView || dataView.byteLength < 5) return;
+                this.latestWatts = Math.max(0, dataView.getUint16(3, true));
+                this.lastStrokePowerAt = performance.now();
+                this.emitTelemetry();
+            }
+
+            emitTelemetry() {
+                this.onTelemetry({
+                    watts: this.latestWatts,
+                    cadence: this.latestStrokeRate,
+                    speedKmh: this.latestSpeedKmh,
+                    heartRate: this.latestHeartRate
+                });
             }
         }
 
@@ -6910,6 +7039,45 @@
             }
         );
 
+        const bleRower = new BleConcept2Rower(
+            (telemetry) => {
+                if (telemetry.watts !== null && telemetry.watts !== undefined) {
+                    state.actualWatts = recordKickrWattReading(telemetry.watts);
+                }
+                if (!bleCadenceSensor.connected && telemetry.cadence !== null && telemetry.cadence !== undefined) {
+                    state.cadence = Math.max(0, Math.round(telemetry.cadence));
+                }
+                if (!bleSpeedSensor.connected && telemetry.speedKmh !== null && telemetry.speedKmh !== undefined) {
+                    state.speedKmh = Math.max(0, telemetry.speedKmh);
+                }
+                const rowerHeartRate = telemetry.heartRate || null;
+                if (!bleHrmSensor.connected && rowerHeartRate !== state.heartRate) {
+                    state.heartRate = rowerHeartRate;
+                    bleEliteAriaFan.setHeartRate(state.heartRate).catch((err) => {
+                        console.error('Could not update Elite Aria fan speed.', err);
+                        bleEliteAriaFan.onStatus('error', 'Elite Aria control error');
+                    });
+                }
+                updateLiveHud();
+            },
+            (status, label) => {
+                const btn = document.getElementById('connectRowerBleBtn');
+                const text = document.getElementById('bleRowerStatusText');
+                const dot = document.getElementById('bleRowerStatusDot');
+                if (text) text.textContent = label;
+                if (!btn || !dot) return;
+                if (status === 'connected') {
+                    btn.className = 'px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/40';
+                    dot.className = 'w-2 h-2 rounded-full bg-emerald-200 animate-ping';
+                } else if (status === 'connecting') {
+                    dot.className = 'w-2 h-2 rounded-full bg-amber-300 animate-pulse';
+                } else {
+                    btn.className = 'px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-sky-700/80 hover:bg-sky-600 text-white border border-sky-400/30';
+                    dot.className = 'w-2 h-2 rounded-full bg-gray-300';
+                }
+            }
+        );
+
         function formatDuration(sec) {
             const total = Math.max(0, Math.floor(sec));
             const mins = Math.floor(total / 60);
@@ -7458,10 +7626,10 @@
             stepTerrainGradient();
             const targetWatts = getTargetWattsAtSecond(state.workout, state.elapsedSec, state.ftp);
 
+            if ((bleTrainer.connected || bleRower.connected) && !state.simMode && state.kickrWattSamples.length > 0) {
+                state.actualWatts = getThreeSecondAverageKickrWatts();
+            }
             if (bleTrainer.connected) {
-                if (!state.simMode && state.kickrWattSamples.length > 0) {
-                    state.actualWatts = getThreeSecondAverageKickrWatts();
-                }
                 if (state.resistanceMode === 'erg') {
                     bleTrainer.setErgTargetWatts(targetWatts);
                 } else {
@@ -7792,7 +7960,7 @@
                 bar.classList.add('hidden');
                 text.textContent = 'Sim Mode: OFF';
                 btn.className = 'px-2.5 py-2 rounded-xl font-semibold text-xs flex items-center gap-1.5 bg-gray-800/90 hover:bg-gray-700 text-gray-300 border border-gray-700 transition cursor-pointer';
-                if (!bleTrainer.connected) {
+                if (!bleTrainer.connected && !bleRower.connected) {
                     state.actualWatts = 0;
                     if (!bleCadenceSensor.connected) state.cadence = 0;
                     if (!bleSpeedSensor.connected) state.speedKmh = 0;
@@ -8051,6 +8219,18 @@
                     alert(err.message || 'Could not connect to Wahoo KICKR via Bluetooth.');
                 }
                 bleTrainer.onStatus('disconnected', 'Connect Wahoo KICKR');
+            }
+        });
+
+        document.getElementById('connectRowerBleBtn').addEventListener('click', async () => {
+            try {
+                await bleRower.connect();
+                if (state.simMode) toggleSimMode(false);
+            } catch (err) {
+                if (!isBlePairingCancelledError(err)) {
+                    alert(err.message || 'Could not connect to Concept2 PM5 via Bluetooth.');
+                }
+                bleRower.onStatus('disconnected', 'Connect Concept2');
             }
         });
 
