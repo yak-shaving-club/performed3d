@@ -6,29 +6,26 @@ Performed 3D is a browser-based 3D cycling game for structured indoor cycling wo
 
 ## Quick start
 
-There is no build step or package installation. Node.js 18 or newer is required to run the local web server and Strava OAuth backend. The page loads Three.js and Tailwind CSS at runtime from CDNs, so an internet connection is required.
+There is no build step or package installation. Node.js 18 or newer is required to run the local web server. The page loads Three.js and Tailwind CSS at runtime from CDNs, so an internet connection is required.
 
 1. Clone or download the repository.
-2. Copy `.env.example` to `.env`, then set `STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET` from your [Strava API application settings](https://www.strava.com/settings/api). Set the app's Authorization Callback Domain to `localhost`.
-3. Start the app from the project directory:
+2. Start the app from the project directory:
 
    ```bash
-   set -a
-   . ./.env
-   set +a
    node server.js
    ```
 
-4. Open <http://localhost:8000/performed3d.html> in your browser.
-5. Choose a workout and resistance mode, set your FTP and accuracy, then click **Start Flight**.
+   To change the port or origin, copy `.env.example` to `.env`, edit it, and load it first (`set -a; . ./.env; set +a`).
+3. Open <http://localhost:8000/performed3d.html> in your browser.
+4. Choose a workout and resistance mode, set your FTP and accuracy, then click **Start Flight**.
 
 Simulation mode is enabled by default, so you can try the game without a trainer. Bluetooth requires a compatible browser; the Web Bluetooth API is supported by browsers such as current versions of Chrome and Edge. Bluetooth is available only in a secure context (for example, `localhost` or HTTPS).
 
-For an HTTPS deployment behind a reverse proxy, set `APP_ORIGIN` to the public origin and `COOKIE_SECURE=true` in the server environment. The Strava callback URL must use that same origin.
+For an HTTPS deployment behind a reverse proxy, set `APP_ORIGIN` to the public origin in the server environment.
 
 ## Gameplay and workout controls
 
-Your current power is compared with the workout's target power. The game displays power accuracy, workout intervals, and progress in the HUD. FTP (250 W by default; adjustable from 50 to 600 W) is used to calculate power targets specified as a percentage of FTP. Use **Donut / Accuracy** to set the allowed power deviation.
+Your current power is compared with the workout's target power. The game displays power accuracy, workout intervals, and progress in the HUD. FTP (200 W by default; adjustable from 50 to 600 W) is used to calculate power targets specified as a percentage of FTP. Use **Donut / Accuracy** to set the allowed power deviation (30 W by default).
 
 Available workouts include:
 
@@ -42,9 +39,9 @@ Resistance modes are **Easy**, **Medium**, **Difficult**, and **ERG Lock**. Use 
 
 ### Adaptive music
 
-While flying, a procedurally generated soundtrack (Web Audio, no audio files) follows your live power relative to FTP. Tempo, key, instruments, and brightness change with your effort:
+While flying, a procedurally generated soundtrack (Web Audio, no audio files) follows the target power of the next ring (donut gate) ahead, relative to FTP. Your actual pedaled watts do not affect it, so the music tracks the workout's intervals. Tempo, key, instruments, and brightness change with the ring targets:
 
-| Mood | Power (% FTP) | Sound |
+| Mood | Ring target (% FTP) | Sound |
 | --- | --- | --- |
 | **Drift** | < 35 % | 76 BPM, soft major pads and sparse bells, no drums |
 | **Cruise** | 35–68 % (warm-up/cool-down) | 92 BPM, warm pads, soft kick, gentle arpeggio |
@@ -52,7 +49,7 @@ While flying, a procedurally generated soundtrack (Web Audio, no audio files) fo
 | **Drive** | 90–106 % | 128 BPM, minor key, four-on-the-floor, saw bass, 16th-note arpeggio |
 | **Inferno** | > 106 % | 146 BPM, full drums with fills, rolling bass, sawtooth lead |
 
-Transitions are smoothed so short power spikes don't toggle the music. The music button in the header turns the soundtrack on or off and shows the current mood. The speaker button mutes all audio.
+Transitions are smoothed so short target changes don't toggle the music. The music button in the header turns the soundtrack on or off and shows the current mood. The speaker button mutes all audio.
 
 ## Controls
 
@@ -95,8 +92,7 @@ Bluetooth devices must be powered on and within range. Start pairing from the co
 ## Custom workouts and results
 
 - **Load a Zwift workout:** Select a `.zwo` file using **Upload Zwift (.zwo)**. Supported interval types include SteadyState, Warmup, Cooldown, Ramp, IntervalsT, FreeRide, and MaxEffort.
-- **Save a FIT file:** After the workout, download the recorded activity as a `.fit` file from the summary. This manual export remains available independently of account connections.
-- **Upload to Strava:** Connect your account from the workout summary and upload the activity directly. Strava processes uploads asynchronously; the app reports when processing finishes. OAuth tokens are held in the server's memory and are cleared when the server restarts or you disconnect.
+- **Save a FIT file:** After the workout, download the recorded activity as a `.fit` file from the summary and import it into Strava, Garmin Connect, or another training platform.
 - **Garmin Connect:** Direct activity uploads require access to Garmin's Business Developer Program Activity API, which provides push access. Garmin's personal API access is pull-only. Until business access is available, download the FIT file and import it into Garmin Connect manually.
 - **Save a screenshot:** Capture a screenshot before or during a workout; it will be available to download from the summary.
 
@@ -116,8 +112,8 @@ Bluetooth devices must be powered on and within range. Start pairing from the co
 ## Project files
 
 - [`performed3d.html`](performed3d.html) – User interface, game, workout logic, and Bluetooth integration
-- [`server.js`](server.js) – Local web server and Strava OAuth/upload API
-- [`.env.example`](.env.example) – Example configuration for Strava credentials and server settings
+- [`server.js`](server.js) – Local static web server
+- [`.env.example`](.env.example) – Example server configuration
 - [`performed3d-models.js`](performed3d-models.js) – 3D models
 - [`sterzo-challenge-codes.js`](sterzo-challenge-codes.js) – Sterzo challenge/response table; the source code attributes it to `pycycling` under the MIT license
 - [`performed3d.svg`](performed3d.svg) – Logo and favicon

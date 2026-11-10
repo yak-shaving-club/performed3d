@@ -137,7 +137,7 @@
                         <!-- Rider FTP -->
                         <div class="flex items-center gap-1.5 bg-gray-900/90 border border-gray-800 rounded-xl px-2.5 py-1 text-xs">
                             <label for="ftpInput" class="text-gray-400 font-semibold">FTP:</label>
-                            <input id="ftpInput" type="number" min="50" max="600" value="250"
+                            <input id="ftpInput" type="number" min="50" max="600" value="200"
                                    class="w-14 bg-gray-800 text-amber-300 font-bold text-center rounded px-1 py-0.5 border border-gray-700 focus:outline-none focus:border-orange-500">
                             <span class="text-gray-500">W</span>
                         </div>
@@ -258,7 +258,7 @@
                         <!-- Adaptive Music Toggle -->
                         <button id="musicToggleBtn" type="button"
                                 class="p-1.5 rounded-xl bg-gray-800/90 hover:bg-gray-700 text-fuchsia-400 border border-gray-700 transition cursor-pointer flex items-center gap-1"
-                                title="Toggle adaptive music (tempo &amp; mood follow your watts)">
+                                title="Toggle adaptive music (tempo &amp; mood follow the target watts of the rings ahead)">
                             <svg id="musicOnIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
                             </svg>
@@ -338,11 +338,11 @@
                         <div class="flex items-center gap-2 bg-gray-900/90 border border-emerald-500/40 rounded-xl px-2.5 py-1.5"
                              title="Configure 3D Donut Gate size and required absolute watt accuracy (5W to 50W) before clicking Start Flight">
                             <label for="accuracyToleranceSlider" class="text-xs text-gray-300 font-medium whitespace-nowrap">Donut / Accuracy:</label>
-                            <input id="accuracyToleranceSlider" type="range" min="5" max="50" step="1" value="15"
+                            <input id="accuracyToleranceSlider" type="range" min="5" max="50" step="1" value="30"
                                    class="w-20 sm:w-24 accent-emerald-400 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
-                            <input id="accuracyToleranceInput" type="number" min="5" max="50" step="1" value="15"
+                            <input id="accuracyToleranceInput" type="number" min="5" max="50" step="1" value="30"
                                    class="w-11 bg-gray-800 text-emerald-300 font-mono font-bold text-xs text-center rounded px-1 py-0.5 border border-gray-700 focus:outline-none focus:border-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed">
-                            <span id="accuracyToleranceBadge" class="text-xs font-mono font-extrabold text-emerald-400 whitespace-nowrap">±15W</span>
+                            <span id="accuracyToleranceBadge" class="text-xs font-mono font-extrabold text-emerald-400 whitespace-nowrap">±30W</span>
                         </div>
                     </div>
 
@@ -662,7 +662,7 @@
                     <div id="summaryMaxStreak" class="text-xs text-gray-400 mt-1">Best Streak: 0s</div>
                 </div>
                 <div class="bg-gray-950/90 border border-emerald-500/40 rounded-2xl p-4 text-center">
-                    <div id="summaryZoneLabel" class="text-xs uppercase font-bold text-emerald-400">Time in ±15W Gate Zone</div>
+                    <div id="summaryZoneLabel" class="text-xs uppercase font-bold text-emerald-400">Time in ±30W Gate Zone</div>
                     <div id="summaryTimeInZone" class="text-3xl font-black font-mono text-emerald-300 mt-1">0.0%</div>
                     <div id="summaryTimeInZoneSec" class="text-xs text-gray-400 mt-1">0s of 0s</div>
                 </div>
@@ -690,7 +690,7 @@
                 <div class="bg-gray-800/60 border border-gray-700/80 rounded-xl p-3.5">
                     <div class="text-xs text-gray-400 font-semibold">Training Stress Score (TSS)</div>
                     <div id="summaryTss" class="text-2xl font-black font-mono text-orange-400 mt-0.5">0.0</div>
-                    <div class="text-[11px] text-gray-400 mt-0.5">FTP Base: <span id="summaryFtpUsed" class="text-gray-200 font-mono">250</span> W</div>
+                    <div class="text-[11px] text-gray-400 mt-0.5">FTP Base: <span id="summaryFtpUsed" class="text-gray-200 font-mono">200</span> W</div>
                 </div>
 
                 <div class="bg-gray-800/60 border border-gray-700/80 rounded-xl p-3.5">
@@ -728,33 +728,6 @@
                     <img id="summaryScreenshotPreview" src="" alt="Prepared Flight Screenshot" class="w-full h-auto max-h-64 object-contain block">
                 </div>
             </div>
-
-            <section id="stravaExportPanel" class="mt-5 bg-gray-950/90 border border-rose-500/30 rounded-2xl p-4 relative z-10">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div class="min-w-0">
-                        <div class="text-sm font-bold text-white">Strava activity upload</div>
-                        <p id="stravaExportStatus" class="text-xs text-gray-400 mt-1" role="status" aria-live="polite">
-                            Checking Strava connection…
-                        </p>
-                        <a id="stravaActivityLink" class="hidden text-xs text-orange-300 hover:text-orange-200 underline mt-1"
-                           target="_blank" rel="noopener noreferrer"></a>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <button id="connectStravaBtn" type="button"
-                                class="hidden px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs cursor-pointer transition">
-                            Connect Strava
-                        </button>
-                        <button id="uploadStravaBtn" type="button" disabled
-                                class="hidden px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-50 disabled:cursor-wait text-gray-950 font-bold text-xs cursor-pointer transition">
-                            Upload Activity
-                        </button>
-                        <button id="disconnectStravaBtn" type="button"
-                                class="hidden px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold text-xs cursor-pointer transition">
-                            Disconnect
-                        </button>
-                    </div>
-                </div>
-            </section>
 
             <!-- Action Buttons: Download FIT File, Save Screenshot & Close -->
             <div class="mt-6 pt-5 border-t border-gray-800 flex flex-col sm:flex-row flex-wrap items-center justify-between gap-3 relative z-10">
@@ -1638,7 +1611,7 @@
         }
 
         // =========================================================================
-        // 3b. ADAPTIVE PROCEDURAL MUSIC (driven by live watts relative to FTP)
+        // 3b. ADAPTIVE PROCEDURAL MUSIC (driven by upcoming ring target watts relative to FTP)
         // =========================================================================
         // Relaxed riding (warm-up / cool-down) → slow, warm major-key pads and bells.
         // Threshold and above → faster tempo, minor key, driving drums, saw bass and bright 16th arps.
@@ -1732,7 +1705,7 @@
                 if (!this.enabled) this.stop();
             }
 
-            // Called every animation frame with the current (3s-averaged) watts.
+            // Called every animation frame with the target watts of the next ring ahead.
             update(watts, ftp, running) {
                 const nowMs = performance.now();
                 const dt = this.lastUpdateMs ? Math.min(0.5, (nowMs - this.lastUpdateMs) / 1000) : 0;
@@ -2755,8 +2728,8 @@
         const state = {
             avatarType: 'aero_wyvern',
             cameraView: 1,
-            ftp: 250,
-            accuracyToleranceWatts: 15,
+            ftp: 200,
+            accuracyToleranceWatts: 30,
             donutVisualSizeBoost: 1.0,
             resistanceMode: 'easy',
             currentGradientPct: 0.0,
@@ -2886,7 +2859,7 @@
          * Returns the minimum target watt value across the entire workout session.
          */
         function getSessionMinTargetWatts(workout, ftp) {
-            const refFtp = Math.max(100, ftp || 250);
+            const refFtp = Math.max(100, ftp || 200);
             if (!workout || !workout.segments || workout.segments.length === 0) {
                 return Math.round(refFtp * 0.50);
             }
@@ -2909,7 +2882,7 @@
          *   almost touching the ground (`GROUND_NEAR_TOUCH_ALTITUDE_Y = 1.35`).
          */
         function wattsToSkyAltitudeY(watts, ftp, gradientPct = 0) {
-            const refFtp = Math.max(100, ftp || 250);
+            const refFtp = Math.max(100, ftp || 200);
             const clampedWatts = Math.max(0, Number(watts) || 0);
             if (clampedWatts <= 0) {
                 return GROUND_NEAR_TOUCH_ALTITUDE_Y;
@@ -2942,9 +2915,9 @@
          * remains strictly above ground while its radius matches the ±toleranceWatts band.
          */
         function getDonutRadiusForTargetWatts(targetWatts, ftp, gradientPct = 0, toleranceWatts = getAccuracyToleranceWatts()) {
-            const refFtp = Math.max(100, ftp || 250);
+            const refFtp = Math.max(100, ftp || 200);
             const clampedTarget = Math.max(25, Number(targetWatts) || 0);
-            const tolW = Math.max(5, Math.min(50, Number(toleranceWatts) || 15));
+            const tolW = Math.max(5, Math.min(50, Number(toleranceWatts) || 30));
             const centerY = wattsToSkyAltitudeY(clampedTarget, ftp, gradientPct);
             const refMin5 = wattsToSkyAltitudeY(clampedTarget * 0.95, ftp, gradientPct);
             const refMax5 = wattsToSkyAltitudeY(clampedTarget * 1.05, ftp, gradientPct);
@@ -5326,6 +5299,14 @@
              * Synchronizes a Donut Gate's center position (Y), accuracy radius, 3D watt text above the torus, and color
              * with the exact desired watt value at its assigned `workoutSec`.
              */
+            getUpcomingGateTargetWatts() {
+                let next = null;
+                for (const g of this.gates) {
+                    if (!g.passed && (!next || g.workoutSec < next.workoutSec)) next = g;
+                }
+                return next ? next.targetWatts : null;
+            }
+
             syncGateToDesiredWatts(gate) {
                 if (!gate) return;
                 const baseWatts = getBaseTargetWattsAtSecond(state.workout, gate.workoutSec, state.ftp);
@@ -6187,7 +6168,7 @@
                 // Indicate the current watt value by flapping the wings of the dragon (or animating the selected avatar).
                 // Do not flap the wings or wiggle the tail when no watts are pedaled.
                 if (isPedalingWatts) {
-                    const wattRatio = Math.max(0.05, Math.min(2.5, currentPedaledWatts / Math.max(100, state.ftp || 250)));
+                    const wattRatio = Math.max(0.05, Math.min(2.5, currentPedaledWatts / Math.max(100, state.ftp || 200)));
                     const wattFlapFrequency = 3.0 + wattRatio * 9.5;
                     const wattFlapAmplitude = Math.min(0.95, 0.22 + wattRatio * 0.48);
                     this.wingFlapPhase += dt * wattFlapFrequency;
@@ -6350,7 +6331,7 @@
                 this.updateAvatarDynamics(stepDt, {
                     isPedaling: isPedalingWatts,
                     isMovingForward,
-                    wattRatio: currentPedaledWatts / Math.max(100, state.ftp || 250),
+                    wattRatio: currentPedaledWatts / Math.max(100, state.ftp || 200),
                     headingAngle: this.dragonHeadingAngle || 0,
                     rollAngle: this.dragonRollAngle || 0,
                     pitchAngle: this.dragonPitchAngle || 0,
@@ -6959,7 +6940,7 @@
             if (targetWatts <= 0 || actualWatts <= 0 || !flewThroughDonut) {
                 return { inZone: false, isBullseye: false, points: 0, ratioPct: 100, errorPct: 0, accuracyFactor: 0, combo: 1.0 };
             }
-            const tolW = Math.max(5, Math.min(50, Number(toleranceWatts) || 15));
+            const tolW = Math.max(5, Math.min(50, Number(toleranceWatts) || 30));
             const ratioPct = (actualWatts / targetWatts) * 100;
             const errorWatts = Math.abs(actualWatts - targetWatts);
             const errorPct = (errorWatts / targetWatts) * 100;
@@ -7351,7 +7332,7 @@
             }
 
             const count = Math.max(1, Math.round(workout.totalDuration));
-            const ftp = Math.max(50, Number(ftpInputVal) || 250);
+            const ftp = Math.max(50, Number(ftpInputVal) || 200);
             const targetWattsBySec = new Array(count);
             let sumWatts = 0;
             let sumFourthPower = 0;
@@ -8489,124 +8470,6 @@
             setTimeout(() => URL.revokeObjectURL(url), 5000);
         });
 
-        const stravaStatusEl = document.getElementById('stravaExportStatus');
-        const stravaConnectBtn = document.getElementById('connectStravaBtn');
-        const stravaUploadBtn = document.getElementById('uploadStravaBtn');
-        const stravaDisconnectBtn = document.getElementById('disconnectStravaBtn');
-        const stravaActivityLinkEl = document.getElementById('stravaActivityLink');
-        let stravaUploadInProgress = false;
-
-        function setStravaStatus(message, isError = false) {
-            stravaStatusEl.textContent = message;
-            stravaStatusEl.classList.toggle('text-rose-300', isError);
-            stravaStatusEl.classList.toggle('text-gray-400', !isError);
-        }
-
-        async function readStravaApiResponse(response) {
-            let result;
-            try {
-                result = await response.json();
-            } catch {
-                throw new Error('The Strava upload service is unavailable. The FIT download is still available.');
-            }
-            if (!response.ok) throw new Error(result.error || `Request failed (${response.status}).`);
-            return result;
-        }
-
-        async function refreshStravaStatus() {
-            try {
-                const response = await fetch('/api/strava/status', { cache: 'no-store' });
-                const status = await readStravaApiResponse(response);
-                const connected = status.connected;
-                stravaConnectBtn.classList.toggle('hidden', !status.configured || connected);
-                stravaUploadBtn.classList.toggle('hidden', !connected);
-                stravaDisconnectBtn.classList.toggle('hidden', !connected);
-                stravaUploadBtn.disabled = stravaUploadInProgress;
-
-                if (!status.configured) {
-                    setStravaStatus('Direct upload is not configured on this server. You can still download the FIT file.');
-                } else if (connected) {
-                    const athleteName = status.athlete
-                        ? [status.athlete.firstname, status.athlete.lastname].filter(Boolean).join(' ')
-                        : '';
-                    setStravaStatus(status.notice || `Connected to Strava${athleteName ? ` as ${athleteName}` : ''}.`);
-                } else {
-                    setStravaStatus(status.notice || 'Connect Strava to upload this activity.');
-                }
-            } catch (error) {
-                stravaConnectBtn.classList.add('hidden');
-                stravaUploadBtn.classList.add('hidden');
-                stravaDisconnectBtn.classList.add('hidden');
-                setStravaStatus(error.message, true);
-            }
-        }
-
-        stravaConnectBtn.addEventListener('click', () => {
-            window.location.assign('/api/strava/connect');
-        });
-
-        stravaDisconnectBtn.addEventListener('click', async () => {
-            stravaDisconnectBtn.disabled = true;
-            try {
-                const response = await fetch('/api/strava/disconnect', { method: 'POST' });
-                await readStravaApiResponse(response);
-                stravaActivityLinkEl.classList.add('hidden');
-                await refreshStravaStatus();
-            } catch (error) {
-                setStravaStatus(error.message, true);
-            } finally {
-                stravaDisconnectBtn.disabled = false;
-            }
-        });
-
-        stravaUploadBtn.addEventListener('click', async () => {
-            if (!state.lastSummary || stravaUploadInProgress) return;
-            stravaUploadInProgress = true;
-            stravaUploadBtn.disabled = true;
-            stravaActivityLinkEl.classList.add('hidden');
-            setStravaStatus('Uploading activity to Strava…');
-
-            try {
-                const fitBytes = buildTrainingFitFile(state.lastSummary, state.samples);
-                const response = await fetch('/api/strava/upload', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/octet-stream',
-                        'X-Activity-Name': encodeURIComponent(state.lastSummary.workoutName || 'Performed 3D Indoor Ride')
-                    },
-                    body: fitBytes
-                });
-                let upload = await readStravaApiResponse(response);
-                if (!upload.id) throw new Error(upload.error || 'Strava did not return an upload ID.');
-
-                for (let attempt = 0; attempt < 60 && !upload.activity_id && !upload.error; attempt++) {
-                    setStravaStatus('Strava is processing the activity…');
-                    await new Promise((resolve) => setTimeout(resolve, 1000));
-                    const statusResponse = await fetch(`/api/strava/uploads/${encodeURIComponent(upload.id)}`, {
-                        cache: 'no-store'
-                    });
-                    upload = await readStravaApiResponse(statusResponse);
-                }
-
-                if (upload.error) throw new Error(upload.error);
-                if (upload.activity_id) {
-                    stravaActivityLinkEl.href = `https://www.strava.com/activities/${encodeURIComponent(upload.activity_id)}`;
-                    stravaActivityLinkEl.textContent = 'View activity on Strava';
-                    stravaActivityLinkEl.classList.remove('hidden');
-                    setStravaStatus('Activity uploaded successfully.');
-                } else {
-                    setStravaStatus('Strava is still processing this activity. Check your Strava profile shortly.');
-                }
-            } catch (error) {
-                setStravaStatus(error.message, true);
-            } finally {
-                stravaUploadInProgress = false;
-                stravaUploadBtn.disabled = false;
-            }
-        });
-
-        refreshStravaStatus();
-
         function closeSummaryModalAndStartNewSession() {
             const modal = document.getElementById('summaryModal');
             modal.classList.add('hidden');
@@ -8664,7 +8527,9 @@
                     dragon3D.update(dt);
                 }
                 fxEngine.updateAndDraw();
-                musicEngine.update(state.actualWatts, state.ftp, state.isRunning);
+                const ringWatts = (dragon3D && dragon3D.getUpcomingGateTargetWatts())
+                    ?? getTargetWattsAtSecond(state.workout, state.elapsedSec, state.ftp);
+                musicEngine.update(ringWatts, state.ftp, state.isRunning);
                 requestAnimationFrame(renderLoop);
             }
             requestAnimationFrame(renderLoop);
