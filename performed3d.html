@@ -2,11 +2,39 @@
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Performed 3D - Dragon Sky Gates Wahoo KICKR Cycling Game</title>
     <link rel="icon" href="performed3d.svg" type="image/svg+xml">
+    <script>
+        window.__p3dEarlyLogs = [];
+        window.addEventListener('error', (e) => {
+            let msg;
+            if (e.target && e.target !== window && (e.target.src || e.target.href)) {
+                msg = `Failed to load resource: ${(e.target.src || e.target.href).split('/').pop()}`;
+            } else {
+                msg = `JS Error: ${e.message || e.type} (${e.filename ? e.filename.split('/').pop() : 'inline'}:${e.lineno || 0})`;
+            }
+            window.__p3dEarlyLogs.push(msg);
+            const el = document.getElementById('mobileDebugLog');
+            if (el) el.textContent += `\n[ERR] ${msg}`;
+        }, true);
+        window.addEventListener('unhandledrejection', (e) => {
+            const msg = `Promise Error: ${e.reason && (e.reason.message || e.reason)}`;
+            window.__p3dEarlyLogs.push(msg);
+            const el = document.getElementById('mobileDebugLog');
+            if (el) el.textContent += `\n[ERR] ${msg}`;
+        });
+        (() => {
+            const p = new URLSearchParams(window.location.search);
+            if (p.has('phone-steer') || p.has('steer')) {
+                document.documentElement.classList.add('phone-steer-mode');
+            }
+        })();
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
     <script src="performed3d-models.js"></script>
     <script src="sterzo-challenge-codes.js"></script>
     <style type="text/tailwindcss">
@@ -62,6 +90,20 @@
         ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
         ::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.8); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(249, 115, 22, 0.8); }
+        html.phone-steer-mode,
+        html.phone-steer-mode body {
+            height: 100dvh;
+            max-height: 100dvh;
+            width: 100vw;
+            overflow: hidden;
+            overscroll-behavior: none;
+        }
+        html.phone-steer-mode body > *:not(#mobilePhoneControllerView):not(script) {
+            display: none !important;
+        }
+        html.phone-steer-mode #mobilePhoneControllerView {
+            display: flex !important;
+        }
     </style>
 </head>
 <body class="bg-gray-950 text-gray-100 h-screen w-screen overflow-hidden font-sans antialiased selection:bg-orange-500 selection:text-white relative select-none">
@@ -241,6 +283,17 @@
                                 </svg>
                                 <span id="bleSteerStatusText">Pair Sterzo / Rizer</span>
                                 <span id="bleSteerStatusDot" class="w-2 h-2 rounded-full bg-gray-300"></span>
+                            </button>
+
+                            <!-- Mobile Phone Handlebar Steering Pairing Button (QR Code / WebRTC) -->
+                            <button id="connectPhoneSteerBtn" type="button"
+                                    class="px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-indigo-700/80 hover:bg-indigo-600 text-white border border-indigo-400/30"
+                                    title="Scan QR code to use your mobile phone on the handlebar as a wireless steering controller">
+                                <svg class="w-3.5 h-3.5 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                </svg>
+                                <span id="phoneSteerStatusText">Phone Steer (QR)</span>
+                                <span id="phoneSteerStatusDot" class="w-2 h-2 rounded-full bg-gray-300"></span>
                             </button>
                         </div>
 
@@ -769,6 +822,605 @@
             </div>
         </div>
     </div>
+
+    <!-- =========================================================================
+         PHONE HANDLEBAR STEERING QR PAIRING MODAL (DESKTOP)
+         ========================================================================= -->
+    <div id="phoneSteerModal" class="hidden fixed inset-0 z-50 bg-gray-950/85 backdrop-blur-md items-center justify-center p-4">
+        <div class="bg-gray-900 border border-indigo-500/40 rounded-2xl max-w-md w-full p-5 shadow-2xl relative text-gray-100">
+            <div class="flex items-center justify-between gap-2 pb-3 border-b border-gray-800">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                    <h2 class="text-base font-black text-indigo-300 tracking-wide">Phone Handlebar Steering</h2>
+                </div>
+                <button id="closePhoneSteerModalBtn" type="button"
+                        class="text-gray-400 hover:text-white px-2 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-bold cursor-pointer">
+                    ✕
+                </button>
+            </div>
+
+            <div class="mt-4 flex flex-col items-center text-center gap-3">
+                <p class="text-xs text-gray-300 leading-relaxed">
+                    Attach your phone to your bike's handlebar and scan this QR code with your phone's camera. No server or IP configuration needed!
+                </p>
+
+                <div id="phoneSteerQrContainer" class="bg-white p-3 rounded-2xl shadow-inner flex items-center justify-center min-w-[200px] min-h-[200px]">
+                    <span class="text-xs text-gray-500 font-semibold">Generating QR code...</span>
+                </div>
+
+                <div class="w-full text-left bg-gray-950/80 border border-gray-800 rounded-xl p-2.5">
+                    <label for="phoneSteerBaseUrlInput" class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                        Controller Base URL (editable if opened via localhost / file)
+                    </label>
+                    <input id="phoneSteerBaseUrlInput" type="text"
+                           class="w-full bg-gray-900 text-indigo-200 font-mono text-xs px-2.5 py-1.5 rounded-lg border border-gray-700 focus:outline-none focus:border-indigo-400"
+                           placeholder="https://...">
+                    <p id="phoneSteerLocalWarning" class="hidden mt-1.5 text-[11px] text-amber-300 leading-snug">
+                        Tip: Replace <code class="text-amber-200">localhost</code> with your computer's LAN IP or hosted HTTPS URL so your phone can reach this page.
+                    </p>
+                </div>
+
+                <div class="w-full flex items-center justify-between bg-gray-950/90 border border-gray-800 rounded-xl px-3 py-2 text-xs">
+                    <span id="phoneSteerModalStatus" class="font-bold text-indigo-300">Waiting for phone to scan...</span>
+                    <span id="phoneSteerModalAngle" class="font-mono font-bold text-emerald-300">0.0°</span>
+                </div>
+
+                <div class="w-full flex items-center justify-between gap-2 pt-1">
+                    <button id="phoneSteerRecenterDesktopBtn" type="button"
+                            class="px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-cyan-300 font-bold text-xs border border-cyan-500/30 cursor-pointer transition">
+                        Calibrate Center (0°)
+                    </button>
+                    <button id="phoneSteerDisconnectBtn" type="button"
+                            class="hidden px-3 py-2 rounded-xl bg-rose-700/80 hover:bg-rose-600 text-white font-bold text-xs border border-rose-400/30 cursor-pointer transition">
+                        Disconnect Phone
+                    </button>
+                    <button id="phoneSteerDoneBtn" type="button"
+                            class="ml-auto px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs cursor-pointer transition">
+                        Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         MINIMALISTIC MOBILE PHONE HANDLEBAR CONTROLLER VIEW (?phone-steer=...)
+         ========================================================================= -->
+    <div id="mobilePhoneControllerView" class="hidden fixed inset-0 z-[100] h-[100dvh] max-h-[100dvh] w-screen bg-gray-950 text-gray-100 flex-col justify-between p-3 select-none touch-manipulation overflow-hidden">
+        <!-- Compact Top Status Bar -->
+        <div class="flex items-center justify-between border-b border-gray-800/80 pb-2 shrink-0">
+            <div class="flex items-center gap-2 min-w-0">
+                <span id="mobileConnDot" class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shrink-0"></span>
+                <p id="mobileConnStatus" class="text-xs font-bold text-amber-300 truncate">Connecting...</p>
+            </div>
+            <button id="mobileInvertToggleBtn" type="button"
+                    class="px-2.5 py-1 rounded-lg bg-gray-900 text-gray-300 border border-gray-700 text-[11px] font-bold shrink-0 cursor-pointer">
+                Axis: Normal
+            </button>
+        </div>
+
+        <!-- Central Steering Gauge & Angle Readout -->
+        <div class="flex-1 min-h-0 flex flex-col items-center justify-evenly gap-1.5 py-1 w-full max-w-sm mx-auto">
+            <button id="mobileEnableSensorBtn" type="button"
+                    class="w-full py-2 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-400 text-gray-950 font-black text-xs uppercase tracking-wider shadow-md active:scale-98 transition cursor-pointer shrink-0">
+                Tap to Enable Motion Sensors
+            </button>
+
+            <div class="text-center leading-tight">
+                <div id="mobileAngleDisplay" class="text-4xl font-black font-mono text-emerald-300 tabular-nums">0.0°</div>
+                <div id="mobileDirectionLabel" class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">CENTERED</div>
+            </div>
+
+            <!-- Visual Steering Bar -->
+            <div class="w-full">
+                <div class="relative h-4 bg-gray-900 border border-gray-800 rounded-full overflow-hidden">
+                    <div class="absolute inset-y-0 left-1/2 w-0.5 bg-gray-600 -translate-x-1/2 z-10"></div>
+                    <div id="mobileSteerBarFill" class="absolute top-0 bottom-0 left-1/2 w-0 bg-gradient-to-r from-cyan-400 to-emerald-400 transition-all duration-75"></div>
+                </div>
+                <div class="flex justify-between text-[10px] font-mono text-gray-500 mt-0.5 px-0.5">
+                    <span>-30° L</span>
+                    <span>0°</span>
+                    <span>R +30°</span>
+                </div>
+            </div>
+
+            <!-- Compact Fallback Touch Slider -->
+            <div class="w-full px-1">
+                <input id="mobileTouchSteerSlider" type="range" min="-30" max="30" step="0.5" value="0"
+                       aria-label="Touch steering slider"
+                       class="w-full accent-cyan-400 cursor-pointer block">
+            </div>
+
+            <!-- Live Connection Diagnostic Log -->
+            <pre id="mobileDebugLog"
+                 class="w-full h-24 max-h-24 overflow-y-auto rounded-lg bg-gray-900/95 border border-gray-800 p-2 text-[10px] leading-snug font-mono text-gray-300 whitespace-pre-wrap break-all select-text shrink-0">Initializing diagnostics...</pre>
+        </div>
+
+        <!-- Bottom Action Buttons: Calibrate Center & Fire Breath -->
+        <div class="grid grid-cols-2 gap-2.5 pt-2 border-t border-gray-800/80 shrink-0 w-full max-w-sm mx-auto">
+            <button id="mobileCalibrateBtn" type="button"
+                    class="py-2.5 px-3 rounded-xl bg-cyan-500/20 active:bg-cyan-500/40 text-cyan-200 border border-cyan-400/40 font-black text-xs uppercase tracking-wide cursor-pointer">
+                Calibrate 0°
+            </button>
+            <button id="mobileFireBtn" type="button"
+                    class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 active:from-orange-400 active:to-rose-400 text-gray-950 font-black text-xs uppercase tracking-wide shadow-md cursor-pointer">
+                🔥 Fire
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // =========================================================================
+        // STANDALONE MOBILE PHONE CONTROLLER BOOTSTRAP (runs before desktop engine)
+        // =========================================================================
+        (function bootstrapMobileControllerIfRequested() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (!urlParams.has('phone-steer') && !urlParams.has('steer')) {
+                return;
+            }
+            const hostPeerId = (urlParams.get('phone-steer') || urlParams.get('steer') || '').trim();
+            const STEER_DEADZONE_DEG = 1.2;
+            const STEER_MAX_ANGLE_DEG = 30.0;
+
+            document.documentElement.classList.add('phone-steer-mode');
+            document.title = 'Performed 3D • Steer';
+            const view = document.getElementById('mobilePhoneControllerView');
+            if (view) {
+                view.classList.remove('hidden');
+                view.classList.add('flex');
+            }
+
+            const statusEl = document.getElementById('mobileConnStatus');
+            const dotEl = document.getElementById('mobileConnDot');
+            const enableBtn = document.getElementById('mobileEnableSensorBtn');
+            const angleEl = document.getElementById('mobileAngleDisplay');
+            const dirEl = document.getElementById('mobileDirectionLabel');
+            const barFillEl = document.getElementById('mobileSteerBarFill');
+            const sliderEl = document.getElementById('mobileTouchSteerSlider');
+            const invertBtn = document.getElementById('mobileInvertToggleBtn');
+            const calibrateBtn = document.getElementById('mobileCalibrateBtn');
+            const fireBtn = document.getElementById('mobileFireBtn');
+            const debugLogEl = document.getElementById('mobileDebugLog');
+
+            const debugLines = [];
+            function logDiag(msg) {
+                const ts = new Date().toISOString().slice(11, 19);
+                debugLines.push(`[${ts}] ${msg}`);
+                if (debugLines.length > 35) debugLines.shift();
+                if (debugLogEl) {
+                    debugLogEl.textContent = debugLines.join('\n');
+                    debugLogEl.scrollTop = debugLogEl.scrollHeight;
+                }
+            }
+            if (debugLogEl) debugLogEl.textContent = '';
+            if (Array.isArray(window.__p3dEarlyLogs)) {
+                window.__p3dEarlyLogs.forEach((m) => logDiag(m));
+            }
+            logDiag(`Origin: ${window.location.origin} (HTTPS=${window.isSecureContext})`);
+            logDiag(`Target laptop peer: ${hostPeerId || '(none)'}`);
+
+            let conn = null;
+            let rawHeadingDeg = null;
+            let zeroHeadingDeg = null;
+            let smoothedDeltaDeg = null;
+            let lockedOrientationEventType = null;
+            let currentAngleDeg = 0.0;
+            let invertAxis = true;
+            let sensorActive = false;
+            let isStopped = false;
+            let lastSentAt = 0;
+
+            const STEER_SMOOTHING_ALPHA = 0.28;
+            const STEER_SPIKE_THRESHOLD_DEG = 10.0;
+            const STEER_SPIKE_DAMPING = 0.08;
+
+            function shortestAngleDeltaDeg(current, center) {
+                return ((current - center + 540) % 360) - 180;
+            }
+
+            function resetCenterCalibration() {
+                zeroHeadingDeg = rawHeadingDeg;
+                smoothedDeltaDeg = 0.0;
+            }
+
+            function updateControllerUiAndSend(angleDeg, forceSend = false) {
+                if (isStopped) return;
+                currentAngleDeg = Math.max(-45, Math.min(45, angleDeg));
+                const effectiveDeg = Math.abs(currentAngleDeg) <= STEER_DEADZONE_DEG ? 0.0 : currentAngleDeg;
+                const sign = effectiveDeg > 0 ? '+' : '';
+                if (angleEl) angleEl.textContent = `${sign}${effectiveDeg.toFixed(1)}°`;
+                if (dirEl) {
+                    if (effectiveDeg < -1.2) {
+                        dirEl.textContent = '◀ LEFT';
+                        dirEl.className = 'text-[11px] font-bold text-cyan-300 uppercase tracking-wider';
+                    } else if (effectiveDeg > 1.2) {
+                        dirEl.textContent = 'RIGHT ▶';
+                        dirEl.className = 'text-[11px] font-bold text-emerald-300 uppercase tracking-wider';
+                    } else {
+                        dirEl.textContent = 'CENTERED';
+                        dirEl.className = 'text-[11px] font-bold text-gray-400 uppercase tracking-wider';
+                    }
+                }
+                if (barFillEl) {
+                    const pct = Math.min(50, (Math.abs(effectiveDeg) / STEER_MAX_ANGLE_DEG) * 50);
+                    barFillEl.style.width = `${pct}%`;
+                    barFillEl.style.left = effectiveDeg < 0 ? `${50 - pct}%` : '50%';
+                }
+                const now = performance.now();
+                if (conn && conn.open && (forceSend || now - lastSentAt >= 33)) {
+                    lastSentAt = now;
+                    try {
+                        conn.send({ type: 'steer', angleDeg: +effectiveDeg.toFixed(2) });
+                    } catch (_) {}
+                }
+            }
+
+            function handleOrientation(event) {
+                if (isStopped) return;
+                // Prefer relative 'deviceorientation' (gyroscope) over 'deviceorientationabsolute' (magnetometer)
+                // so the two reference frames never fight each other or jump on magnetic interference.
+                if (event.type === 'deviceorientation' && typeof event.alpha === 'number' && Number.isFinite(event.alpha)) {
+                    if (lockedOrientationEventType !== 'deviceorientation') {
+                        const prevType = lockedOrientationEventType;
+                        lockedOrientationEventType = 'deviceorientation';
+                        window.removeEventListener('deviceorientationabsolute', handleOrientation, true);
+                        if (prevType !== null) {
+                            zeroHeadingDeg = null;
+                            smoothedDeltaDeg = null;
+                        }
+                    }
+                } else if (lockedOrientationEventType === 'deviceorientation') {
+                    return;
+                } else if (lockedOrientationEventType === null) {
+                    lockedOrientationEventType = event.type;
+                }
+
+                let heading = null;
+                // Prefer gyroscope-integrated event.alpha over webkitCompassHeading (magnetometer)
+                if (typeof event.alpha === 'number' && Number.isFinite(event.alpha)) {
+                    heading = invertAxis ? (360 - event.alpha) % 360 : event.alpha;
+                } else if (typeof event.webkitCompassHeading === 'number' && Number.isFinite(event.webkitCompassHeading)) {
+                    heading = invertAxis ? event.webkitCompassHeading : (360 - event.webkitCompassHeading) % 360;
+                }
+                if (heading === null) return;
+                if (!sensorActive) {
+                    sensorActive = true;
+                    logDiag(`Motion sensor active (${lockedOrientationEventType}, heading=${heading.toFixed(1)}°)`);
+                    if (enableBtn) enableBtn.classList.add('hidden');
+                }
+                rawHeadingDeg = heading;
+                if (zeroHeadingDeg === null) {
+                    zeroHeadingDeg = heading;
+                }
+                const rawDelta = shortestAngleDeltaDeg(rawHeadingDeg, zeroHeadingDeg);
+                if (smoothedDeltaDeg === null) {
+                    smoothedDeltaDeg = rawDelta;
+                } else {
+                    const stepDiff = rawDelta - smoothedDeltaDeg;
+                    const weight = Math.abs(stepDiff) > STEER_SPIKE_THRESHOLD_DEG
+                        ? STEER_SPIKE_DAMPING
+                        : STEER_SMOOTHING_ALPHA;
+                    smoothedDeltaDeg += stepDiff * weight;
+                }
+                if (sliderEl) sliderEl.value = String(Math.max(-30, Math.min(30, smoothedDeltaDeg)));
+                updateControllerUiAndSend(smoothedDeltaDeg);
+            }
+
+            async function requestMotionPermissionAndBind() {
+                if (!window.isSecureContext || typeof DeviceOrientationEvent === 'undefined') {
+                    logDiag('Motion sensors unavailable: requires HTTPS secure context');
+                    if (enableBtn) {
+                        enableBtn.textContent = 'Sensors Require HTTPS — Use Slider';
+                        enableBtn.className = 'w-full py-2 px-3 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold text-xs shrink-0';
+                    }
+                    return;
+                }
+                if (enableBtn) {
+                    enableBtn.textContent = 'Activating Motion Sensors...';
+                }
+                try {
+                    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                        const res = await DeviceOrientationEvent.requestPermission();
+                        logDiag(`Motion permission result: ${res}`);
+                        if (res !== 'granted') {
+                            if (enableBtn) {
+                                enableBtn.textContent = 'Sensor Permission Denied — Use Slider';
+                                enableBtn.className = 'w-full py-2 px-3 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold text-xs shrink-0';
+                            }
+                            return;
+                        }
+                    }
+                    window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+                    window.addEventListener('deviceorientation', handleOrientation, true);
+                    if (enableBtn) {
+                        enableBtn.textContent = 'Listening for Motion... Tilt Phone';
+                        enableBtn.className = 'w-full py-2 px-3 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-xs shrink-0';
+                        setTimeout(() => {
+                            if (sensorActive) {
+                                enableBtn.classList.add('hidden');
+                            } else {
+                                logDiag('No orientation events after 1.8s (using slider)');
+                                enableBtn.textContent = 'No Gyro Detected — Use Touch Slider';
+                                enableBtn.className = 'w-full py-1.5 px-3 rounded-xl bg-gray-900 text-gray-400 border border-gray-800 font-semibold text-[11px] shrink-0';
+                            }
+                        }, 1800);
+                    }
+                } catch (err) {
+                    logDiag(`Motion sensor error: ${err && (err.message || err)}`);
+                    if (enableBtn) {
+                        enableBtn.textContent = 'Sensors Require HTTPS — Use Slider';
+                        enableBtn.className = 'w-full py-2 px-3 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold text-xs shrink-0';
+                    }
+                }
+            }
+
+            if (enableBtn) {
+                if (!window.isSecureContext || typeof DeviceOrientationEvent === 'undefined') {
+                    enableBtn.textContent = 'Sensors Require HTTPS — Use Slider';
+                    enableBtn.className = 'w-full py-1.5 px-3 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-500/30 font-semibold text-[11px] shrink-0';
+                } else {
+                    window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+                    window.addEventListener('deviceorientation', handleOrientation, true);
+                }
+                enableBtn.addEventListener('click', requestMotionPermissionAndBind);
+            }
+
+            if (invertBtn) {
+                invertBtn.addEventListener('click', () => {
+                    invertAxis = !invertAxis;
+                    resetCenterCalibration();
+                    invertBtn.textContent = invertAxis ? 'Axis: Normal' : 'Axis: Inverted';
+                    updateControllerUiAndSend(0, true);
+                });
+            }
+
+            if (sliderEl) {
+                sliderEl.addEventListener('input', (e) => {
+                    const deg = parseFloat(e.target.value) || 0;
+                    smoothedDeltaDeg = deg;
+                    updateControllerUiAndSend(deg, true);
+                });
+            }
+
+            if (calibrateBtn) {
+                calibrateBtn.addEventListener('click', () => {
+                    resetCenterCalibration();
+                    if (sliderEl) sliderEl.value = '0';
+                    updateControllerUiAndSend(0, true);
+                    if (conn && conn.open) {
+                        try { conn.send({ type: 'recenter' }); } catch (_) {}
+                    }
+                    logDiag('Calibrated center (0°)');
+                });
+            }
+
+            if (fireBtn) {
+                fireBtn.addEventListener('click', () => {
+                    if (conn && conn.open) {
+                        try { conn.send({ type: 'fire' }); } catch (_) {}
+                        logDiag('Sent Fire command');
+                    } else {
+                        logDiag('Fire pressed (not connected to laptop)');
+                    }
+                });
+            }
+
+            if (!hostPeerId) {
+                if (statusEl) {
+                    statusEl.textContent = 'Demo Mode (Scan Desktop QR to Pair)';
+                    statusEl.className = 'text-xs font-bold text-cyan-300 truncate';
+                }
+                if (dotEl) {
+                    dotEl.className = 'w-2.5 h-2.5 rounded-full bg-cyan-400 shrink-0';
+                }
+                logDiag('No ?phone-steer=<id> in URL. Running in local demo mode.');
+                return;
+            }
+
+            function startPeerConnection() {
+                if (typeof Peer === 'undefined') {
+                    if (statusEl) statusEl.textContent = 'PeerJS failed to load';
+                    logDiag('ERROR: PeerJS library is undefined (CDN blocked)');
+                    return;
+                }
+
+                logDiag('Connecting to PeerJS signaling (0.peerjs.com:443)...');
+                const peer = new Peer();
+                let retryTimer = null;
+                let diagTimeout = null;
+                let wasConnected = false;
+
+                function stopControllerOnDisconnect(reason) {
+                    if (isStopped) return;
+                    isStopped = true;
+                    if (retryTimer) {
+                        clearTimeout(retryTimer);
+                        retryTimer = null;
+                    }
+                    if (diagTimeout) {
+                        clearTimeout(diagTimeout);
+                        diagTimeout = null;
+                    }
+                    window.removeEventListener('deviceorientationabsolute', handleOrientation, true);
+                    window.removeEventListener('deviceorientation', handleOrientation, true);
+                    if (conn) {
+                        try { conn.close(); } catch (_) {}
+                        conn = null;
+                    }
+                    if (peer && !peer.destroyed) {
+                        try { peer.destroy(); } catch (_) {}
+                    }
+                    logDiag(reason || 'Disconnected by laptop — stopped sending events.');
+                    if (statusEl) {
+                        statusEl.textContent = 'Disconnected (Stopped)';
+                        statusEl.className = 'text-xs font-bold text-rose-400 truncate';
+                    }
+                    if (dotEl) {
+                        dotEl.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0';
+                    }
+                }
+
+                function attachPeerConnectionDiagnostics(dc) {
+                    let boundPc = null;
+                    const checkPc = setInterval(() => {
+                        const pc = dc && dc.peerConnection;
+                        if (!pc || pc === boundPc) return;
+                        boundPc = pc;
+                        clearInterval(checkPc);
+                        logDiag(`RTCPeerConnection created (sig=${pc.signalingState}, ice=${pc.iceConnectionState})`);
+                        pc.addEventListener('signalingstatechange', () => {
+                            logDiag(`SDP signalingState -> ${pc.signalingState}`);
+                        });
+                        pc.addEventListener('icegatheringstatechange', () => {
+                            logDiag(`ICE gathering -> ${pc.iceGatheringState}`);
+                        });
+                        pc.addEventListener('iceconnectionstatechange', () => {
+                            logDiag(`ICE connection -> ${pc.iceConnectionState}`);
+                            if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+                                if (statusEl) {
+                                    statusEl.textContent = `ICE ${pc.iceConnectionState} (P2P UDP blocked)`;
+                                    statusEl.className = 'text-xs font-bold text-rose-400 truncate';
+                                }
+                                if (dotEl) dotEl.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0';
+                            }
+                        });
+                        pc.addEventListener('connectionstatechange', () => {
+                            logDiag(`PeerConnection state -> ${pc.connectionState}`);
+                        });
+                        pc.addEventListener('icecandidate', (ev) => {
+                            if (ev.candidate && ev.candidate.candidate) {
+                                const parts = ev.candidate.candidate.split(' ');
+                                const proto = parts[2] || '';
+                                const ip = parts[4] || '';
+                                const port = parts[5] || '';
+                                const typ = parts[7] || '';
+                                logDiag(`Local ICE [${typ}] ${proto} ${ip}:${port}`);
+                            } else {
+                                logDiag('Local ICE gathering finished');
+                            }
+                        });
+                    }, 50);
+                    setTimeout(() => clearInterval(checkPc), 5000);
+                }
+
+                function connectToHost() {
+                    if (isStopped || !peer || peer.destroyed || (conn && conn.open)) return;
+                    logDiag(`Dialing laptop peer "${hostPeerId}"...`);
+                    conn = peer.connect(hostPeerId, { reliable: false });
+                    attachPeerConnectionDiagnostics(conn);
+
+                    if (diagTimeout) clearTimeout(diagTimeout);
+                    diagTimeout = setTimeout(() => {
+                        if (isStopped || (conn && conn.open)) return;
+                        const pc = conn && conn.peerConnection;
+                        if (!pc) {
+                            logDiag('TIMEOUT (6s): No RTCPeerConnection created.');
+                        } else if (pc.signalingState === 'have-local-offer') {
+                            logDiag('TIMEOUT (6s): Laptop did not answer SDP offer (is laptop QR modal open with matching ID?).');
+                        } else {
+                            logDiag(`TIMEOUT (6s): Laptop answered SDP (sig=${pc.signalingState}), but direct UDP/ICE=${pc.iceConnectionState} failed (NAT/mDNS/firewall between phone & laptop).`);
+                        }
+                    }, 6000);
+
+                    conn.on('open', () => {
+                        if (isStopped) {
+                            try { conn.close(); } catch (_) {}
+                            return;
+                        }
+                        wasConnected = true;
+                        if (retryTimer) {
+                            clearTimeout(retryTimer);
+                            retryTimer = null;
+                        }
+                        if (diagTimeout) {
+                            clearTimeout(diagTimeout);
+                            diagTimeout = null;
+                        }
+                        logDiag('DataChannel OPEN! Connected to laptop.');
+                        if (statusEl) {
+                            statusEl.textContent = 'Connected to Laptop';
+                            statusEl.className = 'text-xs font-bold text-emerald-400 truncate';
+                        }
+                        if (dotEl) {
+                            dotEl.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0';
+                        }
+                        updateControllerUiAndSend(currentAngleDeg, true);
+                    });
+                    conn.on('data', (msg) => {
+                        if (msg && msg.type === 'disconnect') {
+                            stopControllerOnDisconnect('Laptop disconnected — stopped sending events.');
+                            return;
+                        }
+                        if (msg && msg.type === 'recenter') {
+                            logDiag('Received recenter command from laptop');
+                            resetCenterCalibration();
+                            if (sliderEl) sliderEl.value = '0';
+                            updateControllerUiAndSend(0, true);
+                        }
+                    });
+                    conn.on('close', () => {
+                        if (isStopped || wasConnected) {
+                            stopControllerOnDisconnect('Connection closed by laptop — stopped sending events.');
+                            return;
+                        }
+                        logDiag('DataChannel closed. Retrying in 4s...');
+                        if (statusEl) {
+                            statusEl.textContent = 'Reconnecting to laptop...';
+                            statusEl.className = 'text-xs font-bold text-amber-300 truncate';
+                        }
+                        if (dotEl) dotEl.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shrink-0';
+                        retryTimer = setTimeout(connectToHost, 4000);
+                    });
+                    conn.on('error', (err) => {
+                        logDiag(`DataChannel error: ${err && (err.message || err.type || err)}`);
+                    });
+                }
+
+                peer.on('open', (myId) => {
+                    logDiag(`Signaling OK: phone peerId=${myId}`);
+                    connectToHost();
+                });
+                peer.on('disconnected', () => {
+                    logDiag('Signaling disconnected from 0.peerjs.com');
+                });
+                peer.on('error', (err) => {
+                    logDiag(`Peer error: type=${err && err.type} msg=${err && err.message}`);
+                    if (err && err.type === 'peer-unavailable') {
+                        if (statusEl) {
+                            statusEl.textContent = 'Laptop peer not found (check QR)...';
+                            statusEl.className = 'text-xs font-bold text-amber-300 truncate';
+                        }
+                        if (dotEl) dotEl.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shrink-0';
+                        retryTimer = setTimeout(connectToHost, 4000);
+                    } else {
+                        if (statusEl) {
+                            statusEl.textContent = `Error: ${err.type || 'failed'}`;
+                            statusEl.className = 'text-xs font-bold text-rose-400 truncate';
+                        }
+                        if (dotEl) dotEl.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0';
+                    }
+                });
+            }
+
+            if (typeof Peer === 'undefined') {
+                logDiag('PeerJS not loaded from unpkg; trying jsdelivr fallback...');
+                const s = document.createElement('script');
+                s.src = 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js';
+                s.onload = () => {
+                    logDiag('PeerJS fallback loaded.');
+                    startPeerConnection();
+                };
+                s.onerror = () => {
+                    logDiag('ERROR: Failed to load PeerJS from both unpkg and jsdelivr.');
+                };
+                document.head.appendChild(s);
+            } else {
+                startPeerConnection();
+            }
+        })();
+    </script>
 
     <script>
         // =========================================================================
@@ -2189,7 +2841,9 @@
             }
         }
 
-        const STERZO_CHALLENGE_TABLE = Uint8Array.from(atob(STERZO_CHALLENGE_TABLE_B64), c => c.charCodeAt(0));
+        const STERZO_CHALLENGE_TABLE = typeof STERZO_CHALLENGE_TABLE_B64 !== 'undefined'
+            ? Uint8Array.from(atob(STERZO_CHALLENGE_TABLE_B64), c => c.charCodeAt(0))
+            : new Uint8Array(0);
         const sleepMs = (ms) => new Promise(r => setTimeout(r, ms));
 
         class BleEliteSteeringSensor {
@@ -2297,6 +2951,148 @@
                 const normalizedInput = Math.max(-1.0, Math.min(1.0, effectiveDeg / ELITE_STEER_MAX_ANGLE_DEG));
                 this.onSteeringAngle(normalizedInput, calibratedDeg);
                 return calibratedDeg;
+            }
+        }
+
+        class PhoneWebRtcSteeringSensor {
+            constructor(onSteeringAngleCallback, onFireCallback, onStatusCallback) {
+                this.onSteeringAngle = onSteeringAngleCallback;
+                this.onFire = onFireCallback;
+                this.onStatus = onStatusCallback;
+                this.peer = null;
+                this.conn = null;
+                this.peerId = null;
+                this.connected = false;
+                this.zeroAngleOffsetDeg = 0.0;
+                this.latestAngleDeg = 0.0;
+            }
+
+            async ensureHostPeer() {
+                if (this.peer && !this.peer.destroyed && this.peerId) {
+                    return this.peerId;
+                }
+                if (typeof Peer === 'undefined') {
+                    throw new Error('PeerJS WebRTC library failed to load.');
+                }
+                this.onStatus('connecting', 'Waiting for Phone...');
+                return new Promise((resolve, reject) => {
+                    let savedId = localStorage.getItem('performed_phone_host_peer_id');
+                    if (!savedId || !savedId.startsWith('p3d-steer-')) {
+                        const randomSuffix = Math.random().toString(36).substring(2, 8);
+                        savedId = `p3d-steer-${randomSuffix}`;
+                        localStorage.setItem('performed_phone_host_peer_id', savedId);
+                    }
+                    const peer = new Peer(savedId);
+                    this.peer = peer;
+
+                    peer.on('open', (id) => {
+                        this.peerId = id;
+                        localStorage.setItem('performed_phone_host_peer_id', id);
+                        this.onStatus('connecting', `Waiting (${id})`);
+                        resolve(id);
+                    });
+
+                    peer.on('connection', (conn) => {
+                        if (this.conn && this.conn !== conn) {
+                            try { this.conn.close(); } catch (_) {}
+                        }
+                        this.conn = conn;
+                        this.onStatus('connecting', 'Phone ICE Handshake...');
+                        conn.on('open', () => {
+                            if (this.conn !== conn) return;
+                            this.connected = true;
+                            this.zeroAngleOffsetDeg = 0.0;
+                            this.onStatus('connected', 'Phone Connected');
+                        });
+                        conn.on('data', (data) => {
+                            if (this.conn === conn && this.connected) {
+                                this.handleMessage(data);
+                            }
+                        });
+                        conn.on('close', () => {
+                            if (this.conn === conn) {
+                                this.connected = false;
+                                this.conn = null;
+                                this.latestAngleDeg = 0.0;
+                                this.onSteeringAngle(0.0, null);
+                                this.onStatus('disconnected', 'Phone Steer (QR)');
+                            }
+                        });
+                        conn.on('error', () => {
+                            if (this.conn === conn) {
+                                this.connected = false;
+                                this.conn = null;
+                                this.onSteeringAngle(0.0, null);
+                                this.onStatus('disconnected', 'Phone Steer (QR)');
+                            }
+                        });
+                    });
+
+                    peer.on('error', (err) => {
+                        if (err && err.type === 'unavailable-id') {
+                            localStorage.removeItem('performed_phone_host_peer_id');
+                            try { peer.destroy(); } catch (_) {}
+                            this.peer = null;
+                            this.ensureHostPeer().then(resolve).catch(reject);
+                            return;
+                        }
+                        if (!this.peerId) {
+                            reject(err);
+                        }
+                    });
+                });
+            }
+
+            handleMessage(msg) {
+                if (!this.connected || !this.conn || !msg || typeof msg !== 'object') return;
+                if (msg.type === 'steer') {
+                    const rawDeg = Number(msg.angleDeg);
+                    if (!Number.isFinite(rawDeg)) return;
+                    this.latestAngleDeg = rawDeg;
+                    const calibratedDeg = rawDeg - this.zeroAngleOffsetDeg;
+                    const effectiveDeg = Math.abs(calibratedDeg) <= ELITE_STEER_DEADZONE_DEG ? 0.0 : calibratedDeg;
+                    const normalizedInput = Math.max(-1.0, Math.min(1.0, effectiveDeg / ELITE_STEER_MAX_ANGLE_DEG));
+                    this.onSteeringAngle(normalizedInput, calibratedDeg);
+                } else if (msg.type === 'recenter') {
+                    this.zeroAngleOffsetDeg = 0.0;
+                    this.latestAngleDeg = 0.0;
+                    this.onSteeringAngle(0.0, 0.0);
+                } else if (msg.type === 'fire') {
+                    if (this.onFire) this.onFire();
+                }
+            }
+
+            recenter() {
+                this.zeroAngleOffsetDeg = this.latestAngleDeg || 0.0;
+                this.onSteeringAngle(0.0, 0.0);
+                if (this.conn && this.connected) {
+                    try { this.conn.send({ type: 'recenter' }); } catch (_) {}
+                }
+            }
+
+            disconnect() {
+                localStorage.removeItem('performed_phone_host_peer_id');
+                const activeConn = this.conn;
+                const activePeer = this.peer;
+                this.conn = null;
+                this.peer = null;
+                this.peerId = null;
+                this.connected = false;
+                this.latestAngleDeg = 0.0;
+                this.zeroAngleOffsetDeg = 0.0;
+                this.onSteeringAngle(0.0, null);
+                this.onStatus('disconnected', 'Phone Steer (QR)');
+                if (activeConn) {
+                    try { activeConn.send({ type: 'disconnect' }); } catch (_) {}
+                    setTimeout(() => {
+                        try { activeConn.close(); } catch (_) {}
+                        if (activePeer && !activePeer.destroyed) {
+                            try { activePeer.destroy(); } catch (_) {}
+                        }
+                    }, 60);
+                } else if (activePeer && !activePeer.destroyed) {
+                    try { activePeer.destroy(); } catch (_) {}
+                }
             }
         }
 
@@ -2901,6 +3697,8 @@
             steerRightPressed: false,
             bleSteerInput: 0.0,
             bleSteerAngleDeg: 0.0,
+            phoneSteerInput: 0.0,
+            phoneSteerAngleDeg: 0.0,
             dragonSteerOffsetX: 0.0,
             dragonHeadingAngle: 0.0,
             dragonWorldX: 0.0,
@@ -6127,9 +6925,12 @@
                 const turnDelta = lookaheadCourseX - currentCourseX;
 
                 const keyboardSteerInput = (state.steerRightPressed ? 1 : 0) - (state.steerLeftPressed ? 1 : 0);
+                const sensorSteerInput = bleSteeringSensor.connected
+                    ? (state.bleSteerInput || 0)
+                    : (phoneSteeringSensor.connected ? (state.phoneSteerInput || 0) : 0);
                 const rawSteerInput = keyboardSteerInput !== 0
                     ? keyboardSteerInput
-                    : (bleSteeringSensor.connected ? (state.bleSteerInput || 0) : 0);
+                    : sensorSteerInput;
                 const steerInput = state.steeringEnabled
                     ? Math.max(-1, Math.min(1, rawSteerInput))
                     : 0;
@@ -6165,25 +6966,47 @@
                         }
                     }
 
-                    // Smooth rotational inertia for left/right steering: accelerate turn rate on input, coast smoothly to 0 on release
-                    const targetYawRate = steerInput * DRAGON_HEADING_TURN_RATE;
-                    const steerInertiaRate = steerInput !== 0 ? DRAGON_STEER_INERTIA_ACCEL : DRAGON_STEER_INERTIA_DAMPING;
-                    this.dragonHeadingVelocity += (targetYawRate - this.dragonHeadingVelocity) * Math.min(1, stepDt * steerInertiaRate);
-                    if (steerInput === 0 && Math.abs(this.dragonHeadingVelocity) < 0.001) {
-                        this.dragonHeadingVelocity = 0;
-                    }
-                    if (this.wallContactSide === -1 && this.dragonHeadingVelocity < 0) {
-                        this.dragonHeadingVelocity = 0;
-                    } else if (this.wallContactSide === 1 && this.dragonHeadingVelocity > 0) {
-                        this.dragonHeadingVelocity = 0;
-                    }
-                    if (steerInput !== 0 || this.dragonHeadingVelocity !== 0) {
-                        const minHeading = canyonTangentHeading - DRAGON_MAX_HEADING_ANGLE;
-                        const maxHeading = canyonTangentHeading + DRAGON_MAX_HEADING_ANGLE;
-                        this.dragonHeadingAngle = Math.max(
+                    const useDirectPhoneHeading = phoneSteeringSensor.connected && !bleSteeringSensor.connected && keyboardSteerInput === 0;
+                    const minHeading = canyonTangentHeading - DRAGON_MAX_HEADING_ANGLE;
+                    const maxHeading = canyonTangentHeading + DRAGON_MAX_HEADING_ANGLE;
+
+                    if (useDirectPhoneHeading) {
+                        // Phone steering directly sets the avatar's absolute heading angle
+                        let targetHeading = Math.max(
                             minHeading,
-                            Math.min(maxHeading, this.dragonHeadingAngle + this.dragonHeadingVelocity * dt)
+                            Math.min(maxHeading, canyonTangentHeading + steerInput * DRAGON_MAX_HEADING_ANGLE)
                         );
+                        if (this.wallContactSide === -1 && targetHeading < canyonTangentHeading) {
+                            targetHeading = canyonTangentHeading;
+                        } else if (this.wallContactSide === 1 && targetHeading > canyonTangentHeading) {
+                            targetHeading = canyonTangentHeading;
+                        }
+                        const prevHeading = this.dragonHeadingAngle;
+                        const nextHeading = prevHeading + (targetHeading - prevHeading) * Math.min(1, stepDt * DRAGON_STEER_INERTIA_ACCEL * 2.0);
+                        this.dragonHeadingAngle = Math.abs(targetHeading - nextHeading) < 0.0005 ? targetHeading : nextHeading;
+                        this.dragonHeadingVelocity = (this.dragonHeadingAngle - prevHeading) / stepDt;
+                        if (Math.abs(this.dragonHeadingVelocity) < 0.001) {
+                            this.dragonHeadingVelocity = 0;
+                        }
+                    } else {
+                        // Smooth rotational inertia for left/right steering: accelerate turn rate on input, coast smoothly to 0 on release
+                        const targetYawRate = steerInput * DRAGON_HEADING_TURN_RATE;
+                        const steerInertiaRate = steerInput !== 0 ? DRAGON_STEER_INERTIA_ACCEL : DRAGON_STEER_INERTIA_DAMPING;
+                        this.dragonHeadingVelocity += (targetYawRate - this.dragonHeadingVelocity) * Math.min(1, stepDt * steerInertiaRate);
+                        if (steerInput === 0 && Math.abs(this.dragonHeadingVelocity) < 0.001) {
+                            this.dragonHeadingVelocity = 0;
+                        }
+                        if (this.wallContactSide === -1 && this.dragonHeadingVelocity < 0) {
+                            this.dragonHeadingVelocity = 0;
+                        } else if (this.wallContactSide === 1 && this.dragonHeadingVelocity > 0) {
+                            this.dragonHeadingVelocity = 0;
+                        }
+                        if (steerInput !== 0 || this.dragonHeadingVelocity !== 0) {
+                            this.dragonHeadingAngle = Math.max(
+                                minHeading,
+                                Math.min(maxHeading, this.dragonHeadingAngle + this.dragonHeadingVelocity * dt)
+                            );
+                        }
                     }
 
                     // Advance the dragon's 3D world X position along its current heading vector with lateral inertia
@@ -6995,6 +7818,60 @@
                 } else {
                     btn.className = 'px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-purple-700/80 hover:bg-purple-600 text-white border border-purple-400/30';
                     dot.className = 'w-2 h-2 rounded-full bg-gray-300';
+                }
+            }
+        );
+
+        const phoneSteeringSensor = new PhoneWebRtcSteeringSensor(
+            (normalizedInput, angleDeg) => {
+                state.phoneSteerInput = normalizedInput || 0.0;
+                state.phoneSteerAngleDeg = (angleDeg !== null && angleDeg !== undefined) ? angleDeg : 0.0;
+                const degStr = (state.phoneSteerAngleDeg >= 0 ? '+' : '') + state.phoneSteerAngleDeg.toFixed(1) + '°';
+                const text = document.getElementById('phoneSteerStatusText');
+                if (text && phoneSteeringSensor.connected) {
+                    text.textContent = `Phone (${degStr})`;
+                }
+                const modalAngle = document.getElementById('phoneSteerModalAngle');
+                if (modalAngle) {
+                    modalAngle.textContent = degStr;
+                }
+            },
+            () => {
+                if (dragon3D) {
+                    dragon3D.triggerDragonFireBreath();
+                }
+            },
+            (status, label) => {
+                const btn = document.getElementById('connectPhoneSteerBtn');
+                const text = document.getElementById('phoneSteerStatusText');
+                const dot = document.getElementById('phoneSteerStatusDot');
+                const modalStatus = document.getElementById('phoneSteerModalStatus');
+                const disconnectBtn = document.getElementById('phoneSteerDisconnectBtn');
+                if (text) text.textContent = label;
+                if (status === 'connected') {
+                    if (!state.steeringEnabled) setSteeringEnabled(true);
+                    if (btn) btn.className = 'px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/40';
+                    if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-200 animate-ping';
+                    if (modalStatus) {
+                        modalStatus.textContent = 'Phone connected! Turn handlebar to steer.';
+                        modalStatus.className = 'font-bold text-emerald-300';
+                    }
+                    if (disconnectBtn) disconnectBtn.classList.remove('hidden');
+                } else if (status === 'connecting') {
+                    if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-300 animate-pulse';
+                    if (modalStatus) {
+                        modalStatus.textContent = 'Waiting for phone to scan QR code...';
+                        modalStatus.className = 'font-bold text-indigo-300';
+                    }
+                    if (disconnectBtn) disconnectBtn.classList.add('hidden');
+                } else {
+                    if (btn) btn.className = 'px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-indigo-700/80 hover:bg-indigo-600 text-white border border-indigo-400/30';
+                    if (dot) dot.className = 'w-2 h-2 rounded-full bg-gray-300';
+                    if (modalStatus) {
+                        modalStatus.textContent = 'Disconnected. Scan QR code to connect.';
+                        modalStatus.className = 'font-bold text-gray-400';
+                    }
+                    if (disconnectBtn) disconnectBtn.classList.add('hidden');
                 }
             }
         );
@@ -8185,6 +9062,9 @@
                 if (bleSteeringSensor.connected) {
                     bleSteeringSensor.recenter();
                 }
+                if (phoneSteeringSensor.connected) {
+                    phoneSteeringSensor.recenter();
+                }
                 state.dragonSteerOffsetX = 0;
                 if (dragon3D) {
                     const centerZ = dragon3D.flightZ || 0;
@@ -8290,6 +9170,107 @@
                     alert(err.message || 'Could not connect to Elite Sterzo / Rizer steering device.');
                 }
                 bleSteeringSensor.onStatus('disconnected', 'Pair Sterzo / Rizer');
+            }
+        });
+
+        function getDefaultPhoneControllerBaseUrl() {
+            const saved = localStorage.getItem('performed_phone_base_url');
+            if (saved) return saved;
+            const url = new URL(window.location.href);
+            url.search = '';
+            url.hash = '';
+            return url.toString();
+        }
+
+        function renderPhoneSteerQrCode(peerId) {
+            const qrContainer = document.getElementById('phoneSteerQrContainer');
+            const baseInput = document.getElementById('phoneSteerBaseUrlInput');
+            const warningEl = document.getElementById('phoneSteerLocalWarning');
+            if (!qrContainer || !peerId) return;
+
+            const rawBase = (baseInput && baseInput.value.trim()) ? baseInput.value.trim() : getDefaultPhoneControllerBaseUrl();
+            let targetUrlStr = rawBase;
+            try {
+                const u = new URL(rawBase);
+                u.searchParams.set('phone-steer', peerId);
+                targetUrlStr = u.toString();
+                const isLocal = u.protocol === 'file:' || u.hostname === 'localhost' || u.hostname === '127.0.0.1';
+                if (warningEl) warningEl.classList.toggle('hidden', !isLocal);
+            } catch (_) {
+                const sep = rawBase.includes('?') ? '&' : '?';
+                targetUrlStr = `${rawBase}${sep}phone-steer=${encodeURIComponent(peerId)}`;
+                if (warningEl) warningEl.classList.remove('hidden');
+            }
+
+            if (typeof qrcode === 'function') {
+                const qr = qrcode(0, 'M');
+                qr.addData(targetUrlStr);
+                qr.make();
+                qrContainer.innerHTML = qr.createSvgTag({ cellSize: 5, margin: 2, scalable: true });
+                const svgEl = qrContainer.querySelector('svg');
+                if (svgEl) {
+                    svgEl.setAttribute('width', '196');
+                    svgEl.setAttribute('height', '196');
+                }
+            } else {
+                qrContainer.innerHTML = `<a href="${targetUrlStr}" target="_blank" class="text-xs text-indigo-600 underline break-all p-2">${targetUrlStr}</a>`;
+            }
+        }
+
+        function closePhoneSteerModal() {
+            const modal = document.getElementById('phoneSteerModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        document.getElementById('connectPhoneSteerBtn').addEventListener('click', async () => {
+            const modal = document.getElementById('phoneSteerModal');
+            const baseInput = document.getElementById('phoneSteerBaseUrlInput');
+            if (baseInput && !baseInput.value) {
+                baseInput.value = getDefaultPhoneControllerBaseUrl();
+            }
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+            try {
+                const peerId = await phoneSteeringSensor.ensureHostPeer();
+                renderPhoneSteerQrCode(peerId);
+            } catch (err) {
+                const qrContainer = document.getElementById('phoneSteerQrContainer');
+                if (qrContainer) {
+                    qrContainer.innerHTML = `<span class="text-xs text-rose-500 font-bold p-2">${err.message || 'Could not start WebRTC peer.'}</span>`;
+                }
+            }
+        });
+
+        document.getElementById('phoneSteerBaseUrlInput').addEventListener('input', (e) => {
+            const val = e.target.value.trim();
+            if (val) {
+                localStorage.setItem('performed_phone_base_url', val);
+            }
+            if (phoneSteeringSensor.peerId) {
+                renderPhoneSteerQrCode(phoneSteeringSensor.peerId);
+            }
+        });
+
+        document.getElementById('closePhoneSteerModalBtn').addEventListener('click', closePhoneSteerModal);
+        document.getElementById('phoneSteerDoneBtn').addEventListener('click', closePhoneSteerModal);
+        document.getElementById('phoneSteerModal').addEventListener('click', (e) => {
+            if (e.target.id === 'phoneSteerModal') closePhoneSteerModal();
+        });
+
+        document.getElementById('phoneSteerRecenterDesktopBtn').addEventListener('click', () => {
+            phoneSteeringSensor.recenter();
+        });
+
+        document.getElementById('phoneSteerDisconnectBtn').addEventListener('click', () => {
+            phoneSteeringSensor.disconnect();
+            const qrContainer = document.getElementById('phoneSteerQrContainer');
+            if (qrContainer) {
+                qrContainer.innerHTML = '<span class="text-xs text-gray-500 font-semibold p-4">Disconnected. Re-open Phone Steer (QR) to generate a new pairing code.</span>';
             }
         });
 
@@ -8667,6 +9648,13 @@
 
         // Initialize stored FTP, default workout, Three.js 3D Dragon Engine, 1Hz game loop & 60fps render loop
         (function initPerformed3dApp() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('phone-steer') || urlParams.has('steer')) {
+                return;
+            }
+            if (localStorage.getItem('performed_phone_host_peer_id')) {
+                phoneSteeringSensor.ensureHostPeer().catch(() => {});
+            }
             const savedAvatar = localStorage.getItem('performed_avatar_type');
             if (savedAvatar) {
                 setAvatarType(savedAvatar);
