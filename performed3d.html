@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!--suppress HtmlFormInputWithoutLabel, JSBitwiseOperatorUsage -->
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
@@ -1928,7 +1929,7 @@
 
         /**
          * Upwinds / Downwinds only affect the physical resistance (simulation grade / incline) sent to the
-         * Wahoo KICKR and the visual wind particles; they do not modify the target watt values.
+         * Wahoo KICKR and the 3D gate wind indicators; they do not modify the target watt values.
          */
         function getWindWattMultiplier(gradientPct) {
             return 1.0;
@@ -4263,7 +4264,11 @@
                 this.stones = [];
                 this.clouds = [];
                 this.birds = [];
-                this.windStreaks = [];
+                this.windAnimTime = 0;
+                this.gateWindGeos = null;
+                this.windBadgeTextureCache = new Map();
+                this._windColBase = null;
+                this._windColCrest = null;
                 this.neckSegments = [];
                 this.tailSegments = [];
 
@@ -4319,7 +4324,7 @@
                     this.buildTerrainStones();
                     this.buildVolumetricClouds();
                     this.buildFlockOfBirds();
-                    this.buildWindCurrentParticles();
+                    this.ensureGateWindResources();
                     this.buildActiveAvatar(state.avatarType || 'aero_wyvern');
                     this.seedInitialGatesAndObstacles();
 
@@ -5945,33 +5950,313 @@
             }
 
             /**
-             * Builds vertical Downwind / Upwind air current streams that visually
-             * indicate slope wind:
-             * - Downwind (positive slope > 0.35): strong downward-rushing downdraft streaks pushing the dragon down,
-             *   requiring the cyclist to pedal MORE watts to gain height!
-             * - Upwind (negative slope < -0.35): rising upward thermal streams lifting the dragon.
+             * Initializes shared unit geometries and cached textures for 3D Donut Gate wind indicators:
+             * - Upwind (slope <= -0.35): rising emerald 3D chevrons, flanking wind halo arcs, and LIFT badge.
+             * - Downwind (slope >= 0.35): descending amber 3D chevrons, flanking wind halo arcs, and DRAFT badge.
+             * - Flat (|slope| < 0.35): hidden so the sky and rings stay clean.
              */
-            buildWindCurrentParticles() {
-                const streakGeo = new THREE.CylinderGeometry(0.09, 0.09, 6.8, 5);
-                for (let i = 0; i < 68; i++) {
+            ensureGateWindResources() {
+                if (this.gateWindGeos || typeof THREE === 'undefined') return;
+                const shape = new THREE.Shape();
+                const hw = 0.5;
+                const height = 0.587;
+                const thickness = 0.283;
+                shape.moveTo(-hw, 0);
+                shape.lineTo(0, height);
+                shape.lineTo(hw, 0);
+                shape.lineTo(hw, -thickness);
+                shape.lineTo(0, height - thickness);
+                shape.lineTo(-hw, -thickness);
+                shape.closePath();
+
+                const chevronGeo = new THREE.ExtrudeGeometry(shape, {
+                    depth: 0.65,
+                    bevelEnabled: true,
+                    bevelThickness: 0.022,
+                    bevelSize: 0.022,
+                    bevelSegments: 2
+                });
+                chevronGeo.center();
+
+                const arcSpan = Math.PI * 0.46;
+                const leftArcGeo = new THREE.RingGeometry(1.0, 1.062, 28, 1, Math.PI - arcSpan * 0.5, arcSpan);
+                const rightArcGeo = new THREE.RingGeometry(1.0, 1.062, 28, 1, -arcSpan * 0.5, arcSpan);
+
+                this.gateWindGeos = { chevronGeo, leftArcGeo, rightArcGeo };
+                this._windColBase = new THREE.Color();
+                this._windColCrest = new THREE.Color();
+            }
+
+            getWindBadgeTexture(slopePct, isUpwind) {
+                const rounded = slopePct.toFixed(1);
+                const key = `${isUpwind ? 'U' : 'D'}:${rounded}`;
+                const cached = this.windBadgeTextureCache.get(key);
+                if (cached) return cached;
+
+                if (this.windBadgeTextureCache.size > 220) {
+                    const oldestKey = this.windBadgeTextureCache.keys().next().value;
+                    const oldestTex = this.windBadgeTextureCache.get(oldestKey);
+                    if (oldestTex) oldestTex.dispose();
+                    this.windBadgeTextureCache.delete(oldestKey);
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = 512;
+                canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+
+                const border = isUpwind ? '#34d399' : '#f97316';
+                const textCol = isUpwind ? '#6ee7b7' : '#fdba74';
+                const sign = slopePct > 0 ? '+' : '';
+                const label = isUpwind
+                    ? `\u25B2 ${sign}${rounded}% LIFT`
+                    : `\u25BC ${sign}${rounded}% DRAFT`;
+
+                const x = 24, y = 18, w = 464, h = 92, r = 44;
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.lineTo(x + w - r, y);
+                ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+                ctx.lineTo(x + w, y + h - r);
+                ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+                ctx.lineTo(x + r, y + h);
+                ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+                ctx.lineTo(x, y + r);
+                ctx.quadraticCurveTo(x, y, x + r, y);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(8, 15, 30, 0.86)';
+                ctx.fill();
+                ctx.lineWidth = 6;
+                ctx.strokeStyle = border;
+                ctx.stroke();
+
+                ctx.font = '900 44px monospace';
+                ctx.fillStyle = textCol;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = border;
+                ctx.shadowBlur = 14;
+                ctx.fillText(label, 256, 65);
+
+                const tex = new THREE.CanvasTexture(canvas);
+                tex.needsUpdate = true;
+                this.windBadgeTextureCache.set(key, tex);
+                return tex;
+            }
+
+            createGateWindVisual() {
+                this.ensureGateWindResources();
+                if (!this.gateWindGeos) return null;
+
+                const group = new THREE.Group();
+                group.visible = false;
+
+                const makeArcMesh = (geo) => {
                     const mat = new THREE.MeshBasicMaterial({
-                        color: 0x38bdf8,
+                        color: 0x10b981,
                         transparent: true,
-                        opacity: 0.45
+                        opacity: 0.56,
+                        side: THREE.DoubleSide,
+                        blending: THREE.AdditiveBlending,
+                        depthWrite: false
                     });
-                    const mesh = new THREE.Mesh(streakGeo, mat);
-                    mesh.position.set(
-                        (Math.random() - 0.5) * 65,
-                        5 + Math.random() * 75,
-                        -Math.random() * 180
-                    );
-                    this.scene.add(mesh);
-                    this.windStreaks.push({
-                        mesh,
-                        relX: (Math.random() - 0.5) * 58,
-                        relZ: -6 - Math.random() * 145,
-                        yOffset: Math.random() * 68
+                    const mesh = new THREE.Mesh(geo, mat);
+                    group.add(mesh);
+                    return { mesh, mat };
+                };
+
+                const leftArc = makeArcMesh(this.gateWindGeos.leftArcGeo);
+                const rightArc = makeArcMesh(this.gateWindGeos.rightArcGeo);
+
+                const flankChevrons = [];
+                [-1, 1].forEach((side) => {
+                    for (let k = 0; k < 3; k++) {
+                        const mat = new THREE.MeshBasicMaterial({
+                            color: 0x10b981,
+                            transparent: true,
+                            opacity: 0.75
+                        });
+                        const mesh = new THREE.Mesh(this.gateWindGeos.chevronGeo, mat);
+                        group.add(mesh);
+                        flankChevrons.push({ mesh, mat, side, index: k, baseX: 0, baseY: 0 });
+                    }
+                });
+
+                const verticalChevrons = [];
+                for (let k = 0; k < 2; k++) {
+                    const mat = new THREE.MeshBasicMaterial({
+                        color: 0x10b981,
+                        transparent: true,
+                        opacity: 0.75
                     });
+                    const mesh = new THREE.Mesh(this.gateWindGeos.chevronGeo, mat);
+                    group.add(mesh);
+                    verticalChevrons.push({ mesh, mat, index: k, baseY: 0 });
+                }
+
+                const badgeMat = new THREE.SpriteMaterial({
+                    transparent: true,
+                    opacity: 0.96,
+                    depthTest: true,
+                    depthWrite: false
+                });
+                const badgeSprite = new THREE.Sprite(badgeMat);
+                badgeSprite.visible = false;
+                badgeSprite.renderOrder = 3;
+                group.add(badgeSprite);
+
+                return {
+                    group,
+                    leftArc,
+                    rightArc,
+                    flankChevrons,
+                    verticalChevrons,
+                    badgeSprite,
+                    badgeMat,
+                    badgeKey: null,
+                    badgeBaseY: 0,
+                    badgeClamped: false,
+                    isUpwind: true
+                };
+            }
+
+            disposeGateWindVisual(gate) {
+                if (!gate || !gate.windVisual) return;
+                const wv = gate.windVisual;
+                wv.leftArc.mat.dispose();
+                wv.rightArc.mat.dispose();
+                wv.flankChevrons.forEach((c) => c.mat.dispose());
+                wv.verticalChevrons.forEach((c) => c.mat.dispose());
+                wv.badgeMat.dispose();
+                gate.windVisual = null;
+            }
+
+            syncGateWindVisual(gate, donutRadius, tubeRadius, textOffsetY, gradAtGate) {
+                if (!gate || !gate.windVisual) return;
+                const wv = gate.windVisual;
+                gate.gradAtGate = gradAtGate;
+                gate.tubeRadius = tubeRadius;
+
+                if (!Number.isFinite(gradAtGate) || Math.abs(gradAtGate) < 0.35) {
+                    wv.group.visible = false;
+                    wv.badgeSprite.visible = false;
+                    return;
+                }
+
+                wv.group.visible = true;
+                const isUpwind = gradAtGate < 0;
+                wv.isUpwind = isUpwind;
+
+                const effR = Math.max(2.6, Math.min(7.5, donutRadius));
+                const arcInnerR = donutRadius + tubeRadius * 0.96;
+                const arcOuterR = arcInnerR * 1.062;
+                wv.leftArc.mesh.scale.set(arcInnerR, arcInnerR, 1);
+                wv.rightArc.mesh.scale.set(arcInnerR, arcInnerR, 1);
+
+                const chevScaleXY = effR * 0.46;
+                const flankX = arcOuterR + 0.22 + chevScaleXY * 0.5;
+                const stackStepY = effR * 0.47;
+                const chevRotZ = isUpwind ? 0 : Math.PI;
+
+                wv.flankChevrons.forEach((entry) => {
+                    entry.mesh.scale.set(chevScaleXY, chevScaleXY, 0.46);
+                    entry.mesh.rotation.z = chevRotZ;
+                    entry.baseX = entry.side * flankX;
+                    entry.baseY = (entry.index - 1) * stackStepY;
+                    entry.mesh.position.set(entry.baseX, entry.baseY, 0);
+                });
+
+                const badgeH = Math.max(1.85, Math.min(2.65, effR * 0.48));
+                wv.badgeSprite.scale.set(badgeH * 4.0, badgeH, 1);
+                const nextBadgeKey = `${isUpwind ? 'U' : 'D'}:${gradAtGate.toFixed(1)}`;
+                if (wv.badgeKey !== nextBadgeKey) {
+                    wv.badgeKey = nextBadgeKey;
+                    wv.badgeMat.map = this.getWindBadgeTexture(gradAtGate, isUpwind);
+                    wv.badgeMat.needsUpdate = true;
+                }
+
+                const vertScaleX = effR * 0.56;
+                const vertScaleY = effR * 0.41;
+                const vertStep = effR * 0.16 + 0.42;
+                const idealBadgeY = isUpwind
+                    ? (-donutRadius - tubeRadius - 1.45 - vertStep - effR * 0.24)
+                    : (-donutRadius - tubeRadius - 1.45);
+                const minLocalBadgeY = 1.85 - gate.gateY;
+                wv.badgeClamped = idealBadgeY < minLocalBadgeY;
+                wv.badgeBaseY = Math.max(minLocalBadgeY, idealBadgeY);
+
+                const upwindStart = wv.badgeClamped
+                    ? (wv.badgeBaseY + badgeH * 0.60 + 0.55)
+                    : (-donutRadius - tubeRadius - 1.20 - vertStep);
+                const downwindCrownTop = textOffsetY + 2.25 + vertStep;
+
+                wv.verticalChevrons.forEach((entry) => {
+                    entry.mesh.scale.set(vertScaleX, vertScaleY, 0.43);
+                    entry.mesh.rotation.z = chevRotZ;
+                    entry.baseY = isUpwind
+                        ? (upwindStart + entry.index * vertStep)
+                        : (downwindCrownTop - entry.index * vertStep);
+                    entry.mesh.position.set(0, entry.baseY, 0);
+                });
+
+                this.animateGateWindVisual(gate, wv.badgeSprite.visible ? 0 : 99);
+            }
+
+            animateGateWindVisual(gate, upcomingWindRank) {
+                if (!gate || !gate.windVisual || !gate.windVisual.group.visible) return;
+                const wv = gate.windVisual;
+                const isUpwind = wv.isUpwind;
+                const absSlope = Math.abs(gate.gradAtGate || 0);
+                const effR = Math.max(2.6, Math.min(7.5, gate.donutRadius || 4.8));
+
+                if (gate.passed && gate.cleared) {
+                    this._windColBase.setHex(0x4ade80);
+                    this._windColCrest.setHex(0x86efac);
+                } else if (isUpwind) {
+                    this._windColBase.setHex(0x10b981);
+                    this._windColCrest.setHex(0x6ee7b7);
+                } else {
+                    this._windColBase.setHex(0xf97316);
+                    this._windColCrest.setHex(0xfdba74);
+                }
+
+                const intensity = Math.min(1.0, 0.58 + Math.min(7.0, absSlope) * 0.06) * (gate.passed ? 0.52 : 1.0);
+                const waveSpeed = 3.0 + Math.min(8.0, absSlope) * 0.35;
+                const dirSign = isUpwind ? 1 : -1;
+                const gateOffset = (gate.workoutSec || 0) * 0.35;
+
+                wv.flankChevrons.forEach((entry) => {
+                    const phase = this.windAnimTime * waveSpeed - dirSign * entry.index * 1.05 - gateOffset;
+                    const pulse = 0.5 + 0.5 * Math.sin(phase);
+                    entry.mesh.position.y = entry.baseY + Math.sin(phase) * (effR * 0.055) * dirSign;
+                    entry.mat.color.copy(this._windColBase).lerp(this._windColCrest, pulse * pulse);
+                    entry.mat.opacity = (0.34 + 0.66 * pulse) * intensity;
+                });
+
+                wv.verticalChevrons.forEach((entry) => {
+                    const phase = this.windAnimTime * waveSpeed - entry.index * 1.15 - gateOffset;
+                    const pulse = 0.5 + 0.5 * Math.sin(phase);
+                    entry.mesh.position.y = entry.baseY + Math.sin(phase) * (effR * 0.05) * dirSign;
+                    entry.mat.color.copy(this._windColBase).lerp(this._windColCrest, pulse * pulse);
+                    entry.mat.opacity = (0.40 + 0.60 * pulse) * intensity;
+                });
+
+                const haloPulse = 0.5 + 0.5 * Math.sin(this.windAnimTime * waveSpeed * 0.75 - gateOffset);
+                wv.leftArc.mat.color.copy(this._windColBase).lerp(this._windColCrest, haloPulse * 0.45);
+                wv.rightArc.mat.color.copy(wv.leftArc.mat.color);
+                const arcOpacity = (0.42 + 0.28 * haloPulse) * intensity;
+                wv.leftArc.mat.opacity = arcOpacity;
+                wv.rightArc.mat.opacity = arcOpacity;
+
+                const showBadge = !gate.passed && upcomingWindRank < 2;
+                wv.badgeSprite.visible = showBadge;
+                if (showBadge) {
+                    const camSideZ = (this.camera && this.camera.position.z < gate.worldZ) ? -1 : 1;
+                    const zOff = wv.badgeClamped
+                        ? camSideZ * ((gate.tubeRadius || 0.75) + 0.55)
+                        : camSideZ * 0.25;
+                    wv.badgeSprite.position.set(0, wv.badgeBaseY, zOff);
+                    wv.badgeMat.opacity = upcomingWindRank === 0 ? 0.96 : 0.82;
                 }
             }
 
@@ -6285,6 +6570,8 @@
                     gate.wattText3D.group.position.set(0, textOffsetY, 0);
                 }
 
+                this.syncGateWindVisual(gate, donutRadius, tubeRadius, textOffsetY, gradAtGate);
+
                 if (gate.linkedObstacle && !gate.linkedObstacle.destroyed && !gate.linkedObstacle.hitTriggered) {
                     gate.linkedObstacle.obsY = gateY;
                     gate.linkedObstacle.group.position.y = gateY;
@@ -6343,6 +6630,11 @@
                 innerHalo.position.set(0, 0, 0);
                 gateGroup.add(innerHalo);
 
+                const windVisual = this.createGateWindVisual();
+                if (windVisual) {
+                    gateGroup.add(windVisual.group);
+                }
+
                 gateGroup.position.set(gateX, gateY, worldZ);
                 // Orient donut perpendicular to the 3D curved & pitched flight path so the dragon flies straight through the torus center
                 this.alignGateToFlightPath(gateGroup, worldZ, resolvedWorkoutSec, gateY);
@@ -6354,6 +6646,9 @@
                     innerHalo,
                     torusMat,
                     innerHaloMat,
+                    windVisual,
+                    gradAtGate,
+                    tubeRadius,
                     worldZ,
                     workoutSec: resolvedWorkoutSec,
                     gateX,
@@ -6600,7 +6895,10 @@
             seedInitialGatesAndObstacles(preserveVerticalCameraAndDragon = false) {
                 if (!this.initialized) return;
                 // Clear existing
-                this.gates.forEach(g => this.scene.remove(g.group));
+                this.gates.forEach(g => {
+                    this.disposeGateWindVisual(g);
+                    this.scene.remove(g.group);
+                });
                 this.obstacles.forEach(o => this.scene.remove(o.group));
                 this.dragonHunters.forEach(h => this.scene.remove(h.group));
                 this.hunterArrows.forEach(a => this.scene.remove(a.mesh));
@@ -7374,34 +7672,8 @@
                     });
                 }
 
-                // Update Inverted Downwind / Upwind vertical air current particles based on road slope:
-                // - slope > 0.35 = DOWNWIND (downdraft streaming DOWNWARD -Y, requiring more watts to gain height!)
-                // - slope < -0.35 = UPWIND (thermal updraft streaming UPWARD +Y, assisting lift!)
-                const slope = state.currentGradientPct;
-                const verticalWindSpeed = (!isMovingForward || Math.abs(slope) < 0.35) ? 0 : -slope * 9.5;
-                this.windStreaks.forEach((ws) => {
-                    ws.yOffset = (ws.yOffset + verticalWindSpeed * dt + 68) % 68;
-                    ws.mesh.position.set(
-                        currentCourseX + ws.relX,
-                        4 + ws.yOffset,
-                        this.flightZ + ws.relZ
-                    );
-                    if (slope > 0.35) {
-                        // DOWNWIND (descending downdraft streams pushing down on the dragon)
-                        ws.mesh.material.color.setHex(0xf97316);
-                        ws.mesh.material.opacity = Math.min(0.82, 0.30 + (slope / 10) * 0.52);
-                        ws.mesh.rotation.z = 0;
-                    } else if (slope < -0.35) {
-                        // UPWIND (rising emerald thermal updraft streams lifting the dragon)
-                        ws.mesh.material.color.setHex(0x34d399);
-                        ws.mesh.material.opacity = Math.min(0.82, 0.30 + (Math.abs(slope) / 10) * 0.52);
-                        ws.mesh.rotation.z = 0;
-                    } else {
-                        // Level airflow streaks
-                        ws.mesh.material.color.setHex(0x94a3b8);
-                        ws.mesh.material.opacity = 0.16;
-                    }
-                });
+                // Advance 3D gate wind chevron & halo wave phase (Upwind lift <= -0.35%, Downwind draft >= +0.35%)
+                this.windAnimTime += dt * (isMovingForward ? 1.0 : 0.5);
 
                 // Spawn new Donut Gates ahead & evaluate passing through gates
                 while (this.nextGateZ > this.flightZ - 480) {
@@ -7413,8 +7685,8 @@
                 for (let i = this.gates.length - 1; i >= 0; i--) {
                     const g = this.gates[i];
                     this.syncGateToDesiredWatts(g);
-                    if (isMovingForward) {
-                        g.group.children[1].rotation.z += dt * 2.4; // rotate inner halo
+                    if (isMovingForward && g.innerHalo) {
+                        g.innerHalo.rotation.z += dt * 2.4; // rotate inner halo
                     }
 
                     if (isMovingForward && !g.passed && g.worldZ >= this.flightZ) {
@@ -7441,9 +7713,28 @@
                     }
 
                     if (g.worldZ > this.flightZ + 30) {
+                        this.disposeGateWindVisual(g);
                         this.scene.remove(g.group);
                         this.gates.splice(i, 1);
                     }
+                }
+
+                // Animate gate wind chevrons, side halos, and nearest upcoming LIFT / DRAFT slope badges
+                let upcomingGateIdx = 0;
+                let upcomingWindIdx = 0;
+                for (let i = 0; i < this.gates.length; i++) {
+                    const g = this.gates[i];
+                    const gateIdxAhead = upcomingGateIdx;
+                    if (!g.passed) upcomingGateIdx += 1;
+                    if (!g.windVisual || !g.windVisual.group.visible) continue;
+                    let windRank = 99;
+                    if (!g.passed) {
+                        if (gateIdxAhead < 4 && upcomingWindIdx < 2) {
+                            windRank = upcomingWindIdx;
+                        }
+                        upcomingWindIdx += 1;
+                    }
+                    this.animateGateWindVisual(g, windRank);
                 }
 
                 // Update Obstacles, Spacebar warning reticle & collision checks
