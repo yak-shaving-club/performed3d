@@ -361,22 +361,24 @@
                         </label>
 
                         <div class="flex items-center gap-1.5 bg-gray-900/90 border border-gray-800 rounded-xl px-2.5 py-1.5">
-                            <span class="text-xs text-gray-400 font-medium">Preset:</span>
-                            <select id="presetWorkoutSelect" class="bg-transparent text-xs font-semibold text-gray-200 focus:outline-none cursor-pointer">
-                                <option value="kickr_arcade" class="bg-gray-900">KICKR Arcade Pyramid (10m)</option>
-                                <option value="sky_sine_ramps" class="bg-gray-900">Sky Serpent Up &amp; Down Ramps (15m • Continuous Ramps)</option>
-                                <option value="alpine_switchback_ramps" class="bg-gray-900">Alpine Switchback Double Ramps (20m • Up/Down Ramps)</option>
-                                <option value="mach_dive_climb_level" class="bg-gray-900">Mach Canyon Dive &amp; Climb Level (16m • V-Ramps)</option>
-                                <option value="inferno_mega_ramps" class="bg-gray-900">Dragon Boss Mega-Ramp Gauntlet (22m • 24 Ramps)</option>
-                                <option value="dragon_rollercoaster" class="bg-gray-900">Dragon Canyon Rollercoaster (14m • 28 Changes)</option>
-                                <option value="criterium_chaos" class="bg-gray-900">Pro Criterium Corner Sprints (18m • 32 Changes)</option>
-                                <option value="micro_burst_storm" class="bg-gray-900">30/15 VO2max Micro-Burst Storm (16m • 34 Changes)</option>
-                                <option value="sawtooth_alps" class="bg-gray-900">Alpine Sawtooth Multi-Peak (20m • 26 Changes)</option>
-                                <option value="tabata_inferno" class="bg-gray-900">Dragon Fire Tabata Inferno (12m • 30 Changes)</option>
-                                <option value="endurance_wave_matrix" class="bg-gray-900">Harmonic Wave &amp; Step Matrix (25m • 36 Changes)</option>
-                                <option value="sweet_spot" class="bg-gray-900">Sweet Spot Precision (15m)</option>
-                                <option value="hiit_sprints" class="bg-gray-900">Over-Under Surge Blitz (12m)</option>
-                                <option value="quick_blitz" class="bg-gray-900">Quick 3-Minute Accuracy Sprint (3m)</option>
+                            <label for="workoutTypeFilterSelect" class="text-xs text-gray-400 font-medium">Type:</label>
+                            <select id="workoutTypeFilterSelect" autocomplete="off" class="bg-transparent text-xs font-semibold text-gray-200 focus:outline-none cursor-pointer">
+                                <option value="all" class="bg-gray-900">All types</option>
+                            </select>
+                            <label for="workoutDurationFilterSelect" class="ml-1 text-xs text-gray-400 font-medium">Duration:</label>
+                            <select id="workoutDurationFilterSelect" autocomplete="off" class="bg-transparent text-xs font-semibold text-gray-200 focus:outline-none cursor-pointer">
+                                <option value="all" class="bg-gray-900">Any</option>
+                                <option value="short" class="bg-gray-900">Up to 30 min</option>
+                                <option value="medium" class="bg-gray-900">31–60 min</option>
+                                <option value="long" class="bg-gray-900">61–90 min</option>
+                                <option value="xlong" class="bg-gray-900">Over 90 min</option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-center gap-1.5 bg-gray-900/90 border border-gray-800 rounded-xl px-2.5 py-1.5">
+                            <label for="presetWorkoutSelect" class="text-xs text-gray-400 font-medium">Workout:</label>
+                            <select id="presetWorkoutSelect" autocomplete="off" class="bg-transparent text-xs font-semibold text-gray-200 focus:outline-none cursor-pointer">
+                                <option value="kickr_arcade" class="bg-gray-900">KICKR Arcade Pyramid</option>
                             </select>
                         </div>
 
@@ -766,6 +768,11 @@
                     <div class="text-xs text-gray-400 font-semibold">Training Stress Score (TSS)</div>
                     <div id="summaryTss" class="text-2xl font-black font-mono text-orange-400 mt-0.5">0.0</div>
                     <div class="text-[11px] text-gray-400 mt-0.5">FTP Base: <span id="summaryFtpUsed" class="text-gray-200 font-mono">200</span> W</div>
+                    <div id="summaryFtpEstimateRow" class="hidden items-center gap-1.5 text-[11px] text-emerald-300 mt-1">
+                        <span>FTP estimate: <span id="summaryFtpEstimate" class="font-mono font-bold">0</span> W</span>
+                        <button id="applyFtpEstimateBtn" type="button"
+                                class="px-1.5 py-0.5 rounded-md bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-200 font-semibold transition cursor-pointer">Use</button>
+                    </div>
                 </div>
 
                 <div class="bg-gray-800/60 border border-gray-700/80 rounded-xl p-3.5">
@@ -1800,8 +1807,197 @@
         <SteadyState Duration="30" Power="1.15"/>
         <Cooldown Duration="30" PowerLow="0.75" PowerHigh="0.50"/>
     </workout>
-</workout_file>`
+</workout_file>`,
+            recovery_30: buildPresetXml({
+                name: 'Active Recovery Spin',
+                description: 'Easy Zone 1 spin below 55% FTP at a high cadence (90–100 rpm) to promote blood flow and lactate clearance without cardiovascular fatigue.',
+                body: `<Warmup Duration="300" PowerLow="0.40" PowerHigh="0.50" Cadence="95"/>
+        <SteadyState Duration="1200" Power="0.52" Cadence="95"/>
+        <Cooldown Duration="300" PowerLow="0.50" PowerHigh="0.40" Cadence="95"/>`
+            }),
+            recovery_60: buildPresetXml({
+                name: 'Active Recovery Flush',
+                description: 'One hour of relaxed Zone 1 pedaling below 55% FTP at 90–100 rpm.',
+                body: `<Warmup Duration="300" PowerLow="0.40" PowerHigh="0.50" Cadence="95"/>
+        <SteadyState Duration="3000" Power="0.50" Cadence="95"/>
+        <Cooldown Duration="300" PowerLow="0.50" PowerHigh="0.40" Cadence="95"/>`
+            }),
+            endurance_60: buildPresetXml({
+                name: 'Base Endurance 60',
+                description: 'Steady Zone 2 ride (56–75% FTP) for fat metabolism, mitochondrial density, and capillarization.',
+                body: `<Warmup Duration="600" PowerLow="0.45" PowerHigh="0.65"/>
+        <SteadyState Duration="2700" Power="0.68"/>
+        <Cooldown Duration="300" PowerLow="0.65" PowerHigh="0.45"/>`
+            }),
+            endurance_120: buildPresetXml({
+                name: 'Base Endurance 120',
+                description: 'Two-hour Zone 2 endurance ride with gentle 66–72% FTP variations.',
+                body: `<Warmup Duration="600" PowerLow="0.45" PowerHigh="0.65"/>
+        ${repeatXml([0.66, 0.70, 0.72, 0.68], (power) => `<SteadyState Duration="1500" Power="${power.toFixed(2)}"/>`)}
+        <Cooldown Duration="600" PowerLow="0.65" PowerHigh="0.45"/>`
+            }),
+            endurance_180: buildPresetXml({
+                name: 'Long Base Endurance 180',
+                description: 'Three-hour Zone 2 long ride held between 65% and 72% FTP.',
+                body: `<Warmup Duration="900" PowerLow="0.45" PowerHigh="0.65"/>
+        ${repeatXml([0.65, 0.70, 0.72, 0.68, 0.70, 0.66], (power) => `<SteadyState Duration="1500" Power="${power.toFixed(2)}"/>`)}
+        <Cooldown Duration="900" PowerLow="0.65" PowerHigh="0.45"/>`
+            }),
+            tempo_3x15: buildPresetXml({
+                name: 'Tempo 3×15',
+                description: 'Three 15-minute Zone 3 blocks at 83% FTP with 5-minute easy recoveries to build muscular endurance.',
+                body: `<Warmup Duration="600" PowerLow="0.45" PowerHigh="0.75"/>
+        ${workRestXml(3, 900, 0.83, 300, 0.55)}
+        <Cooldown Duration="300" PowerLow="0.55" PowerHigh="0.45"/>`
+            }),
+            tempo_2x20: buildPresetXml({
+                name: 'Tempo 2×20',
+                description: 'Two 20-minute Zone 3 blocks at 85% FTP with a 5-minute recovery.',
+                body: `<Warmup Duration="600" PowerLow="0.45" PowerHigh="0.75"/>
+        ${workRestXml(2, 1200, 0.85, 300, 0.55)}
+        <Cooldown Duration="300" PowerLow="0.55" PowerHigh="0.45"/>`
+            }),
+            sweet_spot_2x20: buildPresetXml({
+                name: 'Sweet Spot 2×20',
+                description: 'Two 20-minute Sweet Spot intervals at 90–92% FTP with a short 5-minute recovery.',
+                body: `<Warmup Duration="600" PowerLow="0.45" PowerHigh="0.80"/>
+        <SteadyState Duration="1200" Power="0.90"/>
+        <SteadyState Duration="300" Power="0.55"/>
+        <SteadyState Duration="1200" Power="0.92"/>
+        <Cooldown Duration="600" PowerLow="0.60" PowerHigh="0.45"/>`
+            }),
+            sweet_spot_3x15: buildPresetXml({
+                name: 'Sweet Spot 3×15',
+                description: 'Three 15-minute Sweet Spot intervals at 91% FTP with 5-minute recoveries.',
+                body: `<Warmup Duration="600" PowerLow="0.45" PowerHigh="0.80"/>
+        ${workRestXml(3, 900, 0.91, 300, 0.55)}
+        <Cooldown Duration="300" PowerLow="0.55" PowerHigh="0.45"/>`
+            }),
+            threshold_4x8: buildPresetXml({
+                name: 'Threshold 4×8',
+                description: 'Four 8-minute Zone 4 time-trial efforts at 100% FTP with 4-minute recoveries.',
+                body: `<Warmup Duration="600" PowerLow="0.45" PowerHigh="0.85"/>
+        ${workRestXml(4, 480, 1.00, 240, 0.55)}
+        <Cooldown Duration="300" PowerLow="0.55" PowerHigh="0.45"/>`
+            }),
+            threshold_3x10: buildPresetXml({
+                name: 'Threshold 3×10',
+                description: 'Three 10-minute Zone 4 efforts progressing from 98% to 102% FTP with 5-minute recoveries.',
+                body: `<Warmup Duration="600" PowerLow="0.45" PowerHigh="0.85"/>
+        ${repeatXml([0.98, 1.00, 1.02], (power) => `<SteadyState Duration="600" Power="${power.toFixed(2)}"/>
+        <SteadyState Duration="300" Power="0.55"/>`)}
+        <Cooldown Duration="300" PowerLow="0.55" PowerHigh="0.45"/>`
+            }),
+            over_under_3x9: buildPresetXml({
+                name: 'Over-Unders 3×9',
+                description: 'Three 9-minute sets alternating 2 minutes at 90% FTP and 1 minute at 108% FTP to clear lactate under load.',
+                body: `<Warmup Duration="600" PowerLow="0.45" PowerHigh="0.85"/>
+        ${repeatXml([1, 2, 3], () => `${workRestXml(3, 120, 0.90, 60, 1.08)}
+        <SteadyState Duration="300" Power="0.55"/>`)}
+        <Cooldown Duration="300" PowerLow="0.55" PowerHigh="0.45"/>`
+            }),
+            vo2max_4x4: buildPresetXml({
+                name: 'VO2max 4×4',
+                description: 'Four 4-minute Zone 5 intervals at 115% FTP with equal 4-minute recoveries.',
+                body: `<Warmup Duration="600" PowerLow="0.45" PowerHigh="0.85"/>
+        ${workRestXml(4, 240, 1.15, 240, 0.50)}
+        <Cooldown Duration="300" PowerLow="0.55" PowerHigh="0.45"/>`
+            }),
+            vo2max_5x3: buildPresetXml({
+                name: 'VO2max 5×3',
+                description: 'Five 3-minute Zone 5 intervals at 118% FTP with equal 3-minute recoveries.',
+                body: `<Warmup Duration="600" PowerLow="0.45" PowerHigh="0.85"/>
+        ${workRestXml(5, 180, 1.18, 180, 0.50)}
+        <Cooldown Duration="300" PowerLow="0.55" PowerHigh="0.45"/>`
+            }),
+            vo2max_5x5: buildPresetXml({
+                name: 'VO2max 5×5',
+                description: 'Five 5-minute Zone 5 intervals at 110% FTP with slightly shorter 4-minute recoveries.',
+                body: `<Warmup Duration="600" PowerLow="0.45" PowerHigh="0.85"/>
+        ${workRestXml(5, 300, 1.10, 240, 0.50)}
+        <Cooldown Duration="300" PowerLow="0.55" PowerHigh="0.45"/>`
+            }),
+            micro_30_30: buildPresetXml({
+                name: '30/30 Micro-Intervals',
+                description: 'Two 12-minute blocks of 30 seconds at 125% FTP and 30 seconds easy.',
+                body: `<Warmup Duration="600" PowerLow="0.45" PowerHigh="0.85"/>
+        <IntervalsT Repeat="12" OnDuration="30" OffDuration="30" OnPower="1.25" OffPower="0.50"/>
+        <SteadyState Duration="300" Power="0.50"/>
+        <IntervalsT Repeat="12" OnDuration="30" OffDuration="30" OnPower="1.25" OffPower="0.50"/>
+        <Cooldown Duration="300" PowerLow="0.55" PowerHigh="0.45"/>`
+            }),
+            micro_40_20: buildPresetXml({
+                name: '40/20 Micro-Intervals',
+                description: 'Two 13-minute blocks of 40 seconds at 120% FTP and 20 seconds easy.',
+                body: `<Warmup Duration="600" PowerLow="0.45" PowerHigh="0.85"/>
+        <IntervalsT Repeat="13" OnDuration="40" OffDuration="20" OnPower="1.20" OffPower="0.50"/>
+        <SteadyState Duration="300" Power="0.50"/>
+        <IntervalsT Repeat="13" OnDuration="40" OffDuration="20" OnPower="1.20" OffPower="0.50"/>
+        <Cooldown Duration="300" PowerLow="0.55" PowerHigh="0.45"/>`
+            }),
+            neuromuscular_sprints: buildPresetXml({
+                name: 'Neuromuscular Sprints 6×15s',
+                description: 'Six 15-second all-out sprints (target 200% FTP) with full 4:45 recoveries for peak power and acceleration.',
+                body: `<Warmup Duration="900" PowerLow="0.45" PowerHigh="0.75"/>
+        ${workRestXml(6, 15, 2.00, 285, 0.45)}
+        <Cooldown Duration="300" PowerLow="0.50" PowerHigh="0.40"/>`
+            }),
+            anaerobic_capacity: buildPresetXml({
+                name: 'Anaerobic Capacity 6×45s',
+                description: 'Six 45-second maximal efforts (target 150% FTP) with 4:15 recoveries for anaerobic capacity and lactate tolerance.',
+                body: `<Warmup Duration="900" PowerLow="0.45" PowerHigh="0.75"/>
+        ${workRestXml(6, 45, 1.50, 255, 0.45)}
+        <Cooldown Duration="300" PowerLow="0.50" PowerHigh="0.40"/>`
+            }),
+            ramp_test: buildPresetXml({
+                name: 'Ramp Test',
+                description: 'Power rises by 8% FTP every minute (about 15–25 W for most riders) until exhaustion. Click Finish &amp; Summary when you can no longer hold the target; the FTP estimate is 75% of your best 1-minute power.',
+                tags: ['RAMP_TEST'],
+                body: `<Warmup Duration="300" PowerLow="0.40" PowerHigh="0.48"/>
+        ${repeatXml(Array.from({ length: 18 }, (_, i) => 0.48 + i * 0.08), (power) => `<SteadyState Duration="60" Power="${power.toFixed(2)}"/>`)}
+        <Cooldown Duration="300" PowerLow="0.50" PowerHigh="0.40"/>`
+            }),
+            ftp_test: buildPresetXml({
+                name: '20-Minute FTP Test',
+                description: 'Five-minute warm-up, a 20-minute maximal effort paced around your current FTP, and a five-minute cool-down. The FTP estimate is 95% of your best 20-minute power.',
+                tags: ['FTP_20MIN'],
+                body: `<Warmup Duration="300" PowerLow="0.50" PowerHigh="0.75"/>
+        <SteadyState Duration="1200" Power="1.00"/>
+        <Cooldown Duration="300" PowerLow="0.65" PowerHigh="0.45"/>`
+            }),
+            pyramid_steps: buildPresetXml({
+                name: 'Step Pyramid 80–110%',
+                description: 'Step intervals 5 min @ 80%, 4 min @ 90%, 3 min @ 100%, 2 min @ 110% FTP and back down.',
+                body: `<Warmup Duration="600" PowerLow="0.45" PowerHigh="0.75"/>
+        ${repeatXml([[300, 0.80], [240, 0.90], [180, 1.00], [120, 1.10], [180, 1.00], [240, 0.90], [300, 0.80]], ([duration, power]) => `<SteadyState Duration="${duration}" Power="${power.toFixed(2)}"/>`)}
+        <Cooldown Duration="300" PowerLow="0.60" PowerHigh="0.45"/>`
+            })
         };
+
+        function repeatXml(items, render) {
+            return items.map(render).join('\n        ');
+        }
+
+        function workRestXml(repeat, onDuration, onPower, offDuration, offPower) {
+            return repeatXml(Array.from({ length: repeat }), () => `<SteadyState Duration="${onDuration}" Power="${onPower.toFixed(2)}"/>
+        <SteadyState Duration="${offDuration}" Power="${offPower.toFixed(2)}"/>`);
+        }
+
+        function buildPresetXml({ name, description, body, tags = [] }) {
+            const tagsXml = tags.length
+                ? `\n    <tags>${tags.map((tag) => `<tag name="${tag}"/>`).join('')}</tags>`
+                : '';
+            return `<?xml version="1.0" encoding="UTF-8"?>
+<workout_file>
+    <author>Performed 3D Training</author>
+    <name>${name}</name>
+    <description>${description}</description>
+    <sportType>bike</sportType>${tagsXml}
+    <workout>
+        ${body}
+    </workout>
+</workout_file>`;
+        }
 
         function parseZwiftWorkoutXml(xmlText) {
             const parser = new DOMParser();
@@ -1912,13 +2108,206 @@
                 accumulated = seg.endSec;
             });
 
+            const tagNames = Array.from(doc.querySelectorAll('tags > tag'))
+                .map((tag) => (tag.getAttribute('name') || '').trim().toUpperCase());
+            let ftpTestProtocol = null;
+            if (tagNames.includes('RAMP_TEST')) ftpTestProtocol = 'ramp';
+            else if (tagNames.includes('FTP_20MIN')) ftpTestProtocol = 'twenty_min';
+
             return {
                 name: nameEl ? nameEl.textContent.trim() : 'Custom Zwift Workout',
                 author: authorEl ? authorEl.textContent.trim() : 'Zwift Athlete',
                 description: descEl ? descEl.textContent.trim() : '',
                 segments,
-                totalDuration: accumulated
+                totalDuration: accumulated,
+                ftpTestProtocol
             };
+        }
+
+        const PRESET_CATEGORY_GROUPS = [
+            {
+                id: 'base',
+                label: '1 · Base & Recovery (Z1–Z2)',
+                categories: [
+                    ['recovery', 'Active Recovery (Z1)'],
+                    ['endurance', 'Base / Endurance (Z2)']
+                ]
+            },
+            {
+                id: 'threshold',
+                label: '2 · Tempo & Threshold (Z3–Z4)',
+                categories: [
+                    ['tempo', 'Tempo (Z3)'],
+                    ['sweet_spot', 'Sweet Spot'],
+                    ['threshold', 'Threshold (Z4)'],
+                    ['over_under', 'Over-Unders']
+                ]
+            },
+            {
+                id: 'high',
+                label: '3 · High-Intensity Intervals (Z5–Z7)',
+                categories: [
+                    ['vo2max', 'VO2max (Z5)'],
+                    ['micro', 'Micro-Intervals 30/30 & 40/20'],
+                    ['anaerobic', 'Anaerobic & Neuromuscular (Z6–Z7)']
+                ]
+            },
+            {
+                id: 'tests',
+                label: '4 · Ramp & Step Tests',
+                categories: [
+                    ['ramp_test', 'Ramp Test'],
+                    ['ftp_test', '20-Minute FTP Test'],
+                    ['steps', 'Steps & Pyramids']
+                ]
+            },
+            {
+                id: 'arcade',
+                label: 'Arcade',
+                categories: [
+                    ['arcade', 'Arcade & Mixed']
+                ]
+            }
+        ];
+        const PRESET_CATEGORY_INFO = Object.fromEntries(PRESET_CATEGORY_GROUPS.flatMap((group) =>
+            group.categories.map(([id, label]) => [id, { label, groupId: group.id }])
+        ));
+        const PRESET_WORKOUT_CATEGORIES = {
+            recovery_30: 'recovery',
+            recovery_60: 'recovery',
+            endurance_60: 'endurance',
+            endurance_120: 'endurance',
+            endurance_180: 'endurance',
+            tempo_3x15: 'tempo',
+            tempo_2x20: 'tempo',
+            sweet_spot: 'sweet_spot',
+            sweet_spot_2x20: 'sweet_spot',
+            sweet_spot_3x15: 'sweet_spot',
+            threshold_4x8: 'threshold',
+            threshold_3x10: 'threshold',
+            over_under_3x9: 'over_under',
+            hiit_sprints: 'over_under',
+            vo2max_4x4: 'vo2max',
+            vo2max_5x3: 'vo2max',
+            vo2max_5x5: 'vo2max',
+            micro_30_30: 'micro',
+            micro_40_20: 'micro',
+            micro_burst_storm: 'micro',
+            tabata_inferno: 'micro',
+            neuromuscular_sprints: 'anaerobic',
+            anaerobic_capacity: 'anaerobic',
+            ramp_test: 'ramp_test',
+            ftp_test: 'ftp_test',
+            pyramid_steps: 'steps',
+            kickr_arcade: 'steps',
+            sawtooth_alps: 'steps',
+            sky_sine_ramps: 'arcade',
+            alpine_switchback_ramps: 'arcade',
+            mach_dive_climb_level: 'arcade',
+            inferno_mega_ramps: 'arcade',
+            dragon_rollercoaster: 'arcade',
+            criterium_chaos: 'arcade',
+            endurance_wave_matrix: 'arcade',
+            quick_blitz: 'arcade'
+        };
+        const PRESET_CATEGORY_ORDER = Object.keys(PRESET_CATEGORY_INFO);
+        const PRESET_WORKOUT_CATALOG = Object.entries(PRESET_WORKOUTS).map(([key, xml]) => {
+            const category = PRESET_WORKOUT_CATEGORIES[key];
+            if (!PRESET_CATEGORY_INFO[category]) throw new Error(`Missing workout category for preset "${key}".`);
+            return { key, category, workout: parseZwiftWorkoutXml(xml) };
+        }).sort((a, b) =>
+            PRESET_CATEGORY_ORDER.indexOf(a.category) - PRESET_CATEGORY_ORDER.indexOf(b.category)
+            || a.workout.totalDuration - b.workout.totalDuration
+        );
+
+        function populateWorkoutTypeFilter() {
+            const typeSelect = document.getElementById('workoutTypeFilterSelect');
+            PRESET_CATEGORY_GROUPS.forEach((group) => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = group.label;
+                optgroup.className = 'bg-gray-900';
+                if (group.categories.length > 1) {
+                    optgroup.appendChild(new Option(`All ${group.label.replace(/^\d+ · /, '')}`, `group:${group.id}`));
+                }
+                group.categories.forEach(([id, label]) => optgroup.appendChild(new Option(label, id)));
+                typeSelect.appendChild(optgroup);
+            });
+        }
+
+        function matchesPresetCategory(typeFilter, category) {
+            if (typeFilter === 'all') return true;
+            if (typeFilter.startsWith('group:')) return PRESET_CATEGORY_INFO[category].groupId === typeFilter.slice(6);
+            return category === typeFilter;
+        }
+
+        function matchesPresetDuration(durationFilter, durationSec) {
+            const minutes = Math.round(durationSec / 60);
+            if (durationFilter === 'short') return minutes <= 30;
+            if (durationFilter === 'medium') return minutes > 30 && minutes <= 60;
+            if (durationFilter === 'long') return minutes > 60 && minutes <= 90;
+            if (durationFilter === 'xlong') return minutes > 90;
+            return true;
+        }
+
+        function formatPresetDuration(durationSec) {
+            const minutes = Math.round(durationSec / 60);
+            if (minutes < 60) return `${minutes} min`;
+            const rest = minutes % 60;
+            return rest ? `${Math.floor(minutes / 60)} h ${rest} min` : `${minutes / 60} h`;
+        }
+
+        function updatePresetWorkoutOptions() {
+            const presetSelect = document.getElementById('presetWorkoutSelect');
+            const typeFilter = document.getElementById('workoutTypeFilterSelect').value;
+            const durationFilter = document.getElementById('workoutDurationFilterSelect').value;
+            const previousKey = presetSelect.value || 'kickr_arcade';
+            const matches = PRESET_WORKOUT_CATALOG.filter(({ category, workout }) =>
+                matchesPresetCategory(typeFilter, category)
+                && matchesPresetDuration(durationFilter, workout.totalDuration)
+            );
+            const selectedKey = matches.some(({ key }) => key === previousKey)
+                ? previousKey
+                : (matches[0] && matches[0].key);
+
+            presetSelect.replaceChildren();
+            if (matches.length === 0) {
+                const emptyOption = new Option('No matching presets', '');
+                emptyOption.disabled = true;
+                emptyOption.selected = true;
+                presetSelect.appendChild(emptyOption);
+                return null;
+            }
+
+            let currentGroup = null;
+            matches.forEach(({ key, category, workout }) => {
+                if (!currentGroup || currentGroup.label !== PRESET_CATEGORY_INFO[category].label) {
+                    currentGroup = document.createElement('optgroup');
+                    currentGroup.label = PRESET_CATEGORY_INFO[category].label;
+                    currentGroup.className = 'bg-gray-900';
+                    presetSelect.appendChild(currentGroup);
+                }
+                currentGroup.appendChild(new Option(`${workout.name} · ${formatPresetDuration(workout.totalDuration)}`, key));
+            });
+            presetSelect.value = selectedKey;
+            return selectedKey;
+        }
+
+        function bestRollingAverageWatts(samples, windowSec) {
+            if (samples.length < windowSec) return 0;
+            let sum = 0;
+            let best = 0;
+            for (let i = 0; i < samples.length; i++) {
+                sum += samples[i].actualWatts;
+                if (i >= windowSec) sum -= samples[i - windowSec].actualWatts;
+                if (i >= windowSec - 1) best = Math.max(best, sum / windowSec);
+            }
+            return best;
+        }
+
+        function estimateFtpFromTest(protocol, samples) {
+            if (protocol === 'ramp') return Math.round(0.75 * bestRollingAverageWatts(samples, 60));
+            if (protocol === 'twenty_min') return Math.round(0.95 * bestRollingAverageWatts(samples, 1200));
+            return 0;
         }
 
         function resolveWatts(powerVal, ftp) {
@@ -9134,6 +9523,13 @@
             document.getElementById('summaryWorkKj').textContent = (metrics.totalWorkJoules / 1000).toFixed(1);
             document.getElementById('summaryAvgCadence').textContent = Math.round(metrics.avgCadence);
 
+            const ftpEstimate = estimateFtpFromTest(state.workout.ftpTestProtocol, state.samples);
+            const ftpEstimateRow = document.getElementById('summaryFtpEstimateRow');
+            ftpEstimateRow.classList.toggle('hidden', ftpEstimate <= 0);
+            ftpEstimateRow.classList.toggle('flex', ftpEstimate > 0);
+            document.getElementById('summaryFtpEstimate').textContent = ftpEstimate;
+            state.lastSummary.ftpEstimate = ftpEstimate;
+
             syncSummaryScreenshotDialogUI();
 
             const modal = document.getElementById('summaryModal');
@@ -9215,6 +9611,14 @@
 
         document.getElementById('ftpInput').addEventListener('input', (e) => {
             applyFtpWatts(e.target.value);
+        });
+
+        document.getElementById('applyFtpEstimateBtn').addEventListener('click', () => {
+            const estimate = state.lastSummary && state.lastSummary.ftpEstimate;
+            if (!estimate) return;
+            const ftpInput = document.getElementById('ftpInput');
+            ftpInput.value = Math.max(50, Math.min(600, estimate));
+            ftpInput.dispatchEvent(new Event('change', { bubbles: true }));
         });
 
         document.getElementById('obstaclesToggleCheck').addEventListener('change', (e) => {
@@ -9798,12 +10202,23 @@
             applyMusicEnabled(!musicEngine.enabled);
         });
 
-        document.getElementById('presetWorkoutSelect').addEventListener('change', (e) => {
+        const presetWorkoutSelect = document.getElementById('presetWorkoutSelect');
+        populateWorkoutTypeFilter();
+        updatePresetWorkoutOptions();
+        presetWorkoutSelect.addEventListener('change', (e) => {
             const key = e.target.value;
-            if (PRESET_WORKOUTS[key]) {
-                loadWorkoutFromXml(PRESET_WORKOUTS[key]);
-            }
+            if (PRESET_WORKOUTS[key]) loadWorkoutFromXml(PRESET_WORKOUTS[key]);
         });
+
+        const refreshPresetWorkoutOptions = () => {
+            const previousKey = presetWorkoutSelect.value;
+            const selectedKey = updatePresetWorkoutOptions();
+            if (selectedKey && selectedKey !== previousKey) {
+                loadWorkoutFromXml(PRESET_WORKOUTS[selectedKey]);
+            }
+        };
+        document.getElementById('workoutTypeFilterSelect').addEventListener('change', refreshPresetWorkoutOptions);
+        document.getElementById('workoutDurationFilterSelect').addEventListener('change', refreshPresetWorkoutOptions);
 
         document.getElementById('zwoFileInput').addEventListener('change', (e) => {
             const file = e.target.files && e.target.files[0];

@@ -17,7 +17,7 @@ There is no build step or package installation. Node.js 18 or newer is required 
 
    To change the port or origin, copy `.env.example` to `.env`, edit it, and load it first (`set -a; . ./.env; set +a`).
 3. Open <http://localhost:8000/performed3d.html> in your browser.
-4. Choose a workout and resistance mode, set your FTP and accuracy, then click **Start Flight**.
+4. Filter presets by training type and duration, choose a workout and resistance mode, set your FTP and accuracy, then click **Start Flight**.
 
 Simulation mode is enabled by default, so you can try the game without a trainer. Bluetooth requires a compatible browser; the Web Bluetooth API is supported by browsers such as current versions of Chrome and Edge. Bluetooth is available only in a secure context (for example, `localhost` or HTTPS).
 
@@ -27,13 +27,19 @@ For an HTTPS deployment behind a reverse proxy, set `APP_ORIGIN` to the public o
 
 Your current power is compared with the workout's target power. The game displays power accuracy, workout intervals, and progress in the HUD. FTP (200 W by default; adjustable from 50 to 600 W) is used to calculate power targets specified as a percentage of FTP. Use **Donut / Accuracy** to set the allowed power deviation (30 W by default).
 
-Available workouts include:
+Use the **Type** and **Duration** filters (up to 30 min, 31–60 min, 61–90 min, over 90 min) to narrow the preset list. Types are grouped by training zone; you can select a whole group or a single type. Each workout shows its total duration.
 
-- **KICKR Arcade Pyramid** and **Quick 3-Minute Accuracy Sprint** for short accuracy challenges
-- Ramp and elevation profiles such as **Sky Serpent**, **Alpine Switchback**, **Mach Canyon**, and **Dragon Boss Mega-Ramp**
-- Interval workouts such as **30/15 VO2max Micro-Burst Storm**, **Dragon Fire Tabata Inferno**, and **Over-Under Surge Blitz**
-- Longer profiles such as **Harmonic Wave & Step Matrix**, **Sweet Spot Precision**, and **Pro Criterium Corner Sprints**
-- Custom Zwift workouts in `.zwo` format
+| Group | Types | Example presets |
+| --- | --- | --- |
+| **1 · Base & Recovery (Z1–Z2)** | Active Recovery (< 55% FTP, 90–100 rpm), Base / Endurance (56–75% FTP) | Active Recovery Spin (30 min), Active Recovery Flush (60 min), Base Endurance 60/120, Long Base Endurance 180 |
+| **2 · Tempo & Threshold (Z3–Z4)** | Tempo (76–90%), Sweet Spot (88–94%), Threshold (95–105%), Over-Unders | Tempo 3×15 and 2×20, Sweet Spot 2×20 and 3×15, Threshold 4×8 and 3×10, Over-Unders 3×9 (2 min @ 90% / 1 min @ 108%) |
+| **3 · High-Intensity Intervals (Z5–Z7)** | VO2max (106–120%), Micro-Intervals 30/30 & 40/20, Anaerobic & Neuromuscular | VO2max 4×4, 5×3 and 5×5, 30/30 and 40/20 Micro-Intervals, Neuromuscular Sprints 6×15s, Anaerobic Capacity 6×45s |
+| **4 · Ramp & Step Tests** | Ramp Test, 20-Minute FTP Test, Steps & Pyramids | Ramp Test (+8% FTP per minute), 20-Minute FTP Test, Step Pyramid 80–110%, KICKR Arcade Pyramid |
+| **Arcade** | Arcade & Mixed | Sky Serpent, Alpine Switchback, Mach Canyon, Dragon Boss Mega-Ramp, Pro Criterium Corner Sprints |
+
+In the **Ramp Test**, ride until you can no longer hold the target, then click **Finish & Summary**. The summary shows an FTP estimate (75% of your best 1-minute power for the ramp test, 95% of your best 20-minute power for the 20-minute test). Click **Use** to apply it as your FTP.
+
+You can also load custom Zwift workouts in `.zwo` format.
 
 Resistance modes are **Easy**, **Medium**, **Difficult**, and **ERG Lock**. In **Medium** and **Difficult** modes, simulated upwind thermals and downwind drafts are shown directly on upcoming donut gates with animated emerald lift or amber draft 3D chevrons, flanking wind halos, and slope badges. Use **Next Block** to skip to the next interval. **Start Flight** pauses or resumes the workout. You can also end a workout early.
 
