@@ -2700,13 +2700,13 @@
                 this.connected = false;
             }
 
-            async connect() {
+            async connect(knownDevice = null) {
                 if (!navigator.bluetooth) {
                     throw new Error('Web Bluetooth is not supported in this browser. Use Chrome/Edge.');
                 }
 
                 this.onStatus('connecting', 'Pairing HRM...');
-                this.device = await navigator.bluetooth.requestDevice({
+                this.device = knownDevice || await navigator.bluetooth.requestDevice({
                     filters: [
                         { services: [BLE_UUIDS.HEART_RATE_SERVICE] },
                         { namePrefix: 'HRM' },
@@ -2774,14 +2774,14 @@
                 this.connected = false;
             }
 
-            async connect() {
+            async connect(knownDevice = null) {
                 if (!navigator.bluetooth) {
                     throw new Error('Web Bluetooth is not supported in this browser. Use Chrome/Edge.');
                 }
 
                 const roleLabel = this.sensorRole === 'speed' ? 'Speed' : 'Cadence';
                 this.onStatus('connecting', `Pairing ${roleLabel}...`);
-                this.device = await navigator.bluetooth.requestDevice({
+                this.device = knownDevice || await navigator.bluetooth.requestDevice({
                     filters: [
                         { services: [BLE_UUIDS.CSC_SERVICE] },
                         { namePrefix: 'Garmin' },
@@ -2884,13 +2884,13 @@
                 this.connected = false;
             }
 
-            async connect() {
+            async connect(knownDevice = null) {
                 if (!navigator.bluetooth) {
                     throw new Error('Web Bluetooth is not supported in this browser. Use Chrome/Edge.');
                 }
 
                 this.onStatus('connecting', 'Pairing Sterzo / Rizer...');
-                this.device = await navigator.bluetooth.requestDevice({
+                this.device = knownDevice || await navigator.bluetooth.requestDevice({
                     filters: [
                         { services: [BLE_UUIDS.ELITE_STEERING_SERVICE] },
                         { namePrefix: 'STERZO' },
@@ -3132,13 +3132,13 @@
                 this.writeQueue = Promise.resolve();
             }
 
-            async connect() {
+            async connect(knownDevice = null) {
                 if (!navigator.bluetooth) {
                     throw new Error('Web Bluetooth is not supported in this browser. Use Chrome/Edge.');
                 }
 
                 this.onStatus('connecting', 'Pairing Elite Aria...');
-                this.device = await navigator.bluetooth.requestDevice({
+                this.device = knownDevice || await navigator.bluetooth.requestDevice({
                     filters: [{ namePrefix: 'ARIA' }],
                     optionalServices: [BLE_UUIDS.ELITE_ARIA_SERVICE]
                 });
@@ -3209,13 +3209,13 @@
                 this.connected = false;
             }
 
-            async connect() {
+            async connect(knownDevice = null) {
                 if (!navigator.bluetooth) {
                     throw new Error('Web Bluetooth is not supported in this browser. Use Chrome/Edge or enable Sim Mode.');
                 }
 
                 this.onStatus('connecting', 'Pairing Concept2...');
-                this.device = await navigator.bluetooth.requestDevice({
+                this.device = knownDevice || await navigator.bluetooth.requestDevice({
                     filters: [
                         { services: [BLE_UUIDS.C2_DISCOVERY_SERVICE] },
                         { namePrefix: 'PM5' }
@@ -3323,13 +3323,13 @@
                 this.connected = false;
             }
 
-            async connect() {
+            async connect(knownDevice = null) {
                 if (!navigator.bluetooth) {
                     throw new Error('Web Bluetooth is not supported in this browser. Use Chrome/Edge or enable Sim Mode.');
                 }
 
                 this.onStatus('connecting', 'Pairing KICKR...');
-                this.device = await navigator.bluetooth.requestDevice({
+                this.device = knownDevice || await navigator.bluetooth.requestDevice({
                     filters: [
                         { services: [BLE_UUIDS.CYCLING_POWER_SERVICE] },
                         { services: [BLE_UUIDS.FITNESS_MACHINE_SERVICE] },
@@ -9431,88 +9431,151 @@
                 msg.includes('requestdevice() chooser');
         }
 
-        document.getElementById('connectBleBtn').addEventListener('click', async () => {
-            try {
-                await bleTrainer.connect();
-                if (state.simMode) toggleSimMode(false);
-            } catch (err) {
-                if (!isBlePairingCancelledError(err)) {
-                    alert(err.message || 'Could not connect to Wahoo KICKR via Bluetooth.');
-                }
-                bleTrainer.onStatus('disconnected', 'Connect Wahoo KICKR');
+        const BLE_KNOWN_DEVICES_STORAGE_KEY = 'performed_ble_known_devices';
+        const bleRoles = {
+            trainer: {
+                sensor: bleTrainer, buttonId: 'connectBleBtn', idleLabel: 'Connect Wahoo KICKR',
+                errorMsg: 'Could not connect to Wahoo KICKR via Bluetooth.',
+                afterConnect: () => { if (state.simMode) toggleSimMode(false); }
+            },
+            rower: {
+                sensor: bleRower, buttonId: 'connectRowerBleBtn', idleLabel: 'Connect Concept2',
+                errorMsg: 'Could not connect to Concept2 PM5 via Bluetooth.',
+                afterConnect: () => { if (state.simMode) toggleSimMode(false); }
+            },
+            hrm: {
+                sensor: bleHrmSensor, buttonId: 'connectHrmBleBtn', idleLabel: 'Pair HRM',
+                errorMsg: 'Could not connect to BLE Heart Rate Monitor.'
+            },
+            aria: {
+                sensor: bleEliteAriaFan, buttonId: 'connectAriaBleBtn', idleLabel: 'Pair Elite Aria',
+                errorMsg: 'Could not connect to Elite Aria via Bluetooth.',
+                afterConnect: () => bleEliteAriaFan.setHeartRate(bleHrmSensor.connected ? state.heartRate : null)
+            },
+            cadence: {
+                sensor: bleCadenceSensor, buttonId: 'connectCadenceBleBtn', idleLabel: 'Pair Cadence',
+                errorMsg: 'Could not connect to BLE Cadence Sensor.'
+            },
+            speed: {
+                sensor: bleSpeedSensor, buttonId: 'connectSpeedBleBtn', idleLabel: 'Pair Speed',
+                errorMsg: 'Could not connect to BLE Speed Sensor.'
+            },
+            steer: {
+                sensor: bleSteeringSensor, buttonId: 'connectSteerBleBtn', idleLabel: 'Pair Sterzo / Rizer',
+                errorMsg: 'Could not connect to Elite Sterzo / Rizer steering device.',
+                afterConnect: () => { if (!state.steeringEnabled) setSteeringEnabled(true); }
             }
+        };
+
+        function loadKnownBleDeviceIds() {
+            try {
+                return JSON.parse(localStorage.getItem(BLE_KNOWN_DEVICES_STORAGE_KEY)) || {};
+            } catch (_) {
+                return {};
+            }
+        }
+
+        function saveKnownBleDevice(role, device) {
+            const known = loadKnownBleDeviceIds();
+            known[role] = { id: device.id, name: device.name || null };
+            localStorage.setItem(BLE_KNOWN_DEVICES_STORAGE_KEY, JSON.stringify(known));
+        }
+
+        const bleRolesConnecting = new Set();
+        const bleAutoReconnectDevices = new Map();
+        const BLE_AUTO_RECONNECT_INTERVAL_MS = 8000;
+
+        async function connectBleRole(role, knownDevice = null) {
+            const cfg = bleRoles[role];
+            if (knownDevice && (cfg.sensor.connected || bleRolesConnecting.has(role))) return;
+            bleRolesConnecting.add(role);
+            try {
+                if (knownDevice && !knownDevice.gatt.connected) {
+                    try {
+                        await knownDevice.gatt.connect();
+                    } catch (err) {
+                        console.debug(`[BLE auto-connect] ${role}: ${knownDevice.name || knownDevice.id} not reachable yet`, err);
+                        return;
+                    }
+                }
+                await cfg.sensor.connect(knownDevice);
+                if (cfg.sensor.device) {
+                    saveKnownBleDevice(role, cfg.sensor.device);
+                    enableBleAutoReconnect(role, cfg.sensor.device);
+                }
+                if (cfg.afterConnect) await cfg.afterConnect();
+                if (knownDevice) console.info(`[BLE auto-connect] ${role}: connected to ${knownDevice.name || knownDevice.id}`);
+            } catch (err) {
+                if (!knownDevice && !isBlePairingCancelledError(err)) {
+                    alert(err.message || cfg.errorMsg);
+                }
+                if (knownDevice) console.warn(`[BLE auto-connect] ${role}: setup of ${knownDevice.name || knownDevice.id} failed`, err);
+                cfg.sensor.onStatus('disconnected', cfg.idleLabel);
+            } finally {
+                bleRolesConnecting.delete(role);
+            }
+        }
+
+        // Retries a permitted device whenever it advertises, and on a timer in case advertisement events never fire
+        function enableBleAutoReconnect(role, device) {
+            const previous = bleAutoReconnectDevices.get(role);
+            bleAutoReconnectDevices.set(role, device);
+            if (previous === device) return;
+
+            const tryConnect = () => {
+                if (bleAutoReconnectDevices.get(role) !== device) return;
+                if (!bleRoles[role].sensor.connected) connectBleRole(role, device);
+            };
+            device.addEventListener('advertisementreceived', tryConnect);
+            if (typeof device.watchAdvertisements === 'function' && !device.watchingAdvertisements) {
+                device.watchAdvertisements().catch((err) => {
+                    console.debug(`[BLE auto-connect] ${role}: watchAdvertisements unavailable, using retry timer`, err);
+                });
+            }
+            const timerId = setInterval(() => {
+                if (bleAutoReconnectDevices.get(role) !== device) {
+                    clearInterval(timerId);
+                    return;
+                }
+                tryConnect();
+            }, BLE_AUTO_RECONNECT_INTERVAL_MS);
+            if (!device.gatt.connected) tryConnect();
+        }
+
+        async function autoConnectKnownBleDevices() {
+            if (!navigator.bluetooth) return;
+            if (typeof navigator.bluetooth.getDevices !== 'function') {
+                console.info('[BLE auto-connect] navigator.bluetooth.getDevices() is not available. Enable chrome://flags/#enable-web-bluetooth-new-permissions-backend (on by default from Chrome 169).');
+                return;
+            }
+            const known = loadKnownBleDeviceIds();
+            let devices = [];
+            try {
+                devices = await navigator.bluetooth.getDevices();
+            } catch (err) {
+                console.warn('[BLE auto-connect] getDevices() failed', err);
+                return;
+            }
+            console.info(`[BLE auto-connect] ${devices.length} permitted device(s):`, devices.map((d) => d.name || d.id));
+            const claimed = new Set();
+            for (const [role, saved] of Object.entries(known)) {
+                if (!bleRoles[role] || !saved) continue;
+                const savedId = typeof saved === 'string' ? saved : saved.id;
+                const savedName = typeof saved === 'string' ? null : saved.name;
+                // Device IDs can change across sessions, so fall back to matching by advertised name
+                const device = devices.find((d) => d.id === savedId)
+                    || (savedName ? devices.find((d) => d.name === savedName && !claimed.has(d)) : null);
+                if (!device) continue;
+                claimed.add(device);
+                enableBleAutoReconnect(role, device);
+            }
+        }
+
+        Object.entries(bleRoles).forEach(([role, cfg]) => {
+            document.getElementById(cfg.buttonId).addEventListener('click', () => connectBleRole(role));
         });
 
-        document.getElementById('connectRowerBleBtn').addEventListener('click', async () => {
-            try {
-                await bleRower.connect();
-                if (state.simMode) toggleSimMode(false);
-            } catch (err) {
-                if (!isBlePairingCancelledError(err)) {
-                    alert(err.message || 'Could not connect to Concept2 PM5 via Bluetooth.');
-                }
-                bleRower.onStatus('disconnected', 'Connect Concept2');
-            }
-        });
-
-        document.getElementById('connectHrmBleBtn').addEventListener('click', async () => {
-            try {
-                await bleHrmSensor.connect();
-            } catch (err) {
-                if (!isBlePairingCancelledError(err)) {
-                    alert(err.message || 'Could not connect to BLE Heart Rate Monitor.');
-                }
-                bleHrmSensor.onStatus('disconnected', 'Pair HRM');
-            }
-        });
-
-        document.getElementById('connectAriaBleBtn').addEventListener('click', async () => {
-            try {
-                await bleEliteAriaFan.connect();
-                await bleEliteAriaFan.setHeartRate(bleHrmSensor.connected ? state.heartRate : null);
-            } catch (err) {
-                if (!isBlePairingCancelledError(err)) {
-                    alert(err.message || 'Could not connect to Elite Aria via Bluetooth.');
-                }
-                bleEliteAriaFan.onStatus('disconnected', 'Pair Elite Aria');
-            }
-        });
-
-        document.getElementById('connectCadenceBleBtn').addEventListener('click', async () => {
-            try {
-                await bleCadenceSensor.connect();
-            } catch (err) {
-                if (!isBlePairingCancelledError(err)) {
-                    alert(err.message || 'Could not connect to BLE Cadence Sensor.');
-                }
-                bleCadenceSensor.onStatus('disconnected', 'Pair Cadence');
-            }
-        });
-
-        document.getElementById('connectSpeedBleBtn').addEventListener('click', async () => {
-            try {
-                await bleSpeedSensor.connect();
-            } catch (err) {
-                if (!isBlePairingCancelledError(err)) {
-                    alert(err.message || 'Could not connect to BLE Speed Sensor.');
-                }
-                bleSpeedSensor.onStatus('disconnected', 'Pair Speed');
-            }
-        });
-
-        document.getElementById('connectSteerBleBtn').addEventListener('click', async () => {
-            try {
-                await bleSteeringSensor.connect();
-                if (!state.steeringEnabled) {
-                    setSteeringEnabled(true);
-                }
-            } catch (err) {
-                if (!isBlePairingCancelledError(err)) {
-                    alert(err.message || 'Could not connect to Elite Sterzo / Rizer steering device.');
-                }
-                bleSteeringSensor.onStatus('disconnected', 'Pair Sterzo / Rizer');
-            }
-        });
+        autoConnectKnownBleDevices();
 
         function getDefaultPhoneControllerBaseUrl() {
             const saved = localStorage.getItem('performed_phone_base_url');
