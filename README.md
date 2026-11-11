@@ -49,7 +49,7 @@ While flying, a procedurally generated soundtrack (Web Audio, no audio files) fo
 | **Drive** | 90–106 % | 128 BPM, minor key, four-on-the-floor, saw bass, 16th-note arpeggio |
 | **Inferno** | > 106 % | 146 BPM, full drums with fills, rolling bass, sawtooth lead |
 
-Transitions are smoothed so short target changes don't toggle the music. The music button in the header turns the soundtrack on or off and shows the current mood. The speaker button mutes all audio.
+Transitions are smoothed so short target changes don't toggle the music. The music (note) button in the header turns the soundtrack on or off. The speaker button mutes all audio, including the music; while muted, the music button is disabled.
 
 ## Controls
 

@@ -333,7 +333,7 @@
 
                         <!-- Adaptive Music Toggle -->
                         <button id="musicToggleBtn" type="button"
-                                class="p-1.5 rounded-xl bg-gray-800/90 hover:bg-gray-700 text-fuchsia-400 border border-gray-700 transition cursor-pointer flex items-center gap-1"
+                                class="p-1.5 rounded-xl bg-gray-800/90 hover:bg-gray-700 text-fuchsia-400 border border-gray-700 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                                 title="Toggle adaptive music (tempo &amp; mood follow the target watts of the rings ahead)">
                             <svg id="musicOnIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
@@ -341,7 +341,6 @@
                             <svg id="musicOffIcon" class="w-4 h-4 hidden text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM3 3l18 18"/>
                             </svg>
-                            <span id="musicMoodLabel" class="hidden sm:inline text-[10px] font-bold uppercase tracking-wider">Cruise</span>
                         </button>
                     </div>
                 </div>
@@ -9779,21 +9778,22 @@
             soundEngine.enabled = !soundEngine.enabled;
             document.getElementById('soundOnIcon').classList.toggle('hidden', !soundEngine.enabled);
             document.getElementById('soundOffIcon').classList.toggle('hidden', soundEngine.enabled);
+            document.getElementById('musicToggleBtn').disabled = !soundEngine.enabled;
+            if (soundEngine.enabled) soundEngine.init();
+            // Muting sound also silences music; the saved music preference is restored on unmute.
+            applyMusicEnabled(localStorage.getItem('performed_music_enabled') !== 'false', false);
         });
 
-        function applyMusicEnabled(enabled) {
-            musicEngine.setEnabled(enabled);
-            document.getElementById('musicOnIcon').classList.toggle('hidden', !enabled);
-            document.getElementById('musicOffIcon').classList.toggle('hidden', enabled);
-            document.getElementById('musicMoodLabel').classList.toggle('opacity-40', !enabled);
-            localStorage.setItem('performed_music_enabled', String(enabled));
+        function applyMusicEnabled(enabled, persist = true) {
+            if (persist) localStorage.setItem('performed_music_enabled', String(enabled));
+            const active = enabled && soundEngine.enabled;
+            musicEngine.setEnabled(active);
+            document.getElementById('musicOnIcon').classList.toggle('hidden', !active);
+            document.getElementById('musicOffIcon').classList.toggle('hidden', active);
         }
 
-        musicEngine.onZoneChange = (name) => {
-            document.getElementById('musicMoodLabel').textContent = name;
-        };
-
         document.getElementById('musicToggleBtn').addEventListener('click', () => {
+            if (!soundEngine.enabled) return;
             soundEngine.init();
             applyMusicEnabled(!musicEngine.enabled);
         });
