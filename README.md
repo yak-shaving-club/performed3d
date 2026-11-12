@@ -6,10 +6,7 @@ Loop Kicker Journey is a browser-based 3D cycling game for structured indoor cyc
 
 ## Feature Requests
 
-- Ghost ride
 - Multiplay
-- Settings GUI (GUI Cleanup)
--- Optimize screen to see current watt and cadence more performant
 - Ranking server
 
 ## Quick start
