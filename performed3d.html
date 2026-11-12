@@ -10760,7 +10760,7 @@
                     updateLiveHud();
                     if (state.ftpTestZeroPedalSeconds >= FTP_TEST_STOP_THRESHOLD_SECONDS) {
                         state.ftpTestAutoStopped = true;
-                        prepareWorkoutScreenshot();
+                        prepareWorkoutScreenshot({ hideGatesBetweenAvatarAndCamera: true });
                         finishWorkoutAndShowSummary();
                     }
                     return;
@@ -10875,7 +10875,7 @@
             updateLiveHud();
 
             if (state.elapsedSec >= state.workout.totalDuration) {
-                prepareWorkoutScreenshot();
+                prepareWorkoutScreenshot({ hideGatesBetweenAvatarAndCamera: true });
                 finishWorkoutAndShowSummary();
             }
         }
@@ -12425,14 +12425,72 @@
             ctx.restore();
         }
 
-        function prepareWorkoutScreenshot() {
+        function prepareWorkoutScreenshot(options = {}) {
+            const hideGatesBetweenAvatarAndCamera = Boolean(options && options.hideGatesBetweenAvatarAndCamera);
             const outCanvas = document.createElement('canvas');
             const webglCanvas = dragon3D && dragon3D.renderer && dragon3D.renderer.domElement
                 ? dragon3D.renderer.domElement
                 : null;
 
             if (dragon3D && dragon3D.initialized && dragon3D.renderer && dragon3D.scene && dragon3D.camera) {
-                dragon3D.renderer.render(dragon3D.scene, dragon3D.camera);
+                const hiddenGates = [];
+                if (hideGatesBetweenAvatarAndCamera && Array.isArray(dragon3D.gates)) {
+                    const camPos = dragon3D.camera.position;
+                    const avatarPos = dragon3D.dragonGroup
+                        ? dragon3D.dragonGroup.position
+                        : {
+                            x: typeof dragon3D.dragonWorldX === 'number' ? dragon3D.dragonWorldX : 0,
+                            y: typeof dragon3D.dragonCurrentY === 'number' ? dragon3D.dragonCurrentY : 0,
+                            z: typeof dragon3D.flightZ === 'number' ? dragon3D.flightZ : 0
+                        };
+                    const segX = avatarPos.x - camPos.x;
+                    const segY = avatarPos.y - camPos.y;
+                    const segZ = avatarPos.z - camPos.z;
+                    const segLenSq = segX * segX + segY * segY + segZ * segZ;
+
+                    for (const g of dragon3D.gates) {
+                        if (!g || !g.group || !g.group.visible) continue;
+                        const gp = g.group.position;
+                        const thicknessMargin = Math.max(2.0, (g.tubeRadius || 0.75) + 1.5);
+                        let isBetween = false;
+
+                        if (Math.abs(camPos.z - avatarPos.z) >= Math.abs(camPos.y - avatarPos.y)) {
+                            const minZ = Math.min(camPos.z, avatarPos.z) - thicknessMargin;
+                            const maxZ = Math.max(camPos.z, avatarPos.z) + thicknessMargin;
+                            if (gp.z >= minZ && gp.z <= maxZ) {
+                                isBetween = true;
+                            }
+                        } else if (segLenSq > 1e-6) {
+                            const segLen = Math.sqrt(segLenSq);
+                            const relX = gp.x - camPos.x;
+                            const relY = gp.y - camPos.y;
+                            const relZ = gp.z - camPos.z;
+                            const projDist = (relX * segX + relY * segY + relZ * segZ) / segLen;
+                            if (projDist >= -thicknessMargin && projDist <= segLen + thicknessMargin) {
+                                const closestX = (segX / segLen) * projDist;
+                                const closestY = (segY / segLen) * projDist;
+                                const closestZ = (segZ / segLen) * projDist;
+                                const perpDist = Math.hypot(relX - closestX, relY - closestY, relZ - closestZ);
+                                const gateExtent = (g.donutRadius || g.torusRadius || 8) + thicknessMargin + 4.0;
+                                if (perpDist <= gateExtent) {
+                                    isBetween = true;
+                                }
+                            }
+                        }
+
+                        if (isBetween) {
+                            hiddenGates.push(g.group);
+                            g.group.visible = false;
+                        }
+                    }
+                }
+                try {
+                    dragon3D.renderer.render(dragon3D.scene, dragon3D.camera);
+                } finally {
+                    for (const group of hiddenGates) {
+                        group.visible = true;
+                    }
+                }
             }
 
             const width = webglCanvas ? (webglCanvas.width || window.innerWidth || 1280) : (window.innerWidth || 1280);
@@ -12506,10 +12564,10 @@
             setTimeout(() => updateScreenshotButtonsUI(false), 1800);
         }
 
-        document.getElementById('screenshotBtn').addEventListener('click', prepareWorkoutScreenshot);
+        document.getElementById('screenshotBtn').addEventListener('click', () => prepareWorkoutScreenshot());
         const compactScreenshotBtnEl = document.getElementById('compactScreenshotBtn');
         if (compactScreenshotBtnEl) {
-            compactScreenshotBtnEl.addEventListener('click', prepareWorkoutScreenshot);
+            compactScreenshotBtnEl.addEventListener('click', () => prepareWorkoutScreenshot());
         }
 
         document.getElementById('downloadScreenshotBtn').addEventListener('click', () => {
@@ -12529,7 +12587,7 @@
 
         document.getElementById('finishWorkoutBtn').addEventListener('click', () => {
             if (!state.preparedScreenshotDataUrl) {
-                prepareWorkoutScreenshot();
+                prepareWorkoutScreenshot({ hideGatesBetweenAvatarAndCamera: true });
             }
             finishWorkoutAndShowSummary();
         });
@@ -12537,7 +12595,7 @@
         if (compactFinishWorkoutBtnEl) {
             compactFinishWorkoutBtnEl.addEventListener('click', () => {
                 if (!state.preparedScreenshotDataUrl) {
-                    prepareWorkoutScreenshot();
+                    prepareWorkoutScreenshot({ hideGatesBetweenAvatarAndCamera: true });
                 }
                 finishWorkoutAndShowSummary();
             });
