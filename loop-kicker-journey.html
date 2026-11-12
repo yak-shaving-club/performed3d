@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Performed 3D - Dragon Sky Gates Wahoo KICKR Cycling Game</title>
-    <link rel="icon" href="performed3d.svg" type="image/svg+xml">
+    <title>Loop Kicker Journey - 3D Cycling Game</title>
+    <link rel="icon" href="loop-kicker-journey.svg" type="image/svg+xml">
     <script>
         window.__p3dEarlyLogs = [];
         window.addEventListener('error', (e) => {
@@ -36,7 +36,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-    <script src="performed3d-models.js"></script>
+    <script src="loop-kicker-journey-models.js"></script>
     <script src="sterzo-challenge-codes.js"></script>
     <style type="text/tailwindcss">
         @custom-variant dark (&:where(.dark, .dark *));
@@ -156,9 +156,9 @@
     <header id="wizardHeaderBar" class="hidden fixed top-0 inset-x-0 z-30 px-3 sm:px-5 pt-2.5 sm:pt-3 pointer-events-none">
         <div class="max-w-5xl mx-auto bg-gray-950/85 backdrop-blur-xl border border-gray-800/90 rounded-2xl px-3.5 py-2 shadow-2xl flex flex-wrap items-center justify-between gap-2.5 pointer-events-auto">
             <div class="flex items-center gap-2.5">
-                <img src="performed3d.svg" alt="Performed 3D Logo" class="w-8 h-8 drop-shadow">
+                <img src="loop-kicker-journey.svg" alt="Loop Kicker Journey Logo" class="w-8 h-8 drop-shadow">
                 <span class="text-sm sm:text-base font-black tracking-tight bg-gradient-to-r from-emerald-400 via-amber-300 to-orange-400 bg-clip-text text-transparent">
-                    Performed 3D
+                    Loop Kicker Journey
                 </span>
             </div>
 
@@ -229,7 +229,7 @@
             <div class="relative z-10 flex items-center justify-between gap-2 mb-3">
                 <a href="/sitemap" title="Back to Application Directory"
                    class="inline-flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-amber-300 transition">
-                    <img src="performed3d.svg" alt="Performed 3D" class="w-6 h-6">
+                    <img src="loop-kicker-journey.svg" alt="Loop Kicker Journey" class="w-6 h-6">
                     <span>Indoor Cycling Sky Arcade</span>
                 </a>
                 <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-widest bg-amber-500/15 text-amber-300 border border-amber-400/30">
@@ -1108,7 +1108,7 @@
             <!-- Title, Tagline & Primary Enter Button -->
             <div class="relative z-10 mt-5 text-center">
                 <h1 class="text-3xl sm:text-5xl font-black tracking-tight bg-gradient-to-r from-emerald-400 via-amber-300 to-orange-500 bg-clip-text text-transparent">
-                    Performed 3D
+                    Loop Kicker Journey
                 </h1>
                 <p class="mt-2 text-xs sm:text-sm text-gray-300 max-w-xl mx-auto leading-relaxed">
                     Pair your smart trainer or sensors, load a structured workout or Zwift <code class="text-amber-300 font-mono">.zwo</code> file, pick your 3D flying avatar, and soar through high-altitude target-watt donut gates.
@@ -2246,7 +2246,7 @@
             const STEER_MAX_ANGLE_DEG = 30.0;
 
             document.documentElement.classList.add('phone-steer-mode');
-            document.title = 'Performed 3D • Steer';
+            document.title = 'Loop Kicker Journey • Steer';
             const view = document.getElementById('mobilePhoneControllerView');
             if (view) {
                 view.classList.remove('hidden');
@@ -2710,7 +2710,7 @@
         const PRESET_WORKOUTS = {
             kickr_arcade: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Arcade</author>
+    <author>Loop Kicker Journey Arcade</author>
     <name>KICKR Arcade Pyramid</name>
     <description>Progressive watt accuracy pyramid flying through 3D Sky Donut Gates.</description>
     <sportType>bike</sportType>
@@ -2726,7 +2726,7 @@
 </workout_file>`,
             sky_sine_ramps: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Sky Master</author>
+    <author>Loop Kicker Journey Sky Master</author>
     <name>Sky Serpent Up &amp; Down Ramps</name>
     <description>Continuous ascending and descending watt ramps where the 3D donut gates weave smoothly up and down through the clouds.</description>
     <sportType>bike</sportType>
@@ -2755,7 +2755,7 @@
 </workout_file>`,
             alpine_switchback_ramps: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Alpine</author>
+    <author>Loop Kicker Journey Alpine</author>
     <name>Alpine Switchback Double Ramps</name>
     <description>Multi-stage mountain switchbacks combining double upward power ramps, summit sprints, and steep downward descent ramps.</description>
     <sportType>bike</sportType>
@@ -2786,7 +2786,7 @@
 </workout_file>`,
             mach_dive_climb_level: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Arcade</author>
+    <author>Loop Kicker Journey Arcade</author>
     <name>Mach Canyon Dive &amp; Climb Level</name>
     <description>High-speed canyon level featuring sharp V-dive ramps (high-to-low-to-high) and inverted apex climb/dive ramps.</description>
     <sportType>bike</sportType>
@@ -2816,7 +2816,7 @@
 </workout_file>`,
             inferno_mega_ramps: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Boss Level</author>
+    <author>Loop Kicker Journey Boss Level</author>
     <name>Dragon Boss Mega-Ramp Gauntlet</name>
     <description>Ultimate 24-ramp gauntlet with relentless ascending and descending watt slopes across every training zone.</description>
     <sportType>bike</sportType>
@@ -2849,7 +2849,7 @@
 </workout_file>`,
             dragon_rollercoaster: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Sky Master</author>
+    <author>Loop Kicker Journey Sky Master</author>
     <name>Dragon Canyon Rollercoaster</name>
     <description>High-action 28-segment sky rollercoaster with rapid climbs, steep dives, up/down ramps, and sprint gates.</description>
     <sportType>bike</sportType>
@@ -2886,7 +2886,7 @@
 </workout_file>`,
             criterium_chaos: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Pro Race</author>
+    <author>Loop Kicker Journey Pro Race</author>
     <name>Pro Criterium Corner Sprints</name>
     <description>Punchy city criterium simulation with 32 watt changes: explosive corner sprints and variable pack surges.</description>
     <sportType>bike</sportType>
@@ -2927,7 +2927,7 @@
 </workout_file>`,
             micro_burst_storm: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D HIIT Lab</author>
+    <author>Loop Kicker Journey HIIT Lab</author>
     <name>30/15 VO2max Micro-Burst Storm</name>
     <description>34 rapid-fire watt transitions combining 30/15 VO2max micro-bursts with mid-flight sawtooth steps.</description>
     <sportType>bike</sportType>
@@ -2948,7 +2948,7 @@
 </workout_file>`,
             sawtooth_alps: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Alpine</author>
+    <author>Loop Kicker Journey Alpine</author>
     <name>Alpine Sawtooth Multi-Peak</name>
     <description>Four jagged alpine staircase climbs where each 40-second step ratchets the 3D donut gates higher into the sky.</description>
     <sportType>bike</sportType>
@@ -2983,7 +2983,7 @@
 </workout_file>`,
             tabata_inferno: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Blitz</author>
+    <author>Loop Kicker Journey Blitz</author>
     <name>Dragon Fire Tabata Inferno</name>
     <description>Explosive 20s/20s anaerobic sky sprints interleaved with multi-step threshold stairs.</description>
     <sportType>bike</sportType>
@@ -3003,7 +3003,7 @@
 </workout_file>`,
             endurance_wave_matrix: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Pro</author>
+    <author>Loop Kicker Journey Pro</author>
     <name>Harmonic Wave &amp; Step Matrix</name>
     <description>25-minute multi-zone wave matrix with 36 dynamic power changes across tempo, threshold, and VO2max.</description>
     <sportType>bike</sportType>
@@ -3035,7 +3035,7 @@
 </workout_file>`,
             sweet_spot: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Pro</author>
+    <author>Loop Kicker Journey Pro</author>
     <name>Sweet Spot Precision</name>
     <description>Hold steady Sweet Spot intervals within 5% of target watts for massive combo multipliers.</description>
     <sportType>bike</sportType>
@@ -3047,7 +3047,7 @@
 </workout_file>`,
             hiit_sprints: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Blitz</author>
+    <author>Loop Kicker Journey Blitz</author>
     <name>Over-Under Surge Blitz</name>
     <description>Rapid altitude transitions between threshold and VO2max sky gates.</description>
     <sportType>bike</sportType>
@@ -3059,7 +3059,7 @@
 </workout_file>`,
             quick_blitz: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Arcade</author>
+    <author>Loop Kicker Journey Arcade</author>
     <name>Quick 3-Minute Accuracy Sprint</name>
     <description>Fast 3-minute dragon flight challenge to test your Wahoo KICKR watt control.</description>
     <sportType>bike</sportType>
@@ -3073,7 +3073,7 @@
 </workout_file>`,
             active_recovery_flush: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Physiology</author>
+    <author>Loop Kicker Journey Physiology</author>
     <name>Active Recovery Flush (Z1)</name>
     <description>Low-strain Zone 1 spin (45–55% FTP) promoting capillary blood flow and metabolite clearance without neuromuscular fatigue.</description>
     <sportType>bike</sportType>
@@ -3087,7 +3087,7 @@
 </workout_file>`,
             aerobic_zone2_base: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Physiology</author>
+    <author>Loop Kicker Journey Physiology</author>
     <name>Mitochondrial Zone 2 Base</name>
     <description>Sustained Zone 2 endurance ride (65–73% FTP) to stimulate PGC-1α mitochondrial biogenesis, capillary density, and fat oxidation.</description>
     <sportType>bike</sportType>
@@ -3102,7 +3102,7 @@
 </workout_file>`,
             polarised_lt1_endurance: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Physiology</author>
+    <author>Loop Kicker Journey Physiology</author>
     <name>Polarized LT1 Aerobic Cruiser</name>
     <description>45-minute Seiler-inspired first-lactate-threshold (LT1) cruise at 68–75% FTP building durable Type I slow-twitch fiber efficiency.</description>
     <sportType>bike</sportType>
@@ -3117,7 +3117,7 @@
 </workout_file>`,
             sweet_spot_2x12: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Physiology</author>
+    <author>Loop Kicker Journey Physiology</author>
     <name>2×12m Sweet Spot Builder</name>
     <description>Classic 2×12-minute efforts at 88–92% FTP maximizing aerobic enzyme adaptation and muscular glycogen storage per unit of fatigue.</description>
     <sportType>bike</sportType>
@@ -3133,7 +3133,7 @@
 </workout_file>`,
             low_cadence_torque: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Physiology</author>
+    <author>Loop Kicker Journey Physiology</author>
     <name>Muscular Force Tempo (SE)</name>
     <description>Sub-threshold tempo blocks (82–88% FTP) targeting high pedal torque and motor-unit recruitment to improve fatigue resistance.</description>
     <sportType>bike</sportType>
@@ -3145,7 +3145,7 @@
 </workout_file>`,
             lactate_clearance_over_unders: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Physiology</author>
+    <author>Loop Kicker Journey Physiology</author>
     <name>MCT1 Lactate Shuttle Over-Unders</name>
     <description>Alternates 2m at 92% FTP with 1m surges at 106% FTP to upregulate MCT1/MCT4 lactate transporters and clear lactate under load.</description>
     <sportType>bike</sportType>
@@ -3160,7 +3160,7 @@
 </workout_file>`,
             classic_threshold_2x15: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Physiology</author>
+    <author>Loop Kicker Journey Physiology</author>
     <name>2×15m MLSS Threshold Cruise</name>
     <description>Sustained Maximal Lactate Steady State (98–100% FTP) intervals extending time-to-exhaustion (TTE) and raising functional threshold power.</description>
     <sportType>bike</sportType>
@@ -3175,7 +3175,7 @@
 </workout_file>`,
             ronnestad_30_15_vo2: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Physiology</author>
+    <author>Loop Kicker Journey Physiology</author>
     <name>Rønnestad 30/15 VO2max Blocks</name>
     <description>Proven Rønnestad protocol (3×9.5m of 30s at 120% FTP / 15s at 50% FTP) maximizing time spent above 90% VO2max and stroke volume.</description>
     <sportType>bike</sportType>
@@ -3190,7 +3190,7 @@
 </workout_file>`,
             seiler_4x4_vo2max: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Physiology</author>
+    <author>Loop Kicker Journey Physiology</author>
     <name>Norwegian 4×4m VO2max Cardiac</name>
     <description>Classic 4×4-minute intervals at 112% FTP with 3-minute recoveries proven to elevate maximal cardiac output and central O2 delivery.</description>
     <sportType>bike</sportType>
@@ -3203,7 +3203,7 @@
 </workout_file>`,
             billat_hard_start_vo2: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Physiology</author>
+    <author>Loop Kicker Journey Physiology</author>
     <name>Billat Fast-Start VO2 Kinetics</name>
     <description>4×3-minute intervals opening with 45s at 125% FTP settling to 108% FTP to accelerate VO2 kinetics and rapidly reach VO2max.</description>
     <sportType>bike</sportType>
@@ -3226,7 +3226,7 @@
 </workout_file>`,
             ftp_ramp_test_standard: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Testing Lab</author>
+    <author>Loop Kicker Journey Testing Lab</author>
     <name>Standard MAP / FTP Ramp Test</name>
     <description>5m warmup (80–100W) then +20W steps every minute from 100W to 580W (estimates FTP up to 435W). Stop pedaling for 5s when spent — your new FTP (75% of best 1m power) is saved automatically.</description>
     <sportType>bike</sportType>
@@ -3262,7 +3262,7 @@
 </workout_file>`,
             ftp_ramp_test_lite: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-    <author>Performed 3D Testing Lab</author>
+    <author>Loop Kicker Journey Testing Lab</author>
     <name>Lite / Finer-Step FTP Ramp Test (+10W)</name>
     <description>Gentle 4m warmup (80–100W) then +10W steps every minute from 100W to 560W (estimates FTP up to 420W). Finer steps for precise pacing — stops automatically 5s after exhaustion.</description>
     <sportType>bike</sportType>
@@ -3533,7 +3533,7 @@
 
             const rawWorkoutName = (sessionSummary && sessionSummary.workoutName)
                 ? String(sessionSummary.workoutName).trim()
-                : 'Performed 3D Flight';
+                : 'Loop Kicker Journey Flight';
             const fitTitleStr = `Indoor Cycling Game - ${rawWorkoutName}`;
             const fitTitleRawBytes = typeof TextEncoder !== 'undefined'
                 ? Array.from(new TextEncoder().encode(fitTitleStr))
@@ -7854,15 +7854,15 @@
             }
 
             /**
-             * Avatar model builders and procedural textures are loaded from external `performed3d-models.js`
-             * (window.Performed3DAvatarModels) and bound onto DragonSky3DEngine.prototype.
+             * Avatar model builders and procedural textures are loaded from external `loop-kicker-journey-models.js`
+             * (window.LoopKickerJourneyAvatarModels) and bound onto DragonSky3DEngine.prototype.
              */
             createDragonHornBoneTexture() {
-                return window.Performed3DAvatarModels.createDragonHornBoneTexture.call(this);
+                return window.LoopKickerJourneyAvatarModels.createDragonHornBoneTexture.call(this);
             }
 
             createCamberedWingPanelGeometry(origin, p1, p2, camberHeight = 0.24, radialSteps = 6, spanSteps = 6) {
-                return window.Performed3DAvatarModels.createCamberedWingPanelGeometry.call(
+                return window.LoopKickerJourneyAvatarModels.createCamberedWingPanelGeometry.call(
                     this,
                     origin,
                     p1,
@@ -7874,27 +7874,27 @@
             }
 
             createWyvernHideTexture() {
-                return window.Performed3DAvatarModels.createWyvernHideTexture.call(this);
+                return window.LoopKickerJourneyAvatarModels.createWyvernHideTexture.call(this);
             }
 
             createWyvernMembraneTexture() {
-                return window.Performed3DAvatarModels.createWyvernMembraneTexture.call(this);
+                return window.LoopKickerJourneyAvatarModels.createWyvernMembraneTexture.call(this);
             }
 
             buildAeroWyvern() {
-                return window.Performed3DAvatarModels.buildAeroWyvern.call(this);
+                return window.LoopKickerJourneyAvatarModels.buildAeroWyvern.call(this);
             }
 
             updateAeroWyvern(dt, ctx) {
-                return window.Performed3DAvatarModels.updateAeroWyvern.call(this, dt, ctx);
+                return window.LoopKickerJourneyAvatarModels.updateAeroWyvern.call(this, dt, ctx);
             }
 
             updateAvatarDynamics(dt, ctx) {
-                return window.Performed3DAvatarModels.updateAvatarDynamics.call(this, dt, ctx);
+                return window.LoopKickerJourneyAvatarModels.updateAvatarDynamics.call(this, dt, ctx);
             }
 
             resetAvatarAnimationParts() {
-                return window.Performed3DAvatarModels.resetAvatarAnimationParts.call(this);
+                return window.LoopKickerJourneyAvatarModels.resetAvatarAnimationParts.call(this);
             }
 
             /**
@@ -8045,59 +8045,59 @@
             }
 
             buildActiveAvatar(avatarType = 'aero_wyvern') {
-                return window.Performed3DAvatarModels.buildActiveAvatar.call(this, avatarType);
+                return window.LoopKickerJourneyAvatarModels.buildActiveAvatar.call(this, avatarType);
             }
 
             createFuchurPearlFurScaleTexture() {
-                return window.Performed3DAvatarModels.createFuchurPearlFurScaleTexture.call(this);
+                return window.LoopKickerJourneyAvatarModels.createFuchurPearlFurScaleTexture.call(this);
             }
 
             createFuchurSilkyManeTexture() {
-                return window.Performed3DAvatarModels.createFuchurSilkyManeTexture.call(this);
+                return window.LoopKickerJourneyAvatarModels.createFuchurSilkyManeTexture.call(this);
             }
 
             buildFuchurLuckdragon() {
-                return window.Performed3DAvatarModels.buildFuchurLuckdragon.call(this);
+                return window.LoopKickerJourneyAvatarModels.buildFuchurLuckdragon.call(this);
             }
 
             createETWrinkledSkinTexture() {
-                return window.Performed3DAvatarModels.createETWrinkledSkinTexture.call(this);
+                return window.LoopKickerJourneyAvatarModels.createETWrinkledSkinTexture.call(this);
             }
 
             updateEtBikePedaling(crankAngle = 0) {
-                return window.Performed3DAvatarModels.updateEtBikePedaling.call(this, crankAngle);
+                return window.LoopKickerJourneyAvatarModels.updateEtBikePedaling.call(this, crankAngle);
             }
 
             buildBoyWithBicycleAndET() {
-                return window.Performed3DAvatarModels.buildBoyWithBicycleAndET.call(this);
+                return window.LoopKickerJourneyAvatarModels.buildBoyWithBicycleAndET.call(this);
             }
 
             createDeLoreanBrushedSteelTexture() {
-                return window.Performed3DAvatarModels.createDeLoreanBrushedSteelTexture.call(this);
+                return window.LoopKickerJourneyAvatarModels.createDeLoreanBrushedSteelTexture.call(this);
             }
 
             createOutatimeLicensePlateTexture() {
-                return window.Performed3DAvatarModels.createOutatimeLicensePlateTexture.call(this);
+                return window.LoopKickerJourneyAvatarModels.createOutatimeLicensePlateTexture.call(this);
             }
 
             createTimeCircuitsDisplayTexture() {
-                return window.Performed3DAvatarModels.createTimeCircuitsDisplayTexture.call(this);
+                return window.LoopKickerJourneyAvatarModels.createTimeCircuitsDisplayTexture.call(this);
             }
 
             buildBackToTheFutureDeLorean() {
-                return window.Performed3DAvatarModels.buildBackToTheFutureDeLorean.call(this);
+                return window.LoopKickerJourneyAvatarModels.buildBackToTheFutureDeLorean.call(this);
             }
 
             createMarsAttacksChromeHullTexture() {
-                return window.Performed3DAvatarModels.createMarsAttacksChromeHullTexture.call(this);
+                return window.LoopKickerJourneyAvatarModels.createMarsAttacksChromeHullTexture.call(this);
             }
 
             createMartianBrainTexture() {
-                return window.Performed3DAvatarModels.createMartianBrainTexture.call(this);
+                return window.LoopKickerJourneyAvatarModels.createMartianBrainTexture.call(this);
             }
 
             buildMarsAttacksUfo() {
-                return window.Performed3DAvatarModels.buildMarsAttacksUfo.call(this);
+                return window.LoopKickerJourneyAvatarModels.buildMarsAttacksUfo.call(this);
             }
 
             /**
@@ -10760,7 +10760,7 @@
                     updateLiveHud();
                     if (state.ftpTestZeroPedalSeconds >= FTP_TEST_STOP_THRESHOLD_SECONDS) {
                         state.ftpTestAutoStopped = true;
-                        prepareWorkoutScreenshot({ hideGatesBetweenAvatarAndCamera: true });
+                        prepareWorkoutScreenshot();
                         finishWorkoutAndShowSummary();
                     }
                     return;
@@ -10875,7 +10875,7 @@
             updateLiveHud();
 
             if (state.elapsedSec >= state.workout.totalDuration) {
-                prepareWorkoutScreenshot({ hideGatesBetweenAvatarAndCamera: true });
+                prepareWorkoutScreenshot();
                 finishWorkoutAndShowSummary();
             }
         }
@@ -11283,7 +11283,8 @@
         // =========================================================================
         // GHOST RIDES: save a finished ride and race against it later
         // =========================================================================
-        const GHOST_FILE_FORMAT = 'performed3d-ghost';
+        const GHOST_FILE_FORMAT = 'loop-kicker-journey-ghost';
+        const LEGACY_GHOST_FILE_FORMAT = 'performed3d-ghost';
         const GHOST_FILE_VERSION = 1;
         const GHOST_MAX_SECONDS = 6 * 3600;
 
@@ -11315,8 +11316,8 @@
             } catch (err) {
                 throw new Error('The file is not valid JSON.');
             }
-            if (!data || data.format !== GHOST_FILE_FORMAT || data.version !== GHOST_FILE_VERSION) {
-                throw new Error('This is not a Performed 3D ghost ride file.');
+            if (!data || ![GHOST_FILE_FORMAT, LEGACY_GHOST_FILE_FORMAT].includes(data.format) || data.version !== GHOST_FILE_VERSION) {
+                throw new Error('This is not a Loop Kicker Journey ghost ride file.');
             }
             if (typeof data.workoutXml !== 'string' || !data.workoutXml.trim()) {
                 throw new Error('The ghost ride does not contain its workout.');
@@ -11456,12 +11457,12 @@
             const blob = new Blob([json], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            const safeName = (state.lastSummary.workoutName || 'performed3d_ride')
+            const safeName = (state.lastSummary.workoutName || 'loop_kicker_journey_ride')
                 .toLowerCase()
                 .replace(/[^a-z0-9]+/g, '_');
             const dateStr = new Date().toISOString().slice(0, 10);
             a.href = url;
-            a.download = `${safeName}_${dateStr}.ghost.json`;
+            a.download = `${safeName}_${dateStr}.loop-kicker-journey-ghost.json`;
             document.body.appendChild(a);
             a.click();
             a.remove();
@@ -12269,7 +12270,7 @@
             // Header bar: Workout Title + Resistance Pill + Legend
             const headerCenterY = panelY + padY + headerH / 2;
             let curX = panelX + padX;
-            const titleText = ((state.workout && state.workout.name) ? state.workout.name : 'Performed 3D Flight').toUpperCase();
+            const titleText = ((state.workout && state.workout.name) ? state.workout.name : 'Loop Kicker Journey Flight').toUpperCase();
             ctx.font = `800 ${Math.round(12 * s)}px sans-serif`;
             ctx.fillStyle = '#e5e7eb';
             ctx.textAlign = 'left';
@@ -12425,72 +12426,14 @@
             ctx.restore();
         }
 
-        function prepareWorkoutScreenshot(options = {}) {
-            const hideGatesBetweenAvatarAndCamera = Boolean(options && options.hideGatesBetweenAvatarAndCamera);
+        function prepareWorkoutScreenshot() {
             const outCanvas = document.createElement('canvas');
             const webglCanvas = dragon3D && dragon3D.renderer && dragon3D.renderer.domElement
                 ? dragon3D.renderer.domElement
                 : null;
 
             if (dragon3D && dragon3D.initialized && dragon3D.renderer && dragon3D.scene && dragon3D.camera) {
-                const hiddenGates = [];
-                if (hideGatesBetweenAvatarAndCamera && Array.isArray(dragon3D.gates)) {
-                    const camPos = dragon3D.camera.position;
-                    const avatarPos = dragon3D.dragonGroup
-                        ? dragon3D.dragonGroup.position
-                        : {
-                            x: typeof dragon3D.dragonWorldX === 'number' ? dragon3D.dragonWorldX : 0,
-                            y: typeof dragon3D.dragonCurrentY === 'number' ? dragon3D.dragonCurrentY : 0,
-                            z: typeof dragon3D.flightZ === 'number' ? dragon3D.flightZ : 0
-                        };
-                    const segX = avatarPos.x - camPos.x;
-                    const segY = avatarPos.y - camPos.y;
-                    const segZ = avatarPos.z - camPos.z;
-                    const segLenSq = segX * segX + segY * segY + segZ * segZ;
-
-                    for (const g of dragon3D.gates) {
-                        if (!g || !g.group || !g.group.visible) continue;
-                        const gp = g.group.position;
-                        const thicknessMargin = Math.max(2.0, (g.tubeRadius || 0.75) + 1.5);
-                        let isBetween = false;
-
-                        if (Math.abs(camPos.z - avatarPos.z) >= Math.abs(camPos.y - avatarPos.y)) {
-                            const minZ = Math.min(camPos.z, avatarPos.z) - thicknessMargin;
-                            const maxZ = Math.max(camPos.z, avatarPos.z) + thicknessMargin;
-                            if (gp.z >= minZ && gp.z <= maxZ) {
-                                isBetween = true;
-                            }
-                        } else if (segLenSq > 1e-6) {
-                            const segLen = Math.sqrt(segLenSq);
-                            const relX = gp.x - camPos.x;
-                            const relY = gp.y - camPos.y;
-                            const relZ = gp.z - camPos.z;
-                            const projDist = (relX * segX + relY * segY + relZ * segZ) / segLen;
-                            if (projDist >= -thicknessMargin && projDist <= segLen + thicknessMargin) {
-                                const closestX = (segX / segLen) * projDist;
-                                const closestY = (segY / segLen) * projDist;
-                                const closestZ = (segZ / segLen) * projDist;
-                                const perpDist = Math.hypot(relX - closestX, relY - closestY, relZ - closestZ);
-                                const gateExtent = (g.donutRadius || g.torusRadius || 8) + thicknessMargin + 4.0;
-                                if (perpDist <= gateExtent) {
-                                    isBetween = true;
-                                }
-                            }
-                        }
-
-                        if (isBetween) {
-                            hiddenGates.push(g.group);
-                            g.group.visible = false;
-                        }
-                    }
-                }
-                try {
-                    dragon3D.renderer.render(dragon3D.scene, dragon3D.camera);
-                } finally {
-                    for (const group of hiddenGates) {
-                        group.visible = true;
-                    }
-                }
+                dragon3D.renderer.render(dragon3D.scene, dragon3D.camera);
             }
 
             const width = webglCanvas ? (webglCanvas.width || window.innerWidth || 1280) : (window.innerWidth || 1280);
@@ -12512,7 +12455,7 @@
             }
 
             // Draw HUD overlay badge onto the screenshot
-            const workoutName = (state.workout && state.workout.name) ? state.workout.name : 'Performed 3D Flight';
+            const workoutName = (state.workout && state.workout.name) ? state.workout.name : 'Loop Kicker Journey Flight';
             const scoreStr = formatSwissNumber(state.totalScore);
             const wattsStr = `${formatSwissNumber(state.actualWatts)} W`;
 
@@ -12564,17 +12507,17 @@
             setTimeout(() => updateScreenshotButtonsUI(false), 1800);
         }
 
-        document.getElementById('screenshotBtn').addEventListener('click', () => prepareWorkoutScreenshot());
+        document.getElementById('screenshotBtn').addEventListener('click', prepareWorkoutScreenshot);
         const compactScreenshotBtnEl = document.getElementById('compactScreenshotBtn');
         if (compactScreenshotBtnEl) {
-            compactScreenshotBtnEl.addEventListener('click', () => prepareWorkoutScreenshot());
+            compactScreenshotBtnEl.addEventListener('click', prepareWorkoutScreenshot);
         }
 
         document.getElementById('downloadScreenshotBtn').addEventListener('click', () => {
             if (!state.preparedScreenshotDataUrl) return;
             const workoutTitle = (state.lastSummary && state.lastSummary.workoutName)
                 || (state.workout && state.workout.name)
-                || 'performed3d_training';
+                || 'loop_kicker_journey_training';
             const safeName = workoutTitle.toLowerCase().replace(/[^a-z0-9]+/g, '_');
             const dateStr = new Date().toISOString().slice(0, 10);
             const a = document.createElement('a');
@@ -12587,7 +12530,7 @@
 
         document.getElementById('finishWorkoutBtn').addEventListener('click', () => {
             if (!state.preparedScreenshotDataUrl) {
-                prepareWorkoutScreenshot({ hideGatesBetweenAvatarAndCamera: true });
+                prepareWorkoutScreenshot();
             }
             finishWorkoutAndShowSummary();
         });
@@ -12595,7 +12538,7 @@
         if (compactFinishWorkoutBtnEl) {
             compactFinishWorkoutBtnEl.addEventListener('click', () => {
                 if (!state.preparedScreenshotDataUrl) {
-                    prepareWorkoutScreenshot({ hideGatesBetweenAvatarAndCamera: true });
+                    prepareWorkoutScreenshot();
                 }
                 finishWorkoutAndShowSummary();
             });
@@ -12671,7 +12614,7 @@
             const blob = new Blob([fitBytes], { type: 'application/octet-stream' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            const safeName = (state.lastSummary.workoutName || 'performed3d_training')
+            const safeName = (state.lastSummary.workoutName || 'loop_kicker_journey_training')
                 .toLowerCase()
                 .replace(/[^a-z0-9]+/g, '_');
             const dateStr = new Date().toISOString().slice(0, 10);
@@ -12702,7 +12645,7 @@
         });
 
         // Initialize stored FTP, default workout, Three.js 3D Dragon Engine, 1Hz game loop & 60fps render loop
-        (function initPerformed3dApp() {
+        (function initLoopKickerJourneyApp() {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('phone-steer') || urlParams.has('steer')) {
                 return;

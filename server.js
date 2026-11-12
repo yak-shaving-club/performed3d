@@ -15,8 +15,16 @@ function sendJson(response, status, value) {
 }
 
 function getStaticFile(pathname) {
-    if (pathname === '/' || pathname === '/performed3d.html') return 'performed3d.html';
-    if (pathname === '/performed3d-models.js' || pathname === '/sterzo-challenge-codes.js' || pathname === '/performed3d.svg') {
+    if (pathname === '/' || pathname === '/loop-kicker-journey.html' || pathname === '/performed3d.html') return 'loop-kicker-journey.html';
+    if (
+        pathname === '/loop-kicker-journey-models.js'
+        || pathname === '/performed3d-models.js'
+        || pathname === '/sterzo-challenge-codes.js'
+        || pathname === '/loop-kicker-journey.svg'
+        || pathname === '/performed3d.svg'
+    ) {
+        if (pathname === '/performed3d-models.js') return 'loop-kicker-journey-models.js';
+        if (pathname === '/performed3d.svg') return 'loop-kicker-journey.svg';
         return pathname.slice(1);
     }
     if (/^\/docs\/screenshots\/[a-z0-9-]+\.png$/i.test(pathname)) return pathname.slice(1);
@@ -39,7 +47,14 @@ async function handleRequest(request, response) {
         return;
     }
 
-    const relativePath = getStaticFile(decodeURIComponent(url.pathname));
+    const pathname = decodeURIComponent(url.pathname);
+    if (pathname === '/performed3d.html') {
+        response.writeHead(308, { Location: '/loop-kicker-journey.html' });
+        response.end();
+        return;
+    }
+
+    const relativePath = getStaticFile(pathname);
     if (!relativePath) {
         sendJson(response, 404, { error: 'Not found.' });
         return;
@@ -78,7 +93,7 @@ const server = createServer((request, response) => {
 });
 
 server.listen(PORT, () => {
-    console.log(`Performed 3D listening on ${APP_ORIGIN}`);
+    console.log(`Loop Kicker Journey listening on ${APP_ORIGIN}`);
 });
 
 module.exports = { server };

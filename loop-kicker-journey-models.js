@@ -1,5 +1,5 @@
 /**
- * External 3D Avatar Models for Performed 3D (Three.js)
+ * External 3D avatar models for Loop Kicker Journey (Three.js)
  * Provides the selectable 3D avatars and their procedural textures/materials:
  *  - Aero Wyvern with articulated wings and flight dynamics ('aero_wyvern', default)
  *  - Fuchur / Falkor from Die unendliche Geschichte ('fuchur')
@@ -8,7 +8,7 @@
  *  - UFO from Mars Attacks! ('mars_ufo')
  *  - Paramotor under a Phi Maestro Light 3 paraglider ('paramotor')
  */
-window.Performed3DAvatarModels = {
+window.LoopKickerJourneyAvatarModels = {
     /**
      * Generates a procedural keratin horn & bone texture with annular growth rings
      * and longitudinal bone flutes for horns, osteoderm spines, wing bones, and talons.
@@ -701,7 +701,7 @@ window.Performed3DAvatarModels = {
 
         this.dragonGroup.position.set(0, this.dragonCurrentY, 0);
         this.scene.add(this.dragonGroup);
-        window.Performed3DAvatarModels.updateAeroWyvern.call(this, 0.016, {});
+        window.LoopKickerJourneyAvatarModels.updateAeroWyvern.call(this, 0.016, {});
     },
 
     /**
@@ -889,7 +889,7 @@ window.Performed3DAvatarModels = {
         this.dragonGroup.updateMatrixWorld(true);
         rig.tmpInv.copy(rig.bodyPivot.matrixWorld).invert();
         rig.membranes.forEach((mem, idx) => {
-            window.Performed3DAvatarModels.updateWyvernMembrane(rig, mem, rig.wings[idx].lift);
+            window.LoopKickerJourneyAvatarModels.updateWyvernMembrane(rig, mem, rig.wings[idx].lift);
         });
     },
 
@@ -1058,7 +1058,7 @@ window.Performed3DAvatarModels = {
      * Dispatches the per-avatar flight dynamics; runs after the generic watt animation and overrides it.
      */
     updateAvatarDynamics(dt, ctx = {}) {
-        const M = window.Performed3DAvatarModels;
+        const M = window.LoopKickerJourneyAvatarModels;
         if (this.wyvernRig) {
             this.updateAeroWyvern(dt, ctx);
         } else if (this.fuchurRig) {
@@ -1083,7 +1083,7 @@ window.Performed3DAvatarModels = {
     updateFuchurDynamics(dt, ctx = {}) {
         const rig = this.fuchurRig;
         if (!rig) return;
-        const f = window.Performed3DAvatarModels.trackAvatarFlightState(rig, dt, ctx);
+        const f = window.LoopKickerJourneyAvatarModels.trackAvatarFlightState(rig, dt, ctx);
         const { step, clamp, smooth } = f;
         // Exact circular-arc offsets for a beam of length d with curvature k: [lateral, along-axis shortening]
         const arc = (k, d) => (Math.abs(k) < 1e-5 ? [k * d * d * 0.5, 0] : [(1 - Math.cos(k * d)) / k, Math.sin(k * d) / k - d]);
@@ -1201,7 +1201,7 @@ window.Performed3DAvatarModels = {
     updateEtBikeDynamics(dt, ctx = {}) {
         const rig = this.etBikeRig;
         if (!rig) return;
-        const f = window.Performed3DAvatarModels.trackAvatarFlightState(rig, dt, ctx);
+        const f = window.LoopKickerJourneyAvatarModels.trackAvatarFlightState(rig, dt, ctx);
         const { step, clamp, smooth } = f;
         const parts = this.avatarAnimParts || {};
         const crank = parts.crankPivot ? parts.crankPivot.rotation.x : 0;
@@ -1245,7 +1245,7 @@ window.Performed3DAvatarModels = {
     updateDeLoreanDynamics(dt, ctx = {}) {
         const rig = this.deloreanRig;
         if (!rig) return;
-        const f = window.Performed3DAvatarModels.trackAvatarFlightState(rig, dt, ctx);
+        const f = window.LoopKickerJourneyAvatarModels.trackAvatarFlightState(rig, dt, ctx);
         const { clamp, smooth } = f;
         rig.effortSlow = smooth(rig.effortSlow, rig.effort, 0.8);
 
@@ -1278,7 +1278,7 @@ window.Performed3DAvatarModels = {
     updateMarsUfoDynamics(dt, ctx = {}) {
         const rig = this.ufoRig;
         if (!rig) return;
-        const f = window.Performed3DAvatarModels.trackAvatarFlightState(rig, dt, ctx);
+        const f = window.LoopKickerJourneyAvatarModels.trackAvatarFlightState(rig, dt, ctx);
         const { step, clamp, smooth } = f;
 
         if (f.isPedaling) {
@@ -1352,7 +1352,7 @@ window.Performed3DAvatarModels = {
         } else if (this.currentAvatarType === 'delorean') {
             this.buildBackToTheFutureDeLorean();
         } else if (this.currentAvatarType === 'paramotor') {
-            window.Performed3DAvatarModels.buildParamotor.call(this);
+            window.LoopKickerJourneyAvatarModels.buildParamotor.call(this);
         } else {
             this.buildMarsAttacksUfo();
         }
@@ -1500,7 +1500,7 @@ window.Performed3DAvatarModels = {
     buildFuchurLuckdragon() {
         this.dragonGroup = new THREE.Group();
         const pearlTex = this.createFuchurPearlFurScaleTexture();
-        const maneTex = (this.createFuchurSilkyManeTexture || window.Performed3DAvatarModels.createFuchurSilkyManeTexture).call(this);
+        const maneTex = (this.createFuchurSilkyManeTexture || window.LoopKickerJourneyAvatarModels.createFuchurSilkyManeTexture).call(this);
         const hornTex = this.dragonHornBoneTexture || this.createDragonHornBoneTexture();
 
         // Helper to organically sculpt sphere/cylinder/box vertices and recompute smooth normals
@@ -2158,7 +2158,7 @@ window.Performed3DAvatarModels = {
         }
 
         this.avatarAnimParts = { leftEar, rightEar, forelegs, hindlegs, whiskerTendrils };
-        this.fuchurRig = window.Performed3DAvatarModels.createAvatarFlightState({
+        this.fuchurRig = window.LoopKickerJourneyAvatarModels.createAvatarFlightState({
             neck: this.neckSegments.map((seg) => ({
                 obj: seg, base: seg.position.clone(), baseRotX: seg.rotation.x, d: Math.max(0.2, -1.6 - seg.position.z)
             })),
@@ -2349,7 +2349,7 @@ window.Performed3DAvatarModels = {
         wickerTex.wrapT = THREE.RepeatWrapping;
         wickerTex.repeat.set(2, 2);
 
-        const etSkinTex = (this.createETWrinkledSkinTexture || window.Performed3DAvatarModels.createETWrinkledSkinTexture).call(this);
+        const etSkinTex = (this.createETWrinkledSkinTexture || window.LoopKickerJourneyAvatarModels.createETWrinkledSkinTexture).call(this);
 
         const frameRedMat = new THREE.MeshPhongMaterial({
             color: 0xdc2626,
@@ -3044,7 +3044,7 @@ window.Performed3DAvatarModels = {
         // Initialize the crank, pedals, and legs in a natural mid-stroke pedaling pose
         this.updateEtBikePedaling(-0.45);
 
-        this.etBikeRig = window.Performed3DAvatarModels.createAvatarFlightState({
+        this.etBikeRig = window.LoopKickerJourneyAvatarModels.createAvatarFlightState({
             bikeRoot,
             riderTorso,
             torsoBaseRotX: riderTorso.rotation.x,
@@ -3259,9 +3259,9 @@ window.Performed3DAvatarModels = {
             return mesh;
         };
 
-        const steelTex = (this.createDeLoreanBrushedSteelTexture || window.Performed3DAvatarModels.createDeLoreanBrushedSteelTexture).call(this);
-        const plateTex = (this.createOutatimeLicensePlateTexture || window.Performed3DAvatarModels.createOutatimeLicensePlateTexture).call(this);
-        const timeCircuitsTex = (this.createTimeCircuitsDisplayTexture || window.Performed3DAvatarModels.createTimeCircuitsDisplayTexture).call(this);
+        const steelTex = (this.createDeLoreanBrushedSteelTexture || window.LoopKickerJourneyAvatarModels.createDeLoreanBrushedSteelTexture).call(this);
+        const plateTex = (this.createOutatimeLicensePlateTexture || window.LoopKickerJourneyAvatarModels.createOutatimeLicensePlateTexture).call(this);
+        const timeCircuitsTex = (this.createTimeCircuitsDisplayTexture || window.LoopKickerJourneyAvatarModels.createTimeCircuitsDisplayTexture).call(this);
 
         const stainlessMat = new THREE.MeshPhongMaterial({
             color: 0xaeb6bf,
@@ -3837,7 +3837,7 @@ window.Performed3DAvatarModels = {
         };
 
         carGroup.rotation.order = 'YXZ';
-        this.deloreanRig = window.Performed3DAvatarModels.createAvatarFlightState({
+        this.deloreanRig = window.LoopKickerJourneyAvatarModels.createAvatarFlightState({
             carGroup,
             baseY: carGroup.position.y,
             wheels: hoverWheelRings.map((ring) => ({ obj: ring.parent, front: ring.parent.position.z < 0 })),
@@ -3978,8 +3978,8 @@ window.Performed3DAvatarModels = {
     buildMarsAttacksUfo() {
         this.dragonGroup = new THREE.Group();
 
-        const hullTex = (this.createMarsAttacksChromeHullTexture || window.Performed3DAvatarModels.createMarsAttacksChromeHullTexture).call(this);
-        const brainTex = (this.createMartianBrainTexture || window.Performed3DAvatarModels.createMartianBrainTexture).call(this);
+        const hullTex = (this.createMarsAttacksChromeHullTexture || window.LoopKickerJourneyAvatarModels.createMarsAttacksChromeHullTexture).call(this);
+        const brainTex = (this.createMartianBrainTexture || window.LoopKickerJourneyAvatarModels.createMartianBrainTexture).call(this);
 
         const saucerChromeMat = new THREE.MeshPhongMaterial({
             color: 0xa3adb8,
@@ -4443,7 +4443,7 @@ window.Performed3DAvatarModels = {
         };
 
         ufoRoot.rotation.order = 'YXZ';
-        this.ufoRig = window.Performed3DAvatarModels.createAvatarFlightState({
+        this.ufoRig = window.LoopKickerJourneyAvatarModels.createAvatarFlightState({
             root: ufoRoot,
             disc: spinningDiscGroup,
             pilot: martianPilotGroup,
@@ -4691,7 +4691,7 @@ window.Performed3DAvatarModels = {
      * surge are animated in updateParamotorDynamics.
      */
     buildParamotor() {
-        const M = window.Performed3DAvatarModels;
+        const M = window.LoopKickerJourneyAvatarModels;
         this.dragonGroup = new THREE.Group();
         const SCALE = 0.85;
         // Pilot, motor and risers are drawn 1.35x larger than true scale relative to the sail so they read well on screen
@@ -5230,7 +5230,7 @@ window.Performed3DAvatarModels = {
     updateParamotorDynamics(dt, ctx = {}) {
         const rig = this.paramotorRig;
         if (!rig) return;
-        const M = window.Performed3DAvatarModels;
+        const M = window.LoopKickerJourneyAvatarModels;
         const f = M.trackAvatarFlightState(rig, dt, ctx);
         const { step, clamp, smooth } = f;
         rig.effortSlow = smooth(rig.effortSlow, rig.effort, 0.7);

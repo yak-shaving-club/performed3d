@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Capture all 12 README.md screenshots for PerFormEd 3D at 1730x1860 (865x930 @ 2x Retina),
+Capture all 12 README.md screenshots for Loop Kicker Journey at 1730x1860 (865x930 @ 2x Retina),
 covering every screen/state:
 - 01-start.png       (Splashscreen: #screenSplash)
 - 01-pairing.png     (Step 1 - Pairing & Flight Rules: #screenPairing)
@@ -367,7 +367,7 @@ def configure_flight_controls(
 
 def main():
     repo_root = Path(__file__).resolve().parents[3]
-    parser = argparse.ArgumentParser(description="Capture PerFormEd 3D documentation screenshots.")
+    parser = argparse.ArgumentParser(description="Capture Loop Kicker Journey documentation screenshots.")
     parser.add_argument(
         "--out-dir",
         type=Path,
@@ -376,7 +376,7 @@ def main():
     )
     args = parser.parse_args()
 
-    html_path = repo_root / "performed3d.html"
+    html_path = repo_root / "loop-kicker-journey.html"
     out_dir = args.out_dir.resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -385,7 +385,7 @@ def main():
 
     port = find_free_port()
     browser = find_browser()
-    user_data_dir = tempfile.mkdtemp(prefix="performed3d_chrome_")
+    user_data_dir = tempfile.mkdtemp(prefix="loop_kicker_journey_chrome_")
 
     cmd = [
         browser,
