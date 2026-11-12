@@ -1,14 +1,22 @@
 #!/usr/bin/env python3
 """
-Capture all 9 README.md screenshots for PerFormEd 3D at 1730x1860 (865x930 @ 2x Retina).
+Capture all 12 README.md screenshots for PerFormEd 3D at 1730x1860 (865x930 @ 2x Retina),
+covering every screen/state:
+- 01-start.png       (Splashscreen: #screenSplash)
+- 01-pairing.png     (Step 1 - Pairing & Flight Rules: #screenPairing)
+- 01-training.png    (Step 2 - Training Selection: #screenTraining)
+- 01-avatar.png      (Step 3 - Avatar Selection: #screenAvatar)
+- 02-flight.png .. 05-paramotor.png (In-game Active Flight: #screenGame)
+- 06-summary.png     (Post-flight Workout Summary: #summaryModal)
 
 Requirements enforced for all avatar flight screenshots:
-- "START FLIGHT" (#startWorkoutBtn) has been clicked and workout is actively flying
+- "START FLIGHT" (#avatarStartFlightBtn / #startWorkoutBtn) has been clicked and workout is actively flying
 - Forward velocity is temporarily set to zero so no forward movement happens and images are taken before any gate is reached
 - "Auto-Fly Target Gate" (#simAutoFollowCheck) is checked
 - "Steering" (#steeringToggleCheck) is turned OFF (unchecked -> "Steering: OFF (Auto-Fly Gates)")
 """
 
+import argparse
 import base64
 import json
 import os
@@ -173,7 +181,8 @@ class CDPClient:
         return res.get("result", {}).get("value")
 
     def screenshot(self, filepath: Path):
-        res = self.send("Page.captureScreenshot", {"format": "png"})
+        self.evaluate("typeof window._stepFrame === 'function' ? window._stepFrame() : null")
+        res = self.send("Page.captureScreenshot", {"format": "png", "optimizeForSpeed": True})
         data = base64.b64decode(res["data"])
         filepath.write_bytes(data)
         print(f"Saved {filepath} ({len(data)} bytes)")
@@ -190,6 +199,7 @@ def configure_flight_controls(
     resistance: str,
     ensure_started: bool,
     freeze_forward_velocity: bool = False,
+    expected_screen: str | None = None,
 ):
     js = f"""
     (() => {{
@@ -222,9 +232,28 @@ def configure_flight_controls(
         // 4. Ensure START FLIGHT was clicked when required
         const startBtn = document.getElementById('startWorkoutBtn');
         if ({'true' if ensure_started else 'false'}) {{
-            const upperText = (startBtn?.textContent || '').toUpperCase();
-            if (startBtn && (upperText.includes('START FLIGHT') || upperText.includes('RESUME FLIGHT'))) {{
-                startBtn.click();
+            const avatarStartBtn = document.getElementById('avatarStartFlightBtn');
+            if (typeof state !== 'undefined' && state.currentScreen === 'avatar' && !state.isRunning && avatarStartBtn) {{
+                avatarStartBtn.click();
+            }} else {{
+                const upperText = (startBtn?.textContent || '').toUpperCase();
+                if (startBtn && (upperText.includes('START FLIGHT') || upperText.includes('RESUME FLIGHT'))) {{
+                    startBtn.click();
+                }}
+            }}
+        }}
+
+        // Seed live simulator telemetry immediately so short sleep durations still show active watts/cadence/speed
+        if (typeof state !== 'undefined' && state.workout) {{
+            const targetW = getTargetWattsAtSecond(state.workout, state.elapsedSec, state.ftp);
+            if (state.isRunning && state.simMode && state.simAutoJitter) {{
+                state.actualWatts = Math.max(0, targetW);
+                state.cadence = 88;
+                state.speedKmh = estimateSpeedMpsFromWatts(state.actualWatts) * 3.6;
+                const slider = document.getElementById('simWattSlider');
+                if (slider) slider.value = state.actualWatts;
+                const readout = document.getElementById('simWattReadout');
+                if (readout) readout.textContent = `${{state.actualWatts}} W`;
             }}
         }}
 
@@ -256,12 +285,18 @@ def configure_flight_controls(
                     fxEngine.spawnAccuracyBurst = function() {{}};
                     fxEngine.particles = [];
                 }}
-                document.querySelectorAll('.score-popup').forEach(el => el.remove());
+                const fsc = document.getElementById('floatingScoreContainer');
+                if (fsc) {{
+                    fsc.innerHTML = '';
+                    fsc.style.display = 'none';
+                }}
                 dragon3D.baseElapsedSec = state.elapsedSec;
                 dragon3D.lastSyncedElapsedSec = state.elapsedSec;
                 dragon3D.subSec = 0;
                 dragon3D.flightZ = 0;
             }} else {{
+                const fsc = document.getElementById('floatingScoreContainer');
+                if (fsc) fsc.style.display = '';
                 if (dragon3D._origUpdateForScreenshots) {{
                     dragon3D.update = dragon3D._origUpdateForScreenshots;
                     delete dragon3D._origUpdateForScreenshots;
@@ -271,6 +306,27 @@ def configure_flight_controls(
                     delete fxEngine._origSpawnAccuracyBurst;
                 }}
             }}
+
+            // Snap vertical altitude and camera blend immediately so short sleeps produce fully settled frames
+            if (typeof state !== 'undefined' && state.workout) {{
+                const targetW = getTargetWattsAtSecond(state.workout, state.elapsedSec, state.ftp);
+                const effW = (state.currentScreen === 'avatar' && !state.isRunning && state.actualWatts <= 0)
+                    ? targetW
+                    : Math.max(0, Number(state.actualWatts) || 0);
+                const targetSkyY = wattsToSkyAltitudeY(targetW, state.ftp, state.currentGradientPct);
+                const effSkyY = wattsToSkyAltitudeY(effW, state.ftp, state.currentGradientPct);
+                dragon3D.dragonCurrentY = effSkyY;
+                dragon3D.dragonVelocityY = 0;
+                dragon3D.cameraCurrentY = effSkyY + 2.2;
+                dragon3D.cameraLookTargetY = targetSkyY * 0.50 + effSkyY * 0.50;
+                dragon3D.cameraViewApplied = undefined;
+                dragon3D.cameraBlendPos = [0, 0, 0];
+                dragon3D.cameraBlendLook = [0, 0, 0];
+            }}
+        }}
+
+        if (typeof updateLiveHud === 'function') {{
+            updateLiveHud();
         }}
 
         const nearestGateZ = (typeof dragon3D !== 'undefined' && dragon3D && dragon3D.gates && dragon3D.gates.length)
@@ -278,6 +334,7 @@ def configure_flight_controls(
             : null;
 
         return {{
+            currentScreen: typeof state !== 'undefined' ? state.currentScreen : null,
             steeringChecked: steering ? steering.checked : null,
             steeringLabel: document.getElementById('steeringToggleLabel')?.textContent?.trim(),
             autoFollowChecked: autoFollow ? autoFollow.checked : null,
@@ -293,6 +350,8 @@ def configure_flight_controls(
     """
     state = cdp.evaluate(js)
     print("  State:", json.dumps(state))
+    if expected_screen is not None and state.get("currentScreen") != expected_screen:
+        raise RuntimeError(f"Expected currentScreen={expected_screen!r}, got {state}")
     if state.get("steeringChecked") is not False:
         raise RuntimeError(f"Expected steeringChecked=False, got {state}")
     if state.get("autoFollowChecked") is not True:
@@ -308,8 +367,17 @@ def configure_flight_controls(
 
 def main():
     repo_root = Path(__file__).resolve().parents[3]
+    parser = argparse.ArgumentParser(description="Capture PerFormEd 3D documentation screenshots.")
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        default=repo_root / "docs" / "screenshots",
+        help="Output directory for captured PNG files (default: docs/screenshots).",
+    )
+    args = parser.parse_args()
+
     html_path = repo_root / "performed3d.html"
-    out_dir = repo_root / "docs" / "screenshots"
+    out_dir = args.out_dir.resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
 
     if not html_path.is_file():
@@ -327,6 +395,7 @@ def main():
         f"--user-data-dir={user_data_dir}",
         "--no-first-run",
         "--no-default-browser-check",
+        "--mute-audio",
         "--disable-gpu-sandbox",
         "--enable-webgl",
         "--ignore-gpu-blocklist",
@@ -340,16 +409,16 @@ def main():
     proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     cdp = None
     try:
-        # Wait for DevTools target
+        # Wait for DevTools target with short polling interval
         targets = None
-        for _ in range(50):
+        for _ in range(100):
             try:
                 with urllib.request.urlopen(f"http://127.0.0.1:{port}/json") as resp:
                     targets = json.loads(resp.read().decode())
                     if targets:
                         break
             except Exception:
-                time.sleep(0.2)
+                time.sleep(0.05)
         if not targets:
             raise RuntimeError("Failed to connect to headless Chrome DevTools.")
 
@@ -367,22 +436,115 @@ def main():
             },
         )
 
-        # Wait for Three.js canvas to initialize
-        time.sleep(2.5)
+        # Poll until document & Three.js scene are initialized instead of sleeping for multiple seconds
+        ready = False
+        for _ in range(100):
+            ready = bool(
+                cdp.evaluate(
+                    "document.readyState === 'complete' && typeof dragon3D !== 'undefined' && dragon3D !== null && !!dragon3D.renderer"
+                )
+            )
+            if ready:
+                break
+            time.sleep(0.05)
+        if not ready:
+            raise RuntimeError("Timed out waiting for Three.js dragon3D scene to initialize.")
 
-        # 1. 01-start.png: Initial pre-flight setup with Steering OFF & Auto-Fly Target Gate ON
-        print("Capturing 01-start.png...")
+        # Pause continuous SwiftShader requestAnimationFrame spinning and step frames cleanly on demand
+        cdp.evaluate(
+            """
+            (() => {
+                if (!window._origRAF) {
+                    window._origRAF = window.requestAnimationFrame.bind(window);
+                    window._pendingRenderLoop = null;
+                    window.requestAnimationFrame = function(cb) {
+                        if (cb && cb.name === 'renderLoop') {
+                            window._pendingRenderLoop = cb;
+                            return 0;
+                        }
+                        return window._origRAF(cb);
+                    };
+                    window._stepFrame = () => new Promise((resolve) => {
+                        window._origRAF((now) => {
+                            if (typeof updateLiveHud === 'function') {
+                                updateLiveHud();
+                            }
+                            if (window._pendingRenderLoop) {
+                                const fn = window._pendingRenderLoop;
+                                window._pendingRenderLoop = null;
+                                fn(now);
+                            } else if (typeof dragon3D !== 'undefined' && dragon3D) {
+                                dragon3D.update(0.016);
+                            }
+                            if (typeof dragon3D !== 'undefined' && dragon3D && dragon3D._origUpdateForScreenshots) {
+                                const fsc = document.getElementById('floatingScoreContainer');
+                                if (fsc) fsc.innerHTML = '';
+                            }
+                            window._origRAF(() => resolve(true));
+                        });
+                    });
+                }
+            })()
+            """
+        )
+        time.sleep(0.05)
+
+        # 1. 01-start.png: Splashscreen (#screenSplash)
+        print("Capturing 01-start.png (splashscreen)...")
         configure_flight_controls(
             cdp,
             avatar="aero_wyvern",
             camera="1",
             resistance="easy",
             ensure_started=False,
+            expected_screen="splash",
         )
-        time.sleep(1.5)
+        time.sleep(0.05)
         cdp.screenshot(out_dir / "01-start.png")
 
-        # 2. 02-flight.png: Click START FLIGHT, zero forward velocity (before any gate is reached), Auto-Fly Target Gate checked, Steering OFF
+        # 2. 01-pairing.png: Step 1 — Pair Devices & Flight Rules (#screenPairing)
+        print("Capturing 01-pairing.png (pairing screen)...")
+        cdp.evaluate("document.getElementById('splashStartBtn')?.click()")
+        configure_flight_controls(
+            cdp,
+            avatar="aero_wyvern",
+            camera="1",
+            resistance="easy",
+            ensure_started=False,
+            expected_screen="pairing",
+        )
+        time.sleep(0.05)
+        cdp.screenshot(out_dir / "01-pairing.png")
+
+        # 3. 01-training.png: Step 2 — Select Training Workout (#screenTraining)
+        print("Capturing 01-training.png (training selection screen)...")
+        cdp.evaluate("document.getElementById('toTrainingScreenBtn')?.click()")
+        configure_flight_controls(
+            cdp,
+            avatar="aero_wyvern",
+            camera="1",
+            resistance="easy",
+            ensure_started=False,
+            expected_screen="training",
+        )
+        time.sleep(0.05)
+        cdp.screenshot(out_dir / "01-training.png")
+
+        # 4. 01-avatar.png: Step 3 — Choose Your 3D Flying Avatar (#screenAvatar)
+        print("Capturing 01-avatar.png (avatar selection screen)...")
+        cdp.evaluate("document.getElementById('toAvatarScreenBtn')?.click()")
+        configure_flight_controls(
+            cdp,
+            avatar="aero_wyvern",
+            camera="1",
+            resistance="easy",
+            ensure_started=False,
+            expected_screen="avatar",
+        )
+        time.sleep(0.05)
+        cdp.screenshot(out_dir / "01-avatar.png")
+
+        # 5. 02-flight.png: Active flight (#screenGame), zero forward velocity (before any gate is reached), Auto-Fly Target Gate checked, Steering OFF
         print("Capturing 02-flight.png...")
         configure_flight_controls(
             cdp,
@@ -391,22 +553,34 @@ def main():
             resistance="easy",
             ensure_started=True,
             freeze_forward_velocity=True,
+            expected_screen="game",
         )
-        time.sleep(2.5)
+        time.sleep(0.05)
         cdp.screenshot(out_dir / "02-flight.png")
 
-        # 3. 03-delorean.png: Active flight, zero forward velocity, skip to higher-watt segment, DeLorean, Chase cam
+        # 6. 03-delorean.png: Active flight, zero forward velocity, advance to higher-watt segment, DeLorean, Chase cam
         print("Capturing 03-delorean.png...")
         cdp.evaluate(
             """
             (() => {
-                const skipBtn = document.getElementById('skipSegmentBtn');
-                if (skipBtn) {
-                    skipBtn.click();
-                    skipBtn.click();
-                }
-                if (typeof dragon3D !== 'undefined' && dragon3D) {
-                    dragon3D.seedInitialGatesAndObstacles(true);
+                if (typeof state !== 'undefined' && state.workout) {
+                    for (let i = 0; i < 2; i++) {
+                        const seg = getActiveSegmentAtSecond(state.workout, state.elapsedSec);
+                        if (seg && seg.endSec < state.workout.totalDuration) {
+                            state.elapsedSec = seg.endSec;
+                            syncGradientAtSecond(state.elapsedSec);
+                        }
+                    }
+                    if (state.simMode && state.simAutoJitter) {
+                        const targetW = getTargetWattsAtSecond(state.workout, state.elapsedSec, state.ftp);
+                        state.actualWatts = targetW;
+                        document.getElementById('simWattSlider').value = targetW;
+                        document.getElementById('simWattReadout').textContent = `${targetW} W`;
+                    }
+                    if (typeof dragon3D !== 'undefined' && dragon3D) {
+                        dragon3D.seedInitialGatesAndObstacles(true);
+                    }
+                    updateLiveHud();
                 }
             })()
             """
@@ -418,11 +592,12 @@ def main():
             resistance="medium",
             ensure_started=True,
             freeze_forward_velocity=True,
+            expected_screen="game",
         )
-        time.sleep(2.5)
+        time.sleep(0.05)
         cdp.screenshot(out_dir / "03-delorean.png")
 
-        # 4. 04-ufo.png: Active flight, zero forward velocity, Mars Attacks UFO, Chase cam
+        # 7. 04-ufo.png: Active flight, zero forward velocity, Mars Attacks UFO, Chase cam
         print("Capturing 04-ufo.png...")
         configure_flight_controls(
             cdp,
@@ -431,11 +606,12 @@ def main():
             resistance="medium",
             ensure_started=True,
             freeze_forward_velocity=True,
+            expected_screen="game",
         )
-        time.sleep(2.5)
+        time.sleep(0.05)
         cdp.screenshot(out_dir / "04-ufo.png")
 
-        # 5. 04-ufo-topdown.png: Active flight, zero forward velocity, Mars Attacks UFO, Top-Down cam (3)
+        # 8. 04-ufo-topdown.png: Active flight, zero forward velocity, Mars Attacks UFO, Top-Down cam (3)
         print("Capturing 04-ufo-topdown.png...")
         configure_flight_controls(
             cdp,
@@ -444,11 +620,12 @@ def main():
             resistance="medium",
             ensure_started=True,
             freeze_forward_velocity=True,
+            expected_screen="game",
         )
-        time.sleep(2.0)
+        time.sleep(0.05)
         cdp.screenshot(out_dir / "04-ufo-topdown.png")
 
-        # 6. 05-front.png: Active flight, zero forward velocity, Sky Dragon (Wyvern), Front cam (4)
+        # 9. 05-front.png: Active flight, zero forward velocity, Sky Dragon (Wyvern), Front cam (4)
         print("Capturing 05-front.png...")
         configure_flight_controls(
             cdp,
@@ -457,11 +634,12 @@ def main():
             resistance="easy",
             ensure_started=True,
             freeze_forward_velocity=True,
+            expected_screen="game",
         )
-        time.sleep(2.0)
+        time.sleep(0.05)
         cdp.screenshot(out_dir / "05-front.png")
 
-        # 7. 05-fuchur.png: Active flight, zero forward velocity, Fuchur (Luckdragon), Chase cam (1)
+        # 10. 05-fuchur.png: Active flight, zero forward velocity, Fuchur (Luckdragon), Chase cam (1)
         print("Capturing 05-fuchur.png...")
         configure_flight_controls(
             cdp,
@@ -470,11 +648,12 @@ def main():
             resistance="easy",
             ensure_started=True,
             freeze_forward_velocity=True,
+            expected_screen="game",
         )
-        time.sleep(2.5)
+        time.sleep(0.05)
         cdp.screenshot(out_dir / "05-fuchur.png")
 
-        # 8. 05-paramotor.png: Active flight, zero forward velocity, Paramotor (Phi Maestro Light 3), Chase cam (1)
+        # 11. 05-paramotor.png: Active flight, zero forward velocity, Paramotor (Phi Maestro Light 3), Chase cam (1)
         print("Capturing 05-paramotor.png...")
         configure_flight_controls(
             cdp,
@@ -483,11 +662,12 @@ def main():
             resistance="easy",
             ensure_started=True,
             freeze_forward_velocity=True,
+            expected_screen="game",
         )
-        time.sleep(2.5)
+        time.sleep(0.05)
         cdp.screenshot(out_dir / "05-paramotor.png")
 
-        # Restore normal forward velocity before finishing workout
+        # Restore normal forward velocity and record representative workout samples before finishing
         configure_flight_controls(
             cdp,
             avatar="paramotor",
@@ -495,15 +675,30 @@ def main():
             resistance="easy",
             ensure_started=True,
             freeze_forward_velocity=False,
+            expected_screen="game",
+        )
+        cdp.evaluate(
+            """
+            (() => {
+                if (typeof executeWorkoutTick === 'function' && typeof state !== 'undefined') {
+                    while (state.isRunning && state.samples.length < 16) {
+                        executeWorkoutTick();
+                    }
+                }
+            })()
+            """
         )
 
-        # 9. 06-summary.png: Click Finish & Summary (#finishWorkoutBtn) after active flight
-        print("Capturing 06-summary.png...")
+        # 12. 06-summary.png: Click Finish (#finishWorkoutBtn) after active flight (#summaryModal)
+        print("Capturing 06-summary.png (summary screen)...")
         cdp.evaluate("document.getElementById('finishWorkoutBtn')?.click()")
-        time.sleep(1.5)
+        time.sleep(0.05)
+        summary_screen = cdp.evaluate("typeof state !== 'undefined' ? state.currentScreen : null")
+        if summary_screen != "summary":
+            raise RuntimeError(f"Expected currentScreen='summary', got {summary_screen!r}")
         cdp.screenshot(out_dir / "06-summary.png")
 
-        print("All 9 screenshots captured successfully.")
+        print("All 12 screenshots captured successfully.")
     finally:
         if cdp is not None:
             try:

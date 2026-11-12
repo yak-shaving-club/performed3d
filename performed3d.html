@@ -97,6 +97,21 @@
         .arcade-text-glow {
             text-shadow: 0 0 12px rgba(251, 146, 60, 0.55), 0 2px 4px rgba(0, 0, 0, 0.9);
         }
+        @keyframes dragon-hero-float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(-0.8deg); }
+        }
+        @keyframes fire-glow-pulse {
+            0%, 100% { opacity: 0.88; filter: drop-shadow(0 0 14px rgba(251, 146, 60, 0.75)); }
+            50% { opacity: 1; filter: drop-shadow(0 0 26px rgba(250, 204, 21, 0.95)); }
+        }
+        .dragon-hero-float {
+            animation: dragon-hero-float 4.2s ease-in-out infinite;
+            transform-origin: center;
+        }
+        .fire-glow-pulse {
+            animation: fire-glow-pulse 1.8s ease-in-out infinite;
+        }
         /* Custom scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
@@ -136,436 +151,881 @@
     </section>
 
     <!-- =========================================================================
-         FLOATING HUD LAYER OVER FULL-WINDOW 3D VIEWPORT
+         SHARED SETUP WIZARD HEADER (VISIBLE ON PAIRING, TRAINING & AVATAR SCREENS)
          ========================================================================= -->
-    <div class="fixed inset-0 z-20 pointer-events-none flex flex-col justify-between p-2.5 sm:p-4 overflow-hidden">
+    <header id="wizardHeaderBar" class="hidden fixed top-0 inset-x-0 z-30 px-3 sm:px-5 pt-2.5 sm:pt-3 pointer-events-none">
+        <div class="max-w-5xl mx-auto bg-gray-950/85 backdrop-blur-xl border border-gray-800/90 rounded-2xl px-3.5 py-2 shadow-2xl flex flex-wrap items-center justify-between gap-2.5 pointer-events-auto">
+            <div class="flex items-center gap-2.5">
+                <button id="wizardLogoBtn" type="button" title="Back to Splash Screen"
+                        class="group flex items-center gap-2.5 cursor-pointer text-left">
+                    <img src="performed3d.svg" alt="Performed 3D Logo" class="w-8 h-8 drop-shadow group-hover:scale-105 transition-transform">
+                    <span class="text-sm sm:text-base font-black tracking-tight bg-gradient-to-r from-emerald-400 via-amber-300 to-orange-400 bg-clip-text text-transparent">
+                        Performed 3D
+                    </span>
+                </button>
+            </div>
 
-        <!-- TOP FLOATING STACK: HEADER, SETUP BAR & IN-GAME SCORE / WIND / INTERVAL HUD -->
+            <!-- Stepper Pills -->
+            <nav aria-label="Setup Steps" class="flex flex-wrap items-center gap-1.5">
+                <button type="button" data-step-nav="pairing"
+                        class="px-2.5 sm:px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer border">
+                    1 · Pairing
+                </button>
+                <span class="text-gray-600 text-xs hidden sm:inline">›</span>
+                <button type="button" data-step-nav="training"
+                        class="px-2.5 sm:px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer border">
+                    2 · Training
+                </button>
+                <span class="text-gray-600 text-xs hidden sm:inline">›</span>
+                <button type="button" data-step-nav="avatar"
+                        class="px-2.5 sm:px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer border">
+                    3 · Avatar
+                </button>
+                <span class="text-gray-600 text-xs hidden sm:inline">›</span>
+                <button type="button" data-step-nav="game"
+                        class="px-2.5 sm:px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer border">
+                    4 · Flight
+                </button>
+            </nav>
+
+            <!-- Resume Active Flight + Audio Toggles -->
+            <div class="flex items-center gap-1.5">
+                <button id="wizardReturnToGameBtn" type="button"
+                        class="hidden px-3 py-1 rounded-xl bg-gradient-to-r from-emerald-500 to-green-400 hover:from-emerald-400 hover:to-green-300 text-gray-950 font-black text-xs uppercase tracking-wide cursor-pointer shadow transition">
+                    Return to Flight ▶
+                </button>
+                <button id="wizardSoundToggleBtn" type="button"
+                        class="p-1.5 rounded-xl bg-gray-800/90 hover:bg-gray-700 text-amber-400 border border-gray-700 transition cursor-pointer"
+                        title="Toggle arcade audio synthesizer">
+                    <svg id="wizardSoundOnIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+                    </svg>
+                    <svg id="wizardSoundOffIcon" class="w-4 h-4 hidden text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/>
+                    </svg>
+                </button>
+                <button id="wizardMusicToggleBtn" type="button"
+                        class="p-1.5 rounded-xl bg-gray-800/90 hover:bg-gray-700 text-fuchsia-400 border border-gray-700 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Toggle adaptive music">
+                    <svg id="wizardMusicOnIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+                    </svg>
+                    <svg id="wizardMusicOffIcon" class="w-4 h-4 hidden text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM3 3l18 18"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- =========================================================================
+         SCREEN 1: SPLASH SCREEN WITH HERO DRAGON GRAPHICS
+         ========================================================================= -->
+    <section id="screenSplash" data-screen="splash"
+             class="fixed inset-0 z-30 flex flex-col items-center justify-center p-4 sm:p-6 overflow-y-auto bg-gradient-to-b from-gray-950/75 via-slate-950/55 to-gray-950/85 backdrop-blur-[2px]">
+        <div class="relative max-w-3xl w-full bg-gray-950/85 border border-amber-500/35 rounded-3xl p-5 sm:p-8 shadow-2xl overflow-hidden my-auto">
+            <!-- Ambient Decorative Glows -->
+            <div class="absolute -top-28 -left-24 w-72 h-72 bg-orange-500/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-28 -right-24 w-72 h-72 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+            <!-- Top Mini Bar: Directory Link & Version Badge -->
+            <div class="relative z-10 flex items-center justify-between gap-2 mb-3">
+                <a href="/sitemap" title="Back to Application Directory"
+                   class="inline-flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-amber-300 transition">
+                    <img src="performed3d.svg" alt="Performed 3D" class="w-6 h-6">
+                    <span>Indoor Cycling Sky Arcade</span>
+                </a>
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-widest bg-amber-500/15 text-amber-300 border border-amber-400/30">
+                    WebGL • FTMS • Zwift .ZWO
+                </span>
+            </div>
+
+            <!-- Custom Detailed Hero Dragon & Sky Donut Gates Artwork -->
+            <div class="relative z-10 rounded-2xl overflow-hidden border border-amber-500/30 bg-slate-950 shadow-inner">
+                <svg viewBox="0 0 880 400" class="w-full h-auto block" role="img" aria-label="Crimson Sky Dragon soaring and breathing fire through glowing 3D Sky Donut Gates">
+                    <defs>
+                        <linearGradient id="splashSkyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#020617"/>
+                            <stop offset="42%" stop-color="#1e1b4b"/>
+                            <stop offset="78%" stop-color="#0f3d3e"/>
+                            <stop offset="100%" stop-color="#064e3b"/>
+                        </linearGradient>
+                        <radialGradient id="splashSunGlow" cx="68%" cy="44%" r="48%">
+                            <stop offset="0%" stop-color="#fde047" stop-opacity="0.42"/>
+                            <stop offset="45%" stop-color="#f97316" stop-opacity="0.20"/>
+                            <stop offset="100%" stop-color="#020617" stop-opacity="0"/>
+                        </radialGradient>
+                        <linearGradient id="splashBodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#fb7185"/>
+                            <stop offset="35%" stop-color="#ef4444"/>
+                            <stop offset="75%" stop-color="#b91c1c"/>
+                            <stop offset="100%" stop-color="#7f1d1d"/>
+                        </linearGradient>
+                        <linearGradient id="splashWingMembrane" x1="15%" y1="0%" x2="85%" y2="100%">
+                            <stop offset="0%" stop-color="#f97316"/>
+                            <stop offset="50%" stop-color="#dc2626"/>
+                            <stop offset="100%" stop-color="#450a0a"/>
+                        </linearGradient>
+                        <linearGradient id="splashBellyGold" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#fef08a"/>
+                            <stop offset="60%" stop-color="#f59e0b"/>
+                            <stop offset="100%" stop-color="#b45309"/>
+                        </linearGradient>
+                        <linearGradient id="splashGateNeon" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#4ade80"/>
+                            <stop offset="50%" stop-color="#facc15"/>
+                            <stop offset="100%" stop-color="#f97316"/>
+                        </linearGradient>
+                        <linearGradient id="splashFirePlume" x1="0%" y1="50%" x2="100%" y2="50%">
+                            <stop offset="0%" stop-color="#ffffff"/>
+                            <stop offset="22%" stop-color="#fef08a"/>
+                            <stop offset="58%" stop-color="#fb923c"/>
+                            <stop offset="100%" stop-color="#ef4444" stop-opacity="0.1"/>
+                        </linearGradient>
+                    </defs>
+
+                    <!-- Twilight Canyon Sky & Sunburst -->
+                    <rect width="880" height="400" fill="url(#splashSkyGrad)"/>
+                    <rect width="880" height="400" fill="url(#splashSunGlow)"/>
+
+                    <!-- Starfield & Floating Sky Motes -->
+                    <g fill="#fef9c3" opacity="0.65">
+                        <circle cx="88" cy="58" r="1.8"/><circle cx="154" cy="92" r="1.3"/><circle cx="242" cy="48" r="2.0"/>
+                        <circle cx="338" cy="74" r="1.4"/><circle cx="490" cy="44" r="1.8"/><circle cx="768" cy="64" r="2.1"/>
+                        <circle cx="822" cy="108" r="1.5"/><circle cx="640" cy="52" r="1.4"/><circle cx="62" cy="152" r="1.5"/>
+                    </g>
+
+                    <!-- Distant Canyon Peaks & Pine Ridges -->
+                    <path d="M0 400 L0 310 L95 255 L175 302 L285 228 L390 296 L495 244 L605 305 L735 235 L830 288 L880 262 L880 400 Z"
+                          fill="#0f172a" opacity="0.72"/>
+                    <path d="M0 400 L0 342 L120 294 L225 338 L350 286 L465 344 L590 292 L710 340 L820 302 L880 326 L880 400 Z"
+                          fill="#064e3b" opacity="0.62"/>
+
+                    <!-- Distant Sky Donut Gates & Flight Trajectory Ribbon -->
+                    <path d="M 110 335 Q 360 280 595 190 T 835 128" fill="none" stroke="#34d399" stroke-width="3" stroke-dasharray="10 10" opacity="0.45"/>
+                    <g opacity="0.52" transform="translate(812, 128) rotate(12)">
+                        <ellipse cx="0" cy="0" rx="22" ry="32" fill="none" stroke="url(#splashGateNeon)" stroke-width="7"/>
+                    </g>
+                    <g opacity="0.72" transform="translate(722, 152) rotate(10)">
+                        <ellipse cx="0" cy="0" rx="36" ry="52" fill="none" stroke="url(#splashGateNeon)" stroke-width="11"/>
+                        <ellipse cx="0" cy="0" rx="36" ry="52" fill="none" stroke="#fef08a" stroke-width="2.5" opacity="0.8"/>
+                    </g>
+
+                    <!-- Foreground Glowing Sky Donut Gate (Back Arc) -->
+                    <g transform="translate(598, 186) rotate(8)">
+                        <path d="M 0 -94 A 64 94 0 0 1 0 94" fill="none" stroke="url(#splashGateNeon)" stroke-width="24" stroke-linecap="round"/>
+                        <path d="M 0 -94 A 64 94 0 0 1 0 94" fill="none" stroke="#fef9c3" stroke-width="5" opacity="0.75"/>
+                    </g>
+
+                    <!-- HERO SOARING DRAGON -->
+                    <g class="dragon-hero-float">
+                        <!-- Far Wing (Right Wing Raised Behind Neck) -->
+                        <g>
+                            <path d="M 355 192 L 455 54 L 548 76 L 512 128 L 542 152 L 468 178 L 388 205 Z"
+                                  fill="url(#splashWingMembrane)" opacity="0.88" stroke="#fca5a5" stroke-width="2.5" stroke-linejoin="round"/>
+                            <path d="M 355 192 L 455 54 M 455 54 L 548 76 M 455 54 L 512 128 M 455 54 L 468 178"
+                                  stroke="#fde68a" stroke-width="3.5" stroke-linecap="round" opacity="0.85"/>
+                        </g>
+
+                        <!-- Sinuous Muscular Tail & Spade Blade -->
+                        <path d="M 92 316 Q 145 348 205 314 Q 262 280 308 232 L 336 252 Q 278 308 212 340 Q 142 368 92 316 Z"
+                              fill="url(#splashBodyGrad)" stroke="#fecaca" stroke-width="2.2"/>
+                        <!-- Tail Spade -->
+                        <path d="M 96 318 L 54 298 L 74 326 L 58 346 L 104 330 Z" fill="#f97316" stroke="#fde047" stroke-width="2"/>
+
+                        <!-- Torso, Arched Neck & Golden Armored Underbelly -->
+                        <path d="M 295 242 Q 345 198 402 182 Q 445 170 472 146 L 494 168 Q 462 204 410 226 Q 352 252 314 260 Z"
+                              fill="url(#splashBodyGrad)" stroke="#fca5a5" stroke-width="2.5"/>
+                        <path d="M 318 258 Q 368 244 418 218 Q 456 198 485 170 L 476 160 Q 446 188 406 206 Q 358 228 312 246 Z"
+                              fill="url(#splashBellyGold)"/>
+
+                        <!-- Dorsal Osteoderm Spines -->
+                        <g fill="#fde047" stroke="#b45309" stroke-width="1.2">
+                            <polygon points="232,298 240,280 248,290"/>
+                            <polygon points="264,274 274,254 282,265"/>
+                            <polygon points="298,244 308,223 318,236"/>
+                            <polygon points="392,185 402,165 412,179"/>
+                            <polygon points="424,174 435,154 444,167"/>
+                        </g>
+
+                        <!-- Tucked Hind Talon -->
+                        <path d="M 332 252 L 316 284 L 338 286 L 348 274 L 354 254 Z" fill="#991b1b" stroke="#fde68a" stroke-width="1.8"/>
+
+                        <!-- Sculpted Dragon Head, Horns & Snout -->
+                        <g>
+                            <!-- Swept-Back Keratin Horns -->
+                            <path d="M 468 144 Q 434 116 404 114 Q 436 128 458 152 Z" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+                            <path d="M 462 152 Q 432 134 410 136 Q 436 144 456 160 Z" fill="#fde68a" stroke="#b45309" stroke-width="1.6"/>
+                            <!-- Upper Skull & Snout -->
+                            <path d="M 462 146 L 502 136 L 538 148 L 532 162 L 496 162 L 526 178 L 514 186 L 474 170 Z"
+                                  fill="url(#splashBodyGrad)" stroke="#fecaca" stroke-width="2.2" stroke-linejoin="round"/>
+                            <!-- Glowing Dragon Eye -->
+                            <ellipse cx="496" cy="149" rx="6.5" ry="4.2" fill="#4ade80"/>
+                            <ellipse cx="497" cy="149" rx="2.0" ry="3.8" fill="#052e16"/>
+                        </g>
+
+                        <!-- Near Wing (Sweeping Left Foreground Wing with Bone Spars) -->
+                        <g>
+                            <path d="M 366 206 L 204 72 L 106 112 L 166 172 L 132 214 L 222 232 L 262 256 L 346 232 Z"
+                                  fill="url(#splashWingMembrane)" stroke="#fecaca" stroke-width="3" stroke-linejoin="round"/>
+                            <!-- Wing Claw & Bone Finger Spars -->
+                            <path d="M 366 206 L 204 72 L 106 112 M 204 72 L 166 172 M 204 72 L 222 232 M 204 72 L 262 256"
+                                  fill="none" stroke="#fef3c7" stroke-width="4" stroke-linecap="round"/>
+                            <polygon points="204,72 192,52 212,62" fill="#fef3c7" stroke="#b45309" stroke-width="1.5"/>
+                        </g>
+
+                        <!-- ROARING DRAGON FIRE BREATH SURGING THROUGH THE DONUT GATE -->
+                        <g class="fire-glow-pulse">
+                            <path d="M 532 160 Q 615 134 736 152 Q 684 176 756 196 Q 664 210 718 228 Q 612 214 528 176 Z"
+                                  fill="url(#splashFirePlume)"/>
+                            <path d="M 534 164 Q 604 152 678 172 Q 638 184 686 196 Q 605 194 532 172 Z"
+                                  fill="#fef9c3" opacity="0.92"/>
+                            <!-- Glowing Fire Embers -->
+                            <circle cx="662" cy="142" r="4" fill="#fde047"/>
+                            <circle cx="712" cy="166" r="5" fill="#fb923c"/>
+                            <circle cx="688" cy="216" r="3.5" fill="#fef08a"/>
+                            <circle cx="748" cy="182" r="4.5" fill="#f97316"/>
+                        </g>
+                    </g>
+
+                    <!-- Foreground Glowing Sky Donut Gate (Front Arc Wrapping Over Fire Plume) -->
+                    <g transform="translate(598, 186) rotate(8)">
+                        <path d="M 0 94 A 64 94 0 0 1 0 -94" fill="none" stroke="url(#splashGateNeon)" stroke-width="24" stroke-linecap="round"/>
+                        <path d="M 0 94 A 64 94 0 0 1 0 -94" fill="none" stroke="#ffffff" stroke-width="4" opacity="0.7"/>
+                        <!-- Floating Target Watt Badge Above Donut -->
+                        <g transform="rotate(-8) translate(0, -118)">
+                            <rect x="-54" y="-16" width="108" height="28" rx="10" fill="#020617" fill-opacity="0.88" stroke="#4ade80" stroke-width="2"/>
+                            <text x="0" y="3" font-family="monospace" font-weight="900" font-size="15" fill="#fde047" text-anchor="middle">200W ±40W</text>
+                        </g>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Title, Tagline & Primary Enter Button -->
+            <div class="relative z-10 mt-5 text-center">
+                <h1 class="text-3xl sm:text-5xl font-black tracking-tight bg-gradient-to-r from-emerald-400 via-amber-300 to-orange-500 bg-clip-text text-transparent">
+                    Performed 3D
+                </h1>
+                <p class="mt-2 text-xs sm:text-sm text-gray-300 max-w-xl mx-auto leading-relaxed">
+                    Pair your smart trainer or sensors, load a structured workout or Zwift <code class="text-amber-300 font-mono">.zwo</code> file, pick your 3D flying avatar, and soar through high-altitude target-watt donut gates.
+                </p>
+
+                <div class="mt-5 flex flex-wrap items-center justify-center gap-3">
+                    <button id="splashStartBtn" type="button"
+                            class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-orange-500 via-amber-400 to-emerald-400 hover:from-orange-400 hover:via-amber-300 hover:to-emerald-300 text-gray-950 font-black text-sm sm:text-base uppercase tracking-wider shadow-xl shadow-orange-500/30 flex items-center gap-2.5 cursor-pointer active:scale-95 transition">
+                        <span>Start Setup</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================================
+         SCREEN 2: PAIRING & GAMEPLAY SETTINGS SCREEN
+         ========================================================================= -->
+    <section id="screenPairing" data-screen="pairing"
+             class="hidden fixed inset-x-0 top-16 bottom-0 z-20 flex-col items-center justify-start px-3 sm:px-5 pb-5 pt-2 overflow-y-auto">
+        <div class="max-w-5xl w-full bg-gray-950/85 backdrop-blur-xl border border-gray-800/90 rounded-3xl p-4 sm:p-6 shadow-2xl my-auto">
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-gray-800">
+                <div>
+                    <span class="text-[11px] font-black uppercase tracking-widest text-blue-400">Step 1 of 3</span>
+                    <h2 class="text-xl sm:text-2xl font-black text-white">Pair Devices &amp; Flight Rules</h2>
+                    <p class="text-xs text-gray-400 mt-0.5">Connect Bluetooth trainers, sensors, or handlebar steering and configure gate accuracy &amp; simulator options.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4">
+                <!-- Left Column: Bluetooth & Wireless Sensors -->
+                <div id="blePairingButtonsGroup" class="lg:col-span-7 bg-gray-900/70 border border-gray-800 rounded-2xl p-4 flex flex-col gap-2.5">
+                    <div class="flex items-center justify-between gap-2 mb-0.5">
+                        <h3 class="text-xs font-black uppercase tracking-wider text-blue-300 flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7l10 10-5 5V2l5 5L7 17"/>
+                            </svg>
+                            <span>Bluetooth &amp; Wireless Devices</span>
+                        </h3>
+                        <span class="text-[11px] text-gray-400">Auto-reconnects permitted sensors</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <!-- Wahoo KICKR / FTMS Smart Trainer -->
+                        <div class="flex flex-col justify-between gap-2 bg-gray-950/80 border border-gray-800 rounded-xl p-2.5">
+                            <div>
+                                <div class="text-xs font-bold text-gray-100">Smart Trainer</div>
+                                <div class="text-[11px] text-gray-400">KICKR / FTMS Power &amp; ERG</div>
+                            </div>
+                            <button id="connectBleBtn" type="button"
+                                    class="w-full px-3 py-1.5 rounded-xl font-bold text-xs flex items-center justify-between gap-1.5 transition cursor-pointer shadow-md bg-blue-600 hover:bg-blue-500 text-white border border-blue-400/30">
+                                <span id="bleStatusText">Connect Wahoo KICKR</span>
+                                <span id="bleStatusDot" class="w-2 h-2 rounded-full bg-gray-300 shrink-0"></span>
+                            </button>
+                        </div>
+
+                        <!-- Concept2 PM5 -->
+                        <div class="flex flex-col justify-between gap-2 bg-gray-950/80 border border-gray-800 rounded-xl p-2.5">
+                            <div>
+                                <div class="text-xs font-bold text-gray-100">Concept2 PM5</div>
+                                <div class="text-[11px] text-gray-400">RowErg / SkiErg / BikeErg</div>
+                            </div>
+                            <button id="connectRowerBleBtn" type="button"
+                                    class="w-full px-3 py-1.5 rounded-xl font-bold text-xs flex items-center justify-between gap-1.5 transition cursor-pointer shadow-md bg-sky-700/80 hover:bg-sky-600 text-white border border-sky-400/30"
+                                    title="Connect Concept2 RowErg / SkiErg / BikeErg (PM5) as power source; stroke rate is shown as cadence">
+                                <span id="bleRowerStatusText">Connect Concept2</span>
+                                <span id="bleRowerStatusDot" class="w-2 h-2 rounded-full bg-gray-300 shrink-0"></span>
+                            </button>
+                        </div>
+
+                        <!-- Heart Rate Monitor -->
+                        <div class="flex flex-col justify-between gap-2 bg-gray-950/80 border border-gray-800 rounded-xl p-2.5">
+                            <div>
+                                <div class="text-xs font-bold text-gray-100">Heart Rate</div>
+                                <div class="text-[11px] text-gray-400">BLE Chest / Arm HRM</div>
+                            </div>
+                            <button id="connectHrmBleBtn" type="button"
+                                    class="w-full px-3 py-1.5 rounded-xl font-bold text-xs flex items-center justify-between gap-1.5 transition cursor-pointer shadow-md bg-rose-700/80 hover:bg-rose-600 text-white border border-rose-400/30"
+                                    title="Pair BLE Heart Rate Monitor (e.g. Garmin HRM 200)">
+                                <span id="bleHrmStatusText">Pair HRM</span>
+                                <span id="bleHrmStatusDot" class="w-2 h-2 rounded-full bg-gray-300 shrink-0"></span>
+                            </button>
+                        </div>
+
+                        <!-- Elite Aria Smart Fan -->
+                        <div class="flex flex-col justify-between gap-2 bg-gray-950/80 border border-gray-800 rounded-xl p-2.5">
+                            <div>
+                                <div class="text-xs font-bold text-gray-100">Elite Aria Fan</div>
+                                <div class="text-[11px] text-gray-400">HR-adaptive airflow</div>
+                            </div>
+                            <button id="connectAriaBleBtn" type="button"
+                                    class="w-full px-3 py-1.5 rounded-xl font-bold text-xs flex items-center justify-between gap-1.5 transition cursor-pointer shadow-md bg-orange-700/80 hover:bg-orange-600 text-white border border-orange-400/30"
+                                    title="Pair Elite Aria Smart Fan; fan speed follows heart rate (80-180 bpm)">
+                                <span id="bleAriaStatusText">Pair Elite Aria</span>
+                                <span id="bleAriaStatusDot" class="w-2 h-2 rounded-full bg-gray-300 shrink-0"></span>
+                            </button>
+                        </div>
+
+                        <!-- Cadence Sensor -->
+                        <div class="flex flex-col justify-between gap-2 bg-gray-950/80 border border-gray-800 rounded-xl p-2.5">
+                            <div>
+                                <div class="text-xs font-bold text-gray-100">Cadence Sensor</div>
+                                <div class="text-[11px] text-gray-400">BLE Crank RPM</div>
+                            </div>
+                            <button id="connectCadenceBleBtn" type="button"
+                                    class="w-full px-3 py-1.5 rounded-xl font-bold text-xs flex items-center justify-between gap-1.5 transition cursor-pointer shadow-md bg-emerald-700/80 hover:bg-emerald-600 text-white border border-emerald-400/30"
+                                    title="Pair BLE Cadence Sensor">
+                                <span id="bleCadenceStatusText">Pair Cadence</span>
+                                <span id="bleCadenceStatusDot" class="w-2 h-2 rounded-full bg-gray-300 shrink-0"></span>
+                            </button>
+                        </div>
+
+                        <!-- Speed Sensor -->
+                        <div class="flex flex-col justify-between gap-2 bg-gray-950/80 border border-gray-800 rounded-xl p-2.5">
+                            <div>
+                                <div class="text-xs font-bold text-gray-100">Speed Sensor</div>
+                                <div class="text-[11px] text-gray-400">BLE Wheel Speed</div>
+                            </div>
+                            <button id="connectSpeedBleBtn" type="button"
+                                    class="w-full px-3 py-1.5 rounded-xl font-bold text-xs flex items-center justify-between gap-1.5 transition cursor-pointer shadow-md bg-cyan-700/80 hover:bg-cyan-600 text-white border border-cyan-400/30"
+                                    title="Pair BLE Speed Sensor">
+                                <span id="bleSpeedStatusText">Pair Speed</span>
+                                <span id="bleSpeedStatusDot" class="w-2 h-2 rounded-full bg-gray-300 shrink-0"></span>
+                            </button>
+                        </div>
+
+                        <!-- Elite Sterzo / Rizer -->
+                        <div class="flex flex-col justify-between gap-2 bg-gray-950/80 border border-gray-800 rounded-xl p-2.5">
+                            <div>
+                                <div class="text-xs font-bold text-gray-100">BLE Steering</div>
+                                <div class="text-[11px] text-gray-400">Elite Sterzo / Rizer</div>
+                            </div>
+                            <button id="connectSteerBleBtn" type="button"
+                                    class="w-full px-3 py-1.5 rounded-xl font-bold text-xs flex items-center justify-between gap-1.5 transition cursor-pointer shadow-md bg-purple-700/80 hover:bg-purple-600 text-white border border-purple-400/30"
+                                    title="Pair Elite Sterzo Smart or Elite Rizer for BLE Steering">
+                                <span id="bleSteerStatusText">Pair Sterzo / Rizer</span>
+                                <span id="bleSteerStatusDot" class="w-2 h-2 rounded-full bg-gray-300 shrink-0"></span>
+                            </button>
+                        </div>
+
+                        <!-- Phone Handlebar Steering (QR) -->
+                        <div class="flex flex-col justify-between gap-2 bg-gray-950/80 border border-gray-800 rounded-xl p-2.5">
+                            <div>
+                                <div class="text-xs font-bold text-gray-100">Phone Steering</div>
+                                <div class="text-[11px] text-gray-400">QR WebRTC Handlebar</div>
+                            </div>
+                            <button id="connectPhoneSteerBtn" type="button"
+                                    class="w-full px-3 py-1.5 rounded-xl font-bold text-xs flex items-center justify-between gap-1.5 transition cursor-pointer shadow-md bg-indigo-700/80 hover:bg-indigo-600 text-white border border-indigo-400/30"
+                                    title="Scan QR code to use your mobile phone on the handlebar as a wireless steering controller">
+                                <span id="phoneSteerStatusText">Phone Steer (QR)</span>
+                                <span id="phoneSteerStatusDot" class="w-2 h-2 rounded-full bg-gray-300 shrink-0"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Gameplay Rules, Donut Accuracy & Simulator Controls -->
+                <div class="lg:col-span-5 bg-gray-900/70 border border-gray-800 rounded-2xl p-4 flex flex-col justify-between gap-3">
+                    <div class="flex flex-col gap-2.5">
+                        <h3 class="text-xs font-black uppercase tracking-wider text-emerald-300">
+                            Gameplay &amp; Simulator Configuration
+                        </h3>
+
+                        <!-- Donut Accuracy Tolerance (Default 40W) -->
+                        <div class="bg-gray-950/85 border border-emerald-500/40 rounded-xl p-3">
+                            <div class="flex items-center justify-between gap-2 mb-1.5">
+                                <label for="accuracyToleranceSlider" class="text-xs font-bold text-gray-100">
+                                    Donut Gate Accuracy
+                                </label>
+                                <span id="accuracyToleranceBadge" class="text-sm font-mono font-black text-emerald-400">±40W</span>
+                            </div>
+                            <div class="flex items-center gap-2.5">
+                                <input id="accuracyToleranceSlider" type="range" min="5" max="50" step="1" value="40"
+                                       class="flex-grow accent-emerald-400 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+                                <input id="accuracyToleranceInput" type="number" min="5" max="50" step="1" value="40"
+                                       class="w-12 bg-gray-800 text-emerald-300 font-mono font-bold text-xs text-center rounded-lg px-1.5 py-1 border border-gray-700 focus:outline-none focus:border-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed">
+                            </div>
+                            <p class="text-[11px] text-gray-400 mt-1">Allowed power deviation (5W tight to 50W wide; default 40W).</p>
+                        </div>
+
+                        <!-- Steering Enabled Toggle -->
+                        <label for="steeringToggleCheck"
+                               class="flex items-center justify-between gap-3 bg-gray-950/85 hover:bg-gray-900 border border-cyan-500/35 rounded-xl p-3 cursor-pointer transition select-none">
+                            <div>
+                                <div id="steeringToggleLabel" class="text-xs font-bold text-cyan-300">Steering: ON</div>
+                                <div class="text-[11px] text-gray-400">Steer manually or turn OFF to auto-align with gates</div>
+                            </div>
+                            <input id="steeringToggleCheck" type="checkbox" checked class="w-4 h-4 accent-cyan-400 rounded cursor-pointer shrink-0">
+                        </label>
+
+                        <!-- Sky Obstacles Toggle -->
+                        <label for="obstaclesToggleCheck"
+                               class="flex items-center justify-between gap-3 bg-gray-950/85 hover:bg-gray-900 border border-rose-500/35 rounded-xl p-3 cursor-pointer transition select-none">
+                            <div>
+                                <div class="text-xs font-bold text-rose-300">3D Sky Obstacles (Spacebar)</div>
+                                <div class="text-[11px] text-gray-400">Spawn aerial hazards — blast them with Dragon Fire</div>
+                            </div>
+                            <input id="obstaclesToggleCheck" type="checkbox" class="w-4 h-4 accent-rose-500 rounded cursor-pointer shrink-0">
+                        </label>
+
+                        <!-- Sim Mode Toggle & Auto-Fly Target Gate -->
+                        <div class="bg-gray-950/85 border border-amber-500/35 rounded-xl p-3 flex flex-col gap-2.5">
+                            <div class="flex items-center justify-between gap-2">
+                                <div>
+                                    <div class="text-xs font-bold text-amber-300">Virtual Trainer Simulator</div>
+                                    <div class="text-[11px] text-gray-400">Ride without a Bluetooth trainer</div>
+                                </div>
+                                <button id="simToggleBtn" type="button"
+                                        class="px-2.5 py-2 rounded-xl font-semibold text-xs flex items-center gap-1.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 transition cursor-pointer shrink-0">
+                                    <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                    </svg>
+                                    <span id="simToggleText">Sim Mode: ON</span>
+                                </button>
+                            </div>
+
+                            <label for="simAutoFollowCheck" class="flex items-center justify-between gap-2 pt-2 border-t border-gray-800/80 text-xs text-gray-200 cursor-pointer select-none">
+                                <div>
+                                    <span class="font-bold text-emerald-300">Auto-Fly Target Gate</span>
+                                    <span class="block text-[11px] text-gray-400">Automatically match target watts in Sim Mode</span>
+                                </div>
+                                <input id="simAutoFollowCheck" type="checkbox" class="w-4 h-4 accent-emerald-500 rounded cursor-pointer shrink-0">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step Footer -->
+            <div class="mt-5 pt-4 border-t border-gray-800 flex items-center justify-between gap-3">
+                <button id="backToSplashBtn" type="button"
+                        class="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 font-bold text-xs border border-gray-700 cursor-pointer transition">
+                    ← Splash Screen
+                </button>
+                <button id="toTrainingScreenBtn" type="button"
+                        class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-gray-950 font-black text-xs sm:text-sm uppercase tracking-wide cursor-pointer shadow-lg shadow-orange-500/25 transition">
+                    Next: Training Selection →
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================================
+         SCREEN 3: TRAINING SELECTION SCREEN (.ZWO UPLOAD & PRESETS)
+         ========================================================================= -->
+    <section id="screenTraining" data-screen="training"
+             class="hidden fixed inset-x-0 top-16 bottom-0 z-20 flex-col items-center justify-start px-3 sm:px-5 pb-5 pt-2 overflow-y-auto">
+        <div class="max-w-5xl w-full bg-gray-950/85 backdrop-blur-xl border border-gray-800/90 rounded-3xl p-4 sm:p-6 shadow-2xl my-auto">
+            <!-- Header & Zwift Upload CTA -->
+            <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-800">
+                <div>
+                    <span class="text-[11px] font-black uppercase tracking-widest text-amber-400">Step 2 of 3</span>
+                    <h2 class="text-xl sm:text-2xl font-black text-white">Select Training Workout</h2>
+                    <p class="text-xs text-gray-400 mt-0.5">Choose a structured sky-gate preset or upload a custom Zwift <code class="text-amber-300 font-mono">.zwo</code> file.</p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <span id="customZwoBadge" class="hidden px-2.5 py-1 rounded-full bg-orange-500/20 border border-orange-400/40 text-orange-300 text-xs font-bold">
+                        Custom .ZWO Loaded
+                    </span>
+                    <label for="zwoFileInput"
+                           class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-gray-950 font-extrabold text-xs flex items-center gap-2 cursor-pointer shadow-lg shadow-orange-500/20 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                        </svg>
+                        <span>Upload Zwift (.zwo)</span>
+                        <input id="zwoFileInput" type="file" accept=".zwo,.xml,text/xml,application/xml" class="hidden">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Rider FTP, Resistance/Wind Mode & Quick Preset Dropdown -->
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-2.5 bg-gray-900/75 border border-gray-800 rounded-2xl p-3">
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <!-- Quick Preset Dropdown (kept synced with preset cards) -->
+                    <div class="flex items-center gap-1.5 bg-gray-950/90 border border-gray-800 rounded-xl px-2.5 py-1.5">
+                        <label for="presetWorkoutSelect" class="text-xs text-gray-400 font-medium">Preset:</label>
+                        <select id="presetWorkoutSelect" class="bg-transparent text-xs font-semibold text-gray-200 focus:outline-none cursor-pointer">
+                            <option value="kickr_arcade" class="bg-gray-900">KICKR Arcade Pyramid (10m)</option>
+                            <option value="sky_sine_ramps" class="bg-gray-900">Sky Serpent Up &amp; Down Ramps (15m • Continuous Ramps)</option>
+                            <option value="alpine_switchback_ramps" class="bg-gray-900">Alpine Switchback Double Ramps (20m • Up/Down Ramps)</option>
+                            <option value="mach_dive_climb_level" class="bg-gray-900">Mach Canyon Dive &amp; Climb Level (16m • V-Ramps)</option>
+                            <option value="inferno_mega_ramps" class="bg-gray-900">Dragon Boss Mega-Ramp Gauntlet (22m • 24 Ramps)</option>
+                            <option value="dragon_rollercoaster" class="bg-gray-900">Dragon Canyon Rollercoaster (14m • 28 Changes)</option>
+                            <option value="criterium_chaos" class="bg-gray-900">Pro Criterium Corner Sprints (18m • 32 Changes)</option>
+                            <option value="micro_burst_storm" class="bg-gray-900">30/15 VO2max Micro-Burst Storm (16m • 34 Changes)</option>
+                            <option value="sawtooth_alps" class="bg-gray-900">Alpine Sawtooth Multi-Peak (20m • 26 Changes)</option>
+                            <option value="tabata_inferno" class="bg-gray-900">Dragon Fire Tabata Inferno (12m • 30 Changes)</option>
+                            <option value="endurance_wave_matrix" class="bg-gray-900">Harmonic Wave &amp; Step Matrix (25m • 36 Changes)</option>
+                            <option value="sweet_spot" class="bg-gray-900">Sweet Spot Precision (15m)</option>
+                            <option value="hiit_sprints" class="bg-gray-900">Over-Under Surge Blitz (12m)</option>
+                            <option value="quick_blitz" class="bg-gray-900">Quick 3-Minute Accuracy Sprint (3m)</option>
+                        </select>
+                    </div>
+
+                    <!-- Rider FTP -->
+                    <div class="flex items-center gap-1.5 bg-gray-950/90 border border-gray-800 rounded-xl px-2.5 py-1.5 text-xs">
+                        <label for="ftpInput" class="text-gray-400 font-semibold">FTP:</label>
+                        <input id="ftpInput" type="number" min="50" max="600" value="200"
+                               class="w-14 bg-gray-800 text-amber-300 font-bold text-center rounded px-1 py-0.5 border border-gray-700 focus:outline-none focus:border-orange-500">
+                        <span class="text-gray-500">W</span>
+                    </div>
+
+                    <!-- Resistance / Gradient Mode Setting -->
+                    <div class="flex items-center gap-1.5 bg-gray-950/90 border border-gray-800 rounded-xl px-2.5 py-1.5">
+                        <label for="resistanceModeSelect" class="text-xs text-gray-400 font-medium">Mode:</label>
+                        <select id="resistanceModeSelect" class="bg-transparent text-xs font-bold text-emerald-400 focus:outline-none cursor-pointer">
+                            <option value="easy" class="bg-gray-900 text-emerald-400" selected>Easy (0% Flat)</option>
+                            <option value="medium" class="bg-gray-900 text-amber-300">Medium (Downwind / Upwind)</option>
+                            <option value="difficult" class="bg-gray-900 text-rose-400">Difficult (Strong Downwind / Upwind)</option>
+                            <option value="erg" class="bg-gray-900 text-cyan-300">ERG Lock</option>
+                        </select>
+                        <button id="rerollWindProfileBtn" type="button"
+                                class="ml-0.5 p-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-amber-300 hover:text-amber-200 border border-gray-700 transition cursor-pointer flex items-center justify-center"
+                                title="Generate a new random upwind/downwind simulation for the session">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Expected Perfect Training Metrics (Avg Watts & TSS) -->
+                <div id="expectedWorkoutMetricsBadge"
+                     class="flex items-center gap-2 bg-gray-950/90 border border-amber-500/30 rounded-xl px-3 py-1.5 text-xs whitespace-nowrap">
+                    <span class="text-gray-400 font-medium">Avg:</span>
+                    <span id="expectedAvgWattsLabel" class="font-mono font-bold text-amber-300">-- W</span>
+                    <span class="text-gray-600">•</span>
+                    <span class="text-gray-400 font-medium">TSS:</span>
+                    <span id="expectedTssLabel" class="font-mono font-bold text-orange-400">--</span>
+                </div>
+            </div>
+
+            <!-- Selected Workout Profile Preview Card -->
+            <div class="mt-3.5 bg-gray-900/80 border border-gray-800 rounded-2xl p-3.5">
+                <div class="flex flex-wrap items-baseline justify-between gap-2 mb-2">
+                    <div>
+                        <h3 id="workoutTitleLabel" class="text-base sm:text-lg font-black text-amber-300">KICKR Arcade Pyramid</h3>
+                        <p id="workoutDescriptionLabel" class="text-xs text-gray-400">Progressive watt accuracy pyramid flying through 3D Sky Donut Gates.</p>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs font-mono">
+                        <span id="workoutAuthorLabel" class="text-gray-400">Performed 3D Arcade</span>
+                        <span class="text-gray-600">•</span>
+                        <span id="workoutDurationLabel" class="px-2 py-0.5 rounded-lg bg-gray-950 border border-gray-800 text-emerald-300 font-bold">10:00</span>
+                    </div>
+                </div>
+                <div class="relative w-full h-24 sm:h-28 bg-gray-950/90 rounded-xl border border-gray-800 overflow-hidden">
+                    <canvas id="trainingPreviewCanvas" class="w-full h-full block"></canvas>
+                </div>
+            </div>
+
+            <!-- Interactive Preset Workout Cards Grid -->
+            <div class="mt-3.5">
+                <div class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Built-in Sky Gate Workouts</div>
+                <div id="presetCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-56 overflow-y-auto pr-1"></div>
+            </div>
+
+            <!-- Step Footer -->
+            <div class="mt-5 pt-4 border-t border-gray-800 flex items-center justify-between gap-3">
+                <button id="backToPairingBtn" type="button"
+                        class="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 font-bold text-xs border border-gray-700 cursor-pointer transition">
+                    ← Pairing &amp; Rules
+                </button>
+                <button id="toAvatarScreenBtn" type="button"
+                        class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-gray-950 font-black text-xs sm:text-sm uppercase tracking-wide cursor-pointer shadow-lg shadow-orange-500/25 transition">
+                    Next: Avatar Selection →
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================================
+         SCREEN 4: AVATAR SELECTION SCREEN (LIVE 3D PREVIEW)
+         ========================================================================= -->
+    <section id="screenAvatar" data-screen="avatar"
+             class="hidden fixed inset-x-0 top-16 bottom-0 z-20 flex-col justify-between px-3 sm:px-5 pb-4 pt-2 pointer-events-none overflow-y-auto">
+        <!-- Top Camera Perspective Selector Over Live 3D Stage -->
+        <div class="max-w-5xl w-full mx-auto bg-gray-950/80 backdrop-blur-xl border border-gray-800/90 rounded-2xl px-4 py-2.5 shadow-xl flex flex-wrap items-center justify-between gap-2.5 pointer-events-auto">
+            <div>
+                <span class="text-[11px] font-black uppercase tracking-widest text-emerald-400">Step 3 of 3</span>
+                <h2 class="text-base sm:text-xl font-black text-white">Choose Your 3D Flying Avatar</h2>
+            </div>
+
+            <!-- Synced Select + Camera Perspective Buttons -->
+            <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-xs font-semibold text-gray-400 mr-1">Camera:</span>
+                <select id="cameraViewSelect" class="hidden">
+                    <option value="1">1 · Chase</option>
+                    <option value="2">2 · Far Chase</option>
+                    <option value="3">3 · Top-Down</option>
+                    <option value="4">4 · Front</option>
+                    <option value="5">5 · Front Far</option>
+                </select>
+                <button type="button" data-camera-pill="1" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer">1 · Chase</button>
+                <button type="button" data-camera-pill="2" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer">2 · Far</button>
+                <button type="button" data-camera-pill="3" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer">3 · Top</button>
+                <button type="button" data-camera-pill="4" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer">4 · Front</button>
+                <button type="button" data-camera-pill="5" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer">5 · Front Far</button>
+            </div>
+        </div>
+
+        <!-- Open Center Window Showcasing the Live 3D Avatar in Flight -->
+        <div class="flex-1 min-h-[160px] pointer-events-none"></div>
+
+        <!-- Bottom Dock: 6 Avatar Cards + Flight Launch CTA -->
+        <div class="max-w-5xl w-full mx-auto bg-gray-950/85 backdrop-blur-xl border border-gray-800/90 rounded-3xl p-4 sm:p-5 shadow-2xl pointer-events-auto">
+            <select id="avatarSelect" class="hidden">
+                <option value="aero_wyvern">Aero Wyvern (Realistic Flight)</option>
+                <option value="fuchur">Fuchur (Unendliche Geschichte)</option>
+                <option value="et_bike">Boy with Bicycle &amp; E.T.</option>
+                <option value="delorean">DeLorean (Back to the Future)</option>
+                <option value="mars_ufo">UFO (Mars Attacks!)</option>
+                <option value="paramotor">Paramotor (Phi Maestro Light 3)</option>
+            </select>
+
+            <div id="avatarCardsGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+                <button type="button" data-avatar-card="aero_wyvern"
+                        class="text-left rounded-2xl p-3 border transition cursor-pointer flex flex-col justify-between gap-1">
+                    <span class="text-lg">🐉</span>
+                    <div>
+                        <div class="text-xs font-black text-white leading-tight">Aero Wyvern</div>
+                        <div class="text-[11px] text-gray-400 leading-snug mt-0.5">Realistic Winged Dragon</div>
+                    </div>
+                </button>
+
+                <button type="button" data-avatar-card="fuchur"
+                        class="text-left rounded-2xl p-3 border transition cursor-pointer flex flex-col justify-between gap-1">
+                    <span class="text-lg">✨</span>
+                    <div>
+                        <div class="text-xs font-black text-white leading-tight">Fuchur</div>
+                        <div class="text-[11px] text-gray-400 leading-snug mt-0.5">Pearly Luckdragon</div>
+                    </div>
+                </button>
+
+                <button type="button" data-avatar-card="et_bike"
+                        class="text-left rounded-2xl p-3 border transition cursor-pointer flex flex-col justify-between gap-1">
+                    <span class="text-lg">🚲</span>
+                    <div>
+                        <div class="text-xs font-black text-white leading-tight">BMX &amp; E.T.</div>
+                        <div class="text-[11px] text-gray-400 leading-snug mt-0.5">Sky Basket Bicycle</div>
+                    </div>
+                </button>
+
+                <button type="button" data-avatar-card="delorean"
+                        class="text-left rounded-2xl p-3 border transition cursor-pointer flex flex-col justify-between gap-1">
+                    <span class="text-lg">⚡</span>
+                    <div>
+                        <div class="text-xs font-black text-white leading-tight">DeLorean</div>
+                        <div class="text-[11px] text-gray-400 leading-snug mt-0.5">Hover Time Machine</div>
+                    </div>
+                </button>
+
+                <button type="button" data-avatar-card="mars_ufo"
+                        class="text-left rounded-2xl p-3 border transition cursor-pointer flex flex-col justify-between gap-1">
+                    <span class="text-lg">🛸</span>
+                    <div>
+                        <div class="text-xs font-black text-white leading-tight">Mars UFO</div>
+                        <div class="text-[11px] text-gray-400 leading-snug mt-0.5">Martian Flying Saucer</div>
+                    </div>
+                </button>
+
+                <button type="button" data-avatar-card="paramotor"
+                        class="text-left rounded-2xl p-3 border transition cursor-pointer flex flex-col justify-between gap-1">
+                    <span class="text-lg">🪂</span>
+                    <div>
+                        <div class="text-xs font-black text-white leading-tight">Paramotor</div>
+                        <div class="text-[11px] text-gray-400 leading-snug mt-0.5">Phi Maestro Light 3</div>
+                    </div>
+                </button>
+            </div>
+
+            <div class="mt-4 pt-3.5 border-t border-gray-800 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <button id="backToTrainingBtn" type="button"
+                            class="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 font-bold text-xs border border-gray-700 cursor-pointer transition">
+                        ← Training
+                    </button>
+                    <span id="avatarReadySummary" class="text-xs text-gray-400 font-mono hidden sm:inline"></span>
+                </div>
+
+                <button id="avatarStartFlightBtn" type="button"
+                        class="px-7 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-green-400 hover:from-emerald-400 hover:to-green-300 text-gray-950 font-black text-xs sm:text-sm uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-xl shadow-emerald-500/30 transition">
+                    <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    <span>Start Flight</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================================
+         SCREEN 5: IN-GAME FLIGHT HUD OVER FULL-WINDOW 3D VIEWPORT
+         ========================================================================= -->
+    <div id="screenGame" data-screen="game"
+         class="hidden fixed inset-0 z-20 pointer-events-none flex-col justify-between p-2.5 sm:p-4 overflow-hidden">
+
+        <!-- TOP FLOATING STACK: IN-FLIGHT BAR, SIMULATOR BAR & ARCADE SCORE HUD -->
         <div class="flex flex-col gap-2 w-full max-w-[1600px] mx-auto pointer-events-none">
 
-            <!-- Header -->
-            <header id="mainHeader" class="bg-gray-950/75 backdrop-blur-md border border-gray-800/90 rounded-2xl px-3.5 py-2 shadow-xl pointer-events-auto">
-                <div class="flex flex-wrap items-center justify-between gap-2.5">
-                    <div class="flex items-center gap-3">
-                        <a href="/sitemap" title="Back to Application Directory" class="group flex items-center gap-2.5">
-                            <img src="performed3d.svg" alt="Performed 3D Logo" class="w-8 h-8 drop-shadow group-hover:scale-105 transition-transform">
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <h1 class="text-base sm:text-lg font-black tracking-tight bg-gradient-to-r from-emerald-400 via-amber-300 to-orange-400 bg-clip-text text-transparent">
-                                        Performed 3D
-                                    </h1>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-
-                    <!-- Header Controls: Avatar, FTP, Obstacles Toggle, Bluetooth, Sim Mode, Sound, Timeline Toggle -->
-                    <div class="flex flex-wrap items-center gap-2">
-                        <!-- Avatar Selector -->
-                        <div class="flex items-center gap-1.5 bg-gray-900/90 border border-amber-500/40 rounded-xl px-2.5 py-1 text-xs"
-                             title="Choose your 3D flying avatar figure">
-                            <label for="avatarSelect" class="text-gray-400 font-semibold">Avatar:</label>
-                            <select id="avatarSelect" class="bg-gray-800 text-amber-300 font-bold rounded px-1.5 py-0.5 border border-gray-700 focus:outline-none focus:border-orange-500 cursor-pointer">
-                                <option value="aero_wyvern" class="bg-gray-900">Aero Wyvern (Realistic Flight)</option>
-                                <option value="fuchur" class="bg-gray-900">Fuchur (Unendliche Geschichte)</option>
-                                <option value="et_bike" class="bg-gray-900">Boy with Bicycle &amp; E.T.</option>
-                                <option value="delorean" class="bg-gray-900">DeLorean (Back to the Future)</option>
-                                <option value="mars_ufo" class="bg-gray-900">UFO (Mars Attacks!)</option>
-                                <option value="paramotor" class="bg-gray-900">Paramotor (Phi Maestro Light 3)</option>
-                            </select>
-                        </div>
-
-                        <!-- Camera Perspective Selector (keys 1-5) -->
-                        <div class="flex items-center gap-1.5 bg-gray-900/90 border border-sky-500/40 rounded-xl px-2.5 py-1 text-xs"
-                             title="Switch camera perspective — press keys 1 to 5">
-                            <label for="cameraViewSelect" class="text-gray-400 font-semibold">Camera:</label>
-                            <select id="cameraViewSelect" class="bg-gray-800 text-sky-300 font-bold rounded px-1.5 py-0.5 border border-gray-700 focus:outline-none focus:border-orange-500 cursor-pointer">
-                                <option value="1" class="bg-gray-900">1 · Chase</option>
-                                <option value="2" class="bg-gray-900">2 · Far Chase</option>
-                                <option value="3" class="bg-gray-900">3 · Top-Down</option>
-                                <option value="4" class="bg-gray-900">4 · Front</option>
-                                <option value="5" class="bg-gray-900">5 · Front Far</option>
-                            </select>
-                        </div>
-
-                        <!-- Rider FTP -->
-                        <div class="flex items-center gap-1.5 bg-gray-900/90 border border-gray-800 rounded-xl px-2.5 py-1 text-xs">
-                            <label for="ftpInput" class="text-gray-400 font-semibold">FTP:</label>
-                            <input id="ftpInput" type="number" min="50" max="600" value="200"
-                                   class="w-14 bg-gray-800 text-amber-300 font-bold text-center rounded px-1 py-0.5 border border-gray-700 focus:outline-none focus:border-orange-500">
-                            <span class="text-gray-500">W</span>
-                        </div>
-
-                        <!-- Obstacles Option Toggle -->
-                        <label for="obstaclesToggleCheck"
-                               class="flex items-center gap-1.5 bg-gray-900/90 hover:bg-gray-800 border border-rose-500/40 rounded-xl px-2.5 py-1 text-xs cursor-pointer transition select-none"
-                               title="Render 3D sky obstacles — Press SPACEBAR at the right moment to destroy them before impact!">
-                            <input id="obstaclesToggleCheck" type="checkbox" class="accent-rose-500 rounded cursor-pointer">
-                            <span class="font-bold text-rose-300">Obstacles (Spacebar)</span>
-                        </label>
-
-                        <!-- Steering On/Off Setting Toggle -->
-                        <label for="steeringToggleCheck"
-                               class="flex items-center gap-1.5 bg-gray-900/90 hover:bg-gray-800 border border-cyan-500/40 rounded-xl px-2.5 py-1 text-xs cursor-pointer transition select-none"
-                               title="Toggle manual left/right dragon steering on or off. When turned off, the dragon automatically steers horizontally through the gates!">
-                            <input id="steeringToggleCheck" type="checkbox" checked class="accent-cyan-400 rounded cursor-pointer">
-                            <span id="steeringToggleLabel" class="font-bold text-cyan-300">Steering: ON</span>
-                        </label>
-
-                        <!-- Bluetooth Pairing Buttons Group -->
-                        <div id="blePairingButtonsGroup" class="flex flex-wrap items-center gap-1.5 bg-gray-900/90 border border-gray-800 rounded-xl px-2 py-1">
-                            <span class="text-[11px] font-semibold text-gray-400 px-1 flex items-center gap-1 select-none" title="Bluetooth Low Energy Sensors">
-                                <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7l10 10-5 5V2l5 5L7 17"/>
-                                </svg>
-                                <span>BLE:</span>
-                            </span>
-
-                            <!-- Bluetooth Connect Button (Wahoo KICKR) -->
-                            <button id="connectBleBtn" type="button"
-                                    class="px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-blue-600 hover:bg-blue-500 text-white border border-blue-400/30">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7l10 10-5 5V2l5 5L7 17"/>
-                                </svg>
-                                <span id="bleStatusText">Connect Wahoo KICKR</span>
-                                <span id="bleStatusDot" class="w-2 h-2 rounded-full bg-gray-300"></span>
-                            </button>
-
-                            <!-- Concept2 PM5 Rowing Ergometer Button (power source, no resistance control) -->
-                            <button id="connectRowerBleBtn" type="button"
-                                    class="px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-sky-700/80 hover:bg-sky-600 text-white border border-sky-400/30"
-                                    title="Connect Concept2 RowErg / SkiErg / BikeErg (PM5) as power source; stroke rate is shown as cadence">
-                                <svg class="w-3.5 h-3.5 text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 17c2 1.5 4 1.5 6 0s4-1.5 6 0 4 1.5 6 0M5 13l14-8M16 4l3 1-1 3"/>
-                                </svg>
-                                <span id="bleRowerStatusText">Connect Concept2</span>
-                                <span id="bleRowerStatusDot" class="w-2 h-2 rounded-full bg-gray-300"></span>
-                            </button>
-
-                            <!-- BLE Heart Rate Monitor Pairing Button (e.g. Garmin HRM 200) -->
-                            <button id="connectHrmBleBtn" type="button"
-                                    class="px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-rose-700/80 hover:bg-rose-600 text-white border border-rose-400/30"
-                                    title="Pair BLE Heart Rate Monitor (e.g. Garmin HRM 200)">
-                                <svg class="w-3.5 h-3.5 text-rose-300" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                                </svg>
-                                <span id="bleHrmStatusText">Pair HRM</span>
-                                <span id="bleHrmStatusDot" class="w-2 h-2 rounded-full bg-gray-300"></span>
-                            </button>
-
-                            <!-- Elite Aria fan pairing button -->
-                            <button id="connectAriaBleBtn" type="button"
-                                    class="px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-orange-700/80 hover:bg-orange-600 text-white border border-orange-400/30"
-                                    title="Pair Elite Aria Smart Fan; fan speed follows heart rate (80-180 bpm)">
-                                <svg class="w-3.5 h-3.5 text-orange-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12c-1.5-2.5-2.1-5.3-.5-7.5 2.8 1.2 3.6 3.3 2.6 6.1 2.8-1 5-.3 6.1 2.5-2.1 1.7-4.9 1.2-7.1 0 1.3 2.7.7 5.1-1.8 6.9-2.1-1.7-2.3-4.5-.9-7.1-2.9.9-5.1-.2-6.1-2.8 2.1-1.5 4.9-1.2 7.7.2z"/>
-                                </svg>
-                                <span id="bleAriaStatusText">Pair Elite Aria</span>
-                                <span id="bleAriaStatusDot" class="w-2 h-2 rounded-full bg-gray-300"></span>
-                            </button>
-
-                            <!-- BLE Cadence Sensor Pairing Button -->
-                            <button id="connectCadenceBleBtn" type="button"
-                                    class="px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-emerald-700/80 hover:bg-emerald-600 text-white border border-emerald-400/30"
-                                    title="Pair BLE Cadence Sensor">
-                                <svg class="w-3.5 h-3.5 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                                </svg>
-                                <span id="bleCadenceStatusText">Pair Cadence</span>
-                                <span id="bleCadenceStatusDot" class="w-2 h-2 rounded-full bg-gray-300"></span>
-                            </button>
-
-                            <!-- BLE Speed Sensor Pairing Button -->
-                            <button id="connectSpeedBleBtn" type="button"
-                                    class="px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-cyan-700/80 hover:bg-cyan-600 text-white border border-cyan-400/30"
-                                    title="Pair BLE Speed Sensor">
-                                <svg class="w-3.5 h-3.5 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                                </svg>
-                                <span id="bleSpeedStatusText">Pair Speed</span>
-                                <span id="bleSpeedStatusDot" class="w-2 h-2 rounded-full bg-gray-300"></span>
-                            </button>
-
-                            <!-- BLE Steering Sensor Pairing Button (Elite Sterzo Smart / Elite Rizer) -->
-                            <button id="connectSteerBleBtn" type="button"
-                                    class="px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-purple-700/80 hover:bg-purple-600 text-white border border-purple-400/30"
-                                    title="Pair Elite Sterzo Smart or Elite Rizer for BLE Steering">
-                                <svg class="w-3.5 h-3.5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7l-5 5 5 5M16 7l5 5-5 5"/>
-                                </svg>
-                                <span id="bleSteerStatusText">Pair Sterzo / Rizer</span>
-                                <span id="bleSteerStatusDot" class="w-2 h-2 rounded-full bg-gray-300"></span>
-                            </button>
-
-                            <!-- Mobile Phone Handlebar Steering Pairing Button (QR Code / WebRTC) -->
-                            <button id="connectPhoneSteerBtn" type="button"
-                                    class="px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md bg-indigo-700/80 hover:bg-indigo-600 text-white border border-indigo-400/30"
-                                    title="Scan QR code to use your mobile phone on the handlebar as a wireless steering controller">
-                                <svg class="w-3.5 h-3.5 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                                </svg>
-                                <span id="phoneSteerStatusText">Phone Steer (QR)</span>
-                                <span id="phoneSteerStatusDot" class="w-2 h-2 rounded-full bg-gray-300"></span>
-                            </button>
-                        </div>
-
-                        <!-- Demo / Virtual Pedal Toggle -->
-                        <button id="simToggleBtn" type="button"
-                                class="px-2.5 py-2 rounded-xl font-semibold text-xs flex items-center gap-1.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 transition cursor-pointer"
-                                title="Toggle Virtual Trainer Simulator when no Bluetooth trainer is paired">
-                            <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                            </svg>
-                            <span id="simToggleText">Sim Mode: ON</span>
-                        </button>
-
-                        <!-- Sound Effects Toggle -->
-                        <button id="soundToggleBtn" type="button"
-                                class="p-1.5 rounded-xl bg-gray-800/90 hover:bg-gray-700 text-amber-400 border border-gray-700 transition cursor-pointer"
-                                title="Toggle arcade audio synthesizer">
-                            <svg id="soundOnIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
-                            </svg>
-                            <svg id="soundOffIcon" class="w-4 h-4 hidden text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/>
-                            </svg>
-                        </button>
-
-                        <!-- Adaptive Music Toggle -->
-                        <button id="musicToggleBtn" type="button"
-                                class="p-1.5 rounded-xl bg-gray-800/90 hover:bg-gray-700 text-fuchsia-400 border border-gray-700 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                                title="Toggle adaptive music (tempo &amp; mood follow the target watts of the rings ahead)">
-                            <svg id="musicOnIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
-                            </svg>
-                            <svg id="musicOffIcon" class="w-4 h-4 hidden text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM3 3l18 18"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </header>
-
-            <!-- Top Control & Workout Setup Bar -->
-            <section id="topSetupBar" class="bg-gray-950/75 backdrop-blur-md border border-gray-800/90 rounded-2xl px-3.5 py-2.5 shadow-xl pointer-events-auto">
-                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
-                    <!-- Workout Upload, Preset, Resistance Mode Selector & Donut Accuracy -->
-                    <div id="sessionSetupOptionsGroup" class="flex flex-wrap items-center gap-2.5">
-                        <label for="zwoFileInput"
-                               class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-gray-950 font-extrabold text-xs flex items-center gap-1.5 cursor-pointer shadow-lg shadow-orange-500/20 transition">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-                            </svg>
-                            <span>Upload Zwift (.zwo)</span>
-                            <input id="zwoFileInput" type="file" accept=".zwo,.xml,text/xml,application/xml" class="hidden">
-                        </label>
-
-                        <div class="flex items-center gap-1.5 bg-gray-900/90 border border-gray-800 rounded-xl px-2.5 py-1.5">
-                            <span class="text-xs text-gray-400 font-medium">Preset:</span>
-                            <select id="presetWorkoutSelect" class="bg-transparent text-xs font-semibold text-gray-200 focus:outline-none cursor-pointer">
-                                <option value="kickr_arcade" class="bg-gray-900">KICKR Arcade Pyramid (10m)</option>
-                                <option value="sky_sine_ramps" class="bg-gray-900">Sky Serpent Up &amp; Down Ramps (15m • Continuous Ramps)</option>
-                                <option value="alpine_switchback_ramps" class="bg-gray-900">Alpine Switchback Double Ramps (20m • Up/Down Ramps)</option>
-                                <option value="mach_dive_climb_level" class="bg-gray-900">Mach Canyon Dive &amp; Climb Level (16m • V-Ramps)</option>
-                                <option value="inferno_mega_ramps" class="bg-gray-900">Dragon Boss Mega-Ramp Gauntlet (22m • 24 Ramps)</option>
-                                <option value="dragon_rollercoaster" class="bg-gray-900">Dragon Canyon Rollercoaster (14m • 28 Changes)</option>
-                                <option value="criterium_chaos" class="bg-gray-900">Pro Criterium Corner Sprints (18m • 32 Changes)</option>
-                                <option value="micro_burst_storm" class="bg-gray-900">30/15 VO2max Micro-Burst Storm (16m • 34 Changes)</option>
-                                <option value="sawtooth_alps" class="bg-gray-900">Alpine Sawtooth Multi-Peak (20m • 26 Changes)</option>
-                                <option value="tabata_inferno" class="bg-gray-900">Dragon Fire Tabata Inferno (12m • 30 Changes)</option>
-                                <option value="endurance_wave_matrix" class="bg-gray-900">Harmonic Wave &amp; Step Matrix (25m • 36 Changes)</option>
-                                <option value="sweet_spot" class="bg-gray-900">Sweet Spot Precision (15m)</option>
-                                <option value="hiit_sprints" class="bg-gray-900">Over-Under Surge Blitz (12m)</option>
-                                <option value="quick_blitz" class="bg-gray-900">Quick 3-Minute Accuracy Sprint (3m)</option>
-                            </select>
-                        </div>
-
-                        <!-- Resistance / Gradient Mode Setting -->
-                        <div class="flex items-center gap-1.5 bg-gray-900/90 border border-gray-800 rounded-xl px-2.5 py-1.5">
-                            <span class="text-xs text-gray-400 font-medium">Mode:</span>
-                            <select id="resistanceModeSelect" class="bg-transparent text-xs font-bold text-emerald-400 focus:outline-none cursor-pointer">
-                                <option value="easy" class="bg-gray-900 text-emerald-400" selected>Easy (0% Flat)</option>
-                                <option value="medium" class="bg-gray-900 text-amber-300">Medium (Downwind / Upwind)</option>
-                                <option value="difficult" class="bg-gray-900 text-rose-400">Difficult (Strong Downwind / Upwind)</option>
-                                <option value="erg" class="bg-gray-900 text-cyan-300">ERG Lock</option>
-                            </select>
-                            <button id="rerollWindProfileBtn" type="button"
-                                    class="ml-0.5 p-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-amber-300 hover:text-amber-200 border border-gray-700 transition cursor-pointer flex items-center justify-center"
-                                    title="Generate a new random upwind/downwind simulation for the session">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                                </svg>
-                            </button>
-                        </div>
-
-                        <!-- Expected Perfect Training Metrics (Avg Watts & TSS) -->
-                        <div id="expectedWorkoutMetricsBadge"
-                             class="flex items-center gap-1.5 bg-gray-900/90 border border-gray-800 rounded-xl px-2.5 py-1.5 text-xs whitespace-nowrap"
-                             title="Expected average watts and Training Stress Score (TSS) when the entire training is executed perfectly">
-                            <span class="text-gray-400 font-medium">Avg:</span>
-                            <span id="expectedAvgWattsLabel" class="font-mono font-bold text-amber-300">-- W</span>
-                            <span class="text-gray-600">•</span>
-                            <span class="text-gray-400 font-medium">TSS:</span>
-                            <span id="expectedTssLabel" class="font-mono font-bold text-orange-400">--</span>
-                        </div>
-
-                        <!-- Donut Size & Required Accuracy Tolerance Setting (5W to 50W, configurable before Start Flight) -->
-                        <div class="flex items-center gap-2 bg-gray-900/90 border border-emerald-500/40 rounded-xl px-2.5 py-1.5"
-                             title="Configure 3D Donut Gate size and required absolute watt accuracy (5W to 50W) before clicking Start Flight">
-                            <label for="accuracyToleranceSlider" class="text-xs text-gray-300 font-medium whitespace-nowrap">Donut / Accuracy:</label>
-                            <input id="accuracyToleranceSlider" type="range" min="5" max="50" step="1" value="30"
-                                   class="w-20 sm:w-24 accent-emerald-400 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
-                            <input id="accuracyToleranceInput" type="number" min="5" max="50" step="1" value="30"
-                                   class="w-11 bg-gray-800 text-emerald-300 font-mono font-bold text-xs text-center rounded px-1 py-0.5 border border-gray-700 focus:outline-none focus:border-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed">
-                            <span id="accuracyToleranceBadge" class="text-xs font-mono font-extrabold text-emerald-400 whitespace-nowrap">±30W</span>
-                        </div>
-                    </div>
-
-                    <!-- Start / Pause / Skip / Finish Action Buttons -->
-                    <div id="sessionActionButtonsGroup" class="flex flex-nowrap items-center justify-end gap-2 shrink-0 ml-auto self-end lg:self-auto">
-                        <button id="startWorkoutBtn" type="button"
-                                class="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-400 hover:from-emerald-400 hover:to-green-300 text-gray-950 font-black text-xs sm:text-sm tracking-wide uppercase flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow-lg shadow-emerald-500/25 transition">
-                            <svg id="startBtnIcon" class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M8 5v14l11-7z"/>
-                            </svg>
-                            <span id="startBtnText">Start Flight</span>
-                        </button>
-
-                        <button id="skipSegmentBtn" type="button" disabled
-                                class="px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 disabled:pointer-events-none text-gray-200 font-bold text-xs flex items-center gap-1 whitespace-nowrap shrink-0 border border-gray-700 transition cursor-pointer"
-                                title="Skip to next interval block">
-                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
-                            </svg>
-                            <span>Next Block</span>
-                        </button>
-
-                        <button id="screenshotBtn" type="button"
-                                class="px-2.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-cyan-300 font-bold text-xs flex items-center gap-1 whitespace-nowrap shrink-0 border border-cyan-500/40 transition cursor-pointer"
-                                title="Capture screenshot for the finish summary dialog">
-                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                            <span id="screenshotBtnText">Screenshot</span>
-                        </button>
-
-                        <button id="finishWorkoutBtn" type="button" disabled
-                                class="px-3.5 py-2 rounded-xl bg-rose-600/90 hover:bg-rose-500 disabled:opacity-40 disabled:pointer-events-none text-white font-bold text-xs flex items-center gap-1 whitespace-nowrap shrink-0 border border-rose-400/30 transition cursor-pointer">
-                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <span>Finish &amp; Summary</span>
-                        </button>
-                    </div>
+            <!-- Compact In-Flight Control Bar -->
+            <section id="activeTrainingControlBar" class="bg-gray-950/75 backdrop-blur-md border border-gray-800/90 rounded-2xl px-3 py-1.5 shadow-lg flex flex-wrap items-center gap-2 pointer-events-auto">
+                <div class="flex items-center gap-1.5 bg-gray-900/90 border border-amber-500/40 rounded-xl px-2.5 py-1 text-xs"
+                     title="Choose your 3D flying avatar figure">
+                    <label for="compactAvatarSelect" class="text-gray-400 font-semibold">Avatar:</label>
+                    <select id="compactAvatarSelect" class="bg-gray-800 text-amber-300 font-bold rounded px-1.5 py-0.5 border border-gray-700 focus:outline-none focus:border-orange-500 cursor-pointer">
+                        <option value="aero_wyvern" class="bg-gray-900">Aero Wyvern (Realistic Flight)</option>
+                        <option value="fuchur" class="bg-gray-900">Fuchur (Unendliche Geschichte)</option>
+                        <option value="et_bike" class="bg-gray-900">Boy with Bicycle &amp; E.T.</option>
+                        <option value="delorean" class="bg-gray-900">DeLorean (Back to the Future)</option>
+                        <option value="mars_ufo" class="bg-gray-900">UFO (Mars Attacks!)</option>
+                        <option value="paramotor" class="bg-gray-900">Paramotor (Phi Maestro Light 3)</option>
+                    </select>
                 </div>
 
-                <!-- Simulator Controls Banner (shown when Sim Mode is ON) -->
-                <div id="simControlBar" class="mt-2.5 pt-2 border-t border-gray-800 flex flex-wrap items-center justify-between gap-3 bg-amber-500/10 rounded-xl px-3 py-1.5 border border-amber-500/20">
-                    <div class="flex items-center gap-2 text-xs text-amber-300 font-semibold">
-                        <span class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 font-bold">VIRTUAL DRAGON POWER</span>
-                        <span class="hidden sm:inline">Adjust watts to climb through the high-altitude 3D Donut Gates:</span>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-3 flex-grow max-w-xl">
-                        <input id="simWattSlider" type="range" min="0" max="600" value="0"
-                               class="flex-grow accent-orange-500 cursor-pointer">
-                        <span id="simWattReadout" class="text-xs font-mono font-bold text-amber-300 w-14 text-right">0 W</span>
-                        <button id="simSnapTargetBtn" type="button"
-                                class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold cursor-pointer transition">
-                            Lock 100% Gate Altitude
-                        </button>
-                        <label class="flex items-center gap-1.5 text-xs text-gray-300 cursor-pointer">
-                            <input id="simAutoFollowCheck" type="checkbox" class="accent-emerald-500 rounded">
-                            <span>Auto-Fly Target Gate</span>
-                        </label>
-                    </div>
+                <div class="flex items-center gap-1.5 bg-gray-900/90 border border-sky-500/40 rounded-xl px-2.5 py-1 text-xs"
+                     title="Switch camera perspective — press keys 1 to 5">
+                    <label for="compactCameraViewSelect" class="text-gray-400 font-semibold">Camera:</label>
+                    <select id="compactCameraViewSelect" class="bg-gray-800 text-sky-300 font-bold rounded px-1.5 py-0.5 border border-gray-700 focus:outline-none focus:border-orange-500 cursor-pointer">
+                        <option value="1" class="bg-gray-900">1 · Chase</option>
+                        <option value="2" class="bg-gray-900">2 · Far Chase</option>
+                        <option value="3" class="bg-gray-900">3 · Top-Down</option>
+                        <option value="4" class="bg-gray-900">4 · Front</option>
+                        <option value="5" class="bg-gray-900">5 · Front Far</option>
+                    </select>
                 </div>
+
+                <button id="compactShowSettingsBtn" type="button"
+                        class="px-2.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold text-xs border border-gray-700 cursor-pointer transition"
+                        title="Open Pairing, Training &amp; Avatar setup screens">
+                    Setup
+                </button>
+
+                <label for="compactSteeringToggleCheck"
+                       class="flex items-center gap-1.5 bg-gray-900/90 hover:bg-gray-800 border border-cyan-500/40 rounded-xl px-2.5 py-1 text-xs cursor-pointer transition select-none"
+                       title="Toggle manual left/right dragon steering on or off. When turned off, the dragon automatically steers horizontally through the gates!">
+                    <input id="compactSteeringToggleCheck" type="checkbox" checked class="accent-cyan-400 rounded cursor-pointer">
+                    <span id="compactSteeringToggleLabel" class="font-bold text-cyan-300">Steering: ON</span>
+                </label>
+
+                <div id="fireBreathContainer" class="hidden">
+                    <button id="fireBreathBtn" type="button" disabled
+                            class="px-3 py-1 rounded-xl bg-gray-900/80 border border-gray-700 text-gray-400 font-black text-xs uppercase tracking-wider shadow flex items-center gap-1.5 cursor-not-allowed opacity-70 transition">
+                        <span id="fireBreathBtnText">&#128274; Fire Locked</span>
+                    </button>
+                </div>
+
+                <!-- Sound & Adaptive Music Toggles -->
+                <button id="soundToggleBtn" type="button"
+                        class="p-1.5 rounded-xl bg-gray-800/90 hover:bg-gray-700 text-amber-400 border border-gray-700 transition cursor-pointer"
+                        title="Toggle arcade audio synthesizer">
+                    <svg id="soundOnIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+                    </svg>
+                    <svg id="soundOffIcon" class="w-4 h-4 hidden text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/>
+                    </svg>
+                </button>
+
+                <button id="musicToggleBtn" type="button"
+                        class="p-1.5 rounded-xl bg-gray-800/90 hover:bg-gray-700 text-fuchsia-400 border border-gray-700 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Toggle adaptive music (tempo &amp; mood follow the target watts of the rings ahead)">
+                    <svg id="musicOnIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+                    </svg>
+                    <svg id="musicOffIcon" class="w-4 h-4 hidden text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM3 3l18 18"/>
+                    </svg>
+                </button>
+
+                <!-- Flight Session Action Buttons -->
+                <button id="startWorkoutBtn" type="button"
+                        class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-400 hover:from-emerald-400 hover:to-green-300 text-gray-950 font-black text-xs tracking-wide uppercase flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow-lg shadow-emerald-500/25 transition">
+                    <svg id="startBtnIcon" class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    <span id="startBtnText">Start Flight</span>
+                </button>
+
+                <button id="screenshotBtn" type="button"
+                        class="px-2.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-cyan-300 font-bold text-xs flex items-center gap-1 whitespace-nowrap shrink-0 border border-cyan-500/40 transition cursor-pointer"
+                        title="Capture screenshot for the finish summary screen">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span id="screenshotBtnText">Screenshot</span>
+                </button>
+
+                <button id="finishWorkoutBtn" type="button" disabled
+                        class="px-3 py-1.5 rounded-xl bg-rose-600/90 hover:bg-rose-500 disabled:opacity-40 disabled:pointer-events-none text-white font-bold text-xs flex items-center gap-1 whitespace-nowrap shrink-0 border border-rose-400/30 transition cursor-pointer">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>Finish &amp; Summary</span>
+                </button>
             </section>
 
-            <!-- Compact In-Training Action Bar (Visible when Header & Setup Bar are hidden during active session) -->
-            <section id="activeTrainingControlBar" class="hidden bg-gray-950/75 backdrop-blur-md border border-gray-800/90 rounded-2xl px-4 py-2 shadow-lg flex flex-wrap items-center justify-between gap-3 pointer-events-auto">
-                <div class="flex items-center gap-3">
-                    <img src="/performed3d.svg" alt="Performed 3D" class="w-6 h-6">
-                    <div>
-                        <span class="text-xs font-bold text-amber-300" id="compactWorkoutTitle">KICKR Arcade Pyramid</span>
-                        <span class="text-[11px] text-gray-300 ml-2 font-mono" id="compactResistanceLabel">Mode: Easy (0.0%)</span>
-                    </div>
+            <!-- Simulator Controls Banner (shown on Game screen when Sim Mode is ON) -->
+            <div id="simControlBar" class="bg-gray-950/75 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 rounded-2xl px-3.5 py-2 border border-amber-500/30 shadow-lg pointer-events-auto">
+                <div class="flex items-center gap-2 text-xs text-amber-300 font-semibold">
+                    <span class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 font-bold">VIRTUAL DRAGON POWER</span>
+                    <span class="hidden sm:inline">Adjust watts to climb through the high-altitude 3D Donut Gates:</span>
                 </div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <div class="flex items-center gap-1.5 bg-gray-900/90 border border-amber-500/40 rounded-xl px-2.5 py-1 text-xs"
-                         title="Choose your 3D flying avatar figure">
-                        <label for="compactAvatarSelect" class="text-gray-400 font-semibold">Avatar:</label>
-                        <select id="compactAvatarSelect" class="bg-gray-800 text-amber-300 font-bold rounded px-1.5 py-0.5 border border-gray-700 focus:outline-none focus:border-orange-500 cursor-pointer">
-                            <option value="aero_wyvern" class="bg-gray-900">Aero Wyvern (Realistic Flight)</option>
-                            <option value="fuchur" class="bg-gray-900">Fuchur (Unendliche Geschichte)</option>
-                            <option value="et_bike" class="bg-gray-900">Boy with Bicycle &amp; E.T.</option>
-                            <option value="delorean" class="bg-gray-900">DeLorean (Back to the Future)</option>
-                            <option value="mars_ufo" class="bg-gray-900">UFO (Mars Attacks!)</option>
-                            <option value="paramotor" class="bg-gray-900">Paramotor (Phi Maestro Light 3)</option>
-                        </select>
-                    </div>
-                    <div class="flex items-center gap-1.5 bg-gray-900/90 border border-sky-500/40 rounded-xl px-2.5 py-1 text-xs"
-                         title="Switch camera perspective — press keys 1 to 5">
-                        <label for="compactCameraViewSelect" class="text-gray-400 font-semibold">Camera:</label>
-                        <select id="compactCameraViewSelect" class="bg-gray-800 text-sky-300 font-bold rounded px-1.5 py-0.5 border border-gray-700 focus:outline-none focus:border-orange-500 cursor-pointer">
-                            <option value="1" class="bg-gray-900">1 · Chase</option>
-                            <option value="2" class="bg-gray-900">2 · Far Chase</option>
-                            <option value="3" class="bg-gray-900">3 · Top-Down</option>
-                            <option value="4" class="bg-gray-900">4 · Front</option>
-                            <option value="5" class="bg-gray-900">5 · Front Far</option>
-                        </select>
-                    </div>
-                    <label for="compactSteeringToggleCheck"
-                           class="flex items-center gap-1.5 bg-gray-900/90 hover:bg-gray-800 border border-cyan-500/40 rounded-xl px-2.5 py-1 text-xs cursor-pointer transition select-none"
-                           title="Toggle manual left/right dragon steering on or off. When turned off, the dragon automatically steers horizontally through the gates!">
-                        <input id="compactSteeringToggleCheck" type="checkbox" checked class="accent-cyan-400 rounded cursor-pointer">
-                        <span id="compactSteeringToggleLabel" class="font-bold text-cyan-300">Steering: ON</span>
+                <div class="flex flex-wrap items-center gap-3 flex-grow max-w-xl">
+                    <input id="simWattSlider" type="range" min="0" max="600" value="0"
+                           class="flex-grow accent-orange-500 cursor-pointer">
+                    <span id="simWattReadout" class="text-xs font-mono font-bold text-amber-300 w-14 text-right">0 W</span>
+                    <button id="simSnapTargetBtn" type="button"
+                            class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold cursor-pointer transition">
+                        Lock 100% Gate Altitude
+                    </button>
+                    <label class="flex items-center gap-1.5 text-xs text-gray-300 cursor-pointer">
+                        <input id="gameSimAutoFollowCheck" type="checkbox" class="accent-emerald-500 rounded">
+                        <span>Auto-Fly Target Gate</span>
                     </label>
-                    <div id="compactSteerControlsContainer" class="flex items-center gap-1 bg-gray-900/90 border border-gray-700/80 rounded-xl px-1.5 py-1">
-                        <button id="steerLeftBtn" type="button"
-                                class="px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 active:bg-orange-500/30 text-amber-300 font-black text-xs border border-gray-700 cursor-pointer transition select-none disabled:opacity-40 disabled:pointer-events-none"
-                                title="Steer Dragon Left (ArrowLeft / A)">
-                            &#9664; Steer Left [A / &larr;]
-                        </button>
-                        <button id="steerCenterBtn" type="button"
-                                class="px-2 py-1 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-bold text-[11px] border border-gray-700 cursor-pointer transition select-none disabled:opacity-40 disabled:pointer-events-none"
-                                title="Center Dragon in Canyon">
-                            Center
-                        </button>
-                        <button id="steerRightBtn" type="button"
-                                class="px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 active:bg-orange-500/30 text-amber-300 font-black text-xs border border-gray-700 cursor-pointer transition select-none disabled:opacity-40 disabled:pointer-events-none"
-                                title="Steer Dragon Right (ArrowRight / D)">
-                            Steer Right [D / &rarr;] &#9654;
-                        </button>
-                    </div>
-                    <button id="compactPauseResumeBtn" type="button"
-                            class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-gray-950 font-black text-xs uppercase tracking-wide flex items-center gap-1.5 cursor-pointer shadow transition">
-                        <span id="compactPauseResumeText">Pause Flight</span>
-                    </button>
-                    <button id="compactSkipSegmentBtn" type="button"
-                            class="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 font-bold text-xs border border-gray-700 cursor-pointer transition">
-                        Next Block
-                    </button>
-                    <button id="compactScreenshotBtn" type="button"
-                            class="px-2.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-cyan-300 font-bold text-xs flex items-center gap-1 border border-cyan-500/40 cursor-pointer transition"
-                            title="Capture screenshot for the finish summary dialog">
-                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        </svg>
-                        <span id="compactScreenshotBtnText">Screenshot</span>
-                    </button>
-                    <button id="compactFinishWorkoutBtn" type="button"
-                            class="px-3 py-1.5 rounded-xl bg-rose-600/90 hover:bg-rose-500 text-white font-bold text-xs border border-rose-400/30 cursor-pointer transition">
-                        Finish &amp; Summary
-                    </button>
-                    <button id="compactShowSettingsBtn" type="button"
-                            class="px-2.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold text-xs border border-gray-700 cursor-pointer transition"
-                            title="Show header and setup controls">
-                        Setup / BLE
-                    </button>
                 </div>
-            </section>
+            </div>
 
             <!-- TOP IN-GAME ARCADE HUD: UPPER RIGHT ORANGE SCORE, STREAK DURATION, WATTS, HEART RATE, CADENCE & SPEED -->
             <div class="flex items-start justify-end pointer-events-none">
@@ -667,8 +1127,8 @@
             <section class="bg-gray-950/70 backdrop-blur-md border border-gray-800/80 rounded-2xl px-3.5 py-2 shadow-xl pointer-events-auto">
                 <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
                     <div class="flex flex-wrap items-center gap-2.5">
-                        <h2 class="text-xs font-extrabold text-gray-200 uppercase tracking-wide">
-                            Sky Gate Altitude &amp; Downwind / Upwind Profile
+                        <h2 id="timelineWorkoutTitle" class="text-xs font-extrabold text-gray-200 uppercase tracking-wide">
+                            KICKR Arcade Pyramid
                         </h2>
                         <div id="timelineResistanceBanner" class="flex items-center gap-2 bg-gray-900/90 border border-amber-500/40 rounded-lg px-2.5 py-0.5">
                             <span id="timelineResistanceModeBadge" class="text-[10px] font-black text-amber-300">Easy</span>
@@ -703,9 +1163,12 @@
         </div>
     </div>
 
-    <!-- End of Training Summary & FIT Export Modal -->
-    <div id="summaryModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
-        <div class="bg-gray-900 border border-gray-700 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl my-8 relative overflow-hidden">
+    <!-- =========================================================================
+         SCREEN 6: WORKOUT SUMMARY & FIT EXPORT SCREEN
+         ========================================================================= -->
+    <section id="summaryModal" data-screen="summary"
+             class="fixed inset-0 z-40 hidden items-center justify-center bg-gray-950/80 backdrop-blur-md p-4 overflow-y-auto">
+        <div class="bg-gray-900/95 border border-gray-700 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl my-8 relative overflow-hidden">
             <div class="absolute -top-24 -left-24 w-64 h-64 bg-orange-500/20 rounded-full blur-3xl pointer-events-none"></div>
             <div class="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -737,7 +1200,7 @@
                     <div id="summaryMaxStreak" class="text-xs text-gray-400 mt-1">Best Streak: 0s</div>
                 </div>
                 <div class="bg-gray-950/90 border border-emerald-500/40 rounded-2xl p-4 text-center">
-                    <div id="summaryZoneLabel" class="text-xs uppercase font-bold text-emerald-400">Time in ±30W Gate Zone</div>
+                    <div id="summaryZoneLabel" class="text-xs uppercase font-bold text-emerald-400">Time in ±40W Gate Zone</div>
                     <div id="summaryTimeInZone" class="text-3xl font-black font-mono text-emerald-300 mt-1">0.0%</div>
                     <div id="summaryTimeInZoneSec" class="text-xs text-gray-400 mt-1">0s of 0s</div>
                 </div>
@@ -800,13 +1263,13 @@
                     <span id="summaryScreenshotTimestamp" class="text-[11px] font-mono text-gray-400"></span>
                 </div>
                 <div class="rounded-xl overflow-hidden border border-gray-800 bg-gray-900 max-h-64 flex items-center justify-center">
-                    <img id="summaryScreenshotPreview" src="" alt="Prepared Flight Screenshot" class="w-full h-auto max-h-64 object-contain block">
+                    <img id="summaryScreenshotPreview" alt="Prepared Flight Screenshot" class="w-full h-auto max-h-64 object-contain block">
                 </div>
             </div>
 
-            <!-- Action Buttons: Download FIT File, Save Screenshot & Close -->
-            <div class="mt-6 pt-5 border-t border-gray-800 flex flex-col sm:flex-row flex-wrap items-center justify-between gap-3 relative z-10">
-                <div class="flex flex-col sm:flex-row flex-wrap items-center gap-3 w-full sm:w-auto">
+            <!-- Action Buttons: Download FIT File, Save Screenshot & Screen Navigation -->
+            <div class="mt-6 pt-5 border-t border-gray-800 flex flex-col gap-3 relative z-10">
+                <div class="flex flex-col sm:flex-row flex-wrap items-center gap-3 w-full">
                     <button id="downloadFitBtn" type="button"
                             class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400 hover:from-orange-400 hover:to-yellow-300 text-gray-950 font-black text-sm flex items-center justify-center gap-2.5 cursor-pointer shadow-lg shadow-orange-500/25 transition">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -824,15 +1287,29 @@
                     </button>
                 </div>
 
-                <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
-                    <button id="closeSummaryBtn" type="button"
-                            class="px-5 py-2.5 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold text-xs cursor-pointer transition">
-                        Close
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-2">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button id="closeSummaryBtn" type="button"
+                                class="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold text-xs border border-gray-700 cursor-pointer transition">
+                            Splash Screen
+                        </button>
+                        <button id="summaryPairingBtn" type="button"
+                                class="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 font-bold text-xs border border-gray-700 cursor-pointer transition">
+                            Pairing &amp; Rules
+                        </button>
+                        <button id="summaryChangeTrainingBtn" type="button"
+                                class="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-amber-300 font-bold text-xs border border-amber-500/30 cursor-pointer transition">
+                            Select Training
+                        </button>
+                    </div>
+                    <button id="summaryFlyAgainBtn" type="button"
+                            class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-400 hover:from-emerald-400 hover:to-green-300 text-gray-950 font-black text-xs sm:text-sm uppercase tracking-wide cursor-pointer shadow-lg shadow-emerald-500/25 transition">
+                        Fly Again ▶
                     </button>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 
     <!-- =========================================================================
          PHONE HANDLEBAR STEERING QR PAIRING MODAL (DESKTOP)
@@ -3674,10 +4151,12 @@
         };
 
         const state = {
+            currentScreen: 'splash',
+            selectedPresetKey: 'kickr_arcade',
             avatarType: 'aero_wyvern',
             cameraView: 1,
             ftp: 200,
-            accuracyToleranceWatts: 30,
+            accuracyToleranceWatts: 40,
             donutVisualSizeBoost: 1.0,
             resistanceMode: 'easy',
             currentGradientPct: 0.0,
@@ -3848,7 +4327,7 @@
 
         function getAccuracyToleranceWatts() {
             const raw = Number(state.accuracyToleranceWatts);
-            if (!Number.isFinite(raw)) return 15;
+            if (!Number.isFinite(raw)) return 40;
             return Math.max(5, Math.min(50, Math.round(raw)));
         }
 
@@ -7220,8 +7699,10 @@
                 }
 
                 const targetWatts = getTargetWattsAtSecond(state.workout, state.elapsedSec, state.ftp);
-                // Do not use a default watt value above zero when not pedaling or zero watts are simulated
-                const effectiveWatts = currentPedaledWatts;
+                // Preview at target-gate altitude on the Avatar Selection screen; during gameplay use strictly pedaled/simulated watts
+                const effectiveWatts = (state.currentScreen === 'avatar' && !state.isRunning && currentPedaledWatts <= 0)
+                    ? targetWatts
+                    : currentPedaledWatts;
 
                 // Stop forward motion when the user is not generating any watts (or when paused / not started)
                 const prevFlightZ = this.flightZ;
@@ -7954,19 +8435,71 @@
         // =========================================================================
         // 8. SCORING HELPERS & TIMELINE CANVAS RENDERING
         // =========================================================================
-        function updateHeaderAndSetupVisibility() {
-            const headerEl = document.getElementById('mainHeader');
-            const setupEl = document.getElementById('topSetupBar');
-            const setupOptionsEl = document.getElementById('sessionSetupOptionsGroup');
-            const compactBar = document.getElementById('activeTrainingControlBar');
+        const VALID_SCREENS = ['splash', 'pairing', 'training', 'avatar', 'game', 'summary'];
 
-            const shouldHideHeader = state.isRunning;
-            const shouldHideSetupOptions = state.hasStartedSession;
-            const shouldHideChrome = state.hasStartedSession && !state.simMode && !state.forceShowSetupDuringTraining;
-            if (headerEl) headerEl.classList.toggle('hidden', shouldHideHeader);
-            if (setupOptionsEl) setupOptionsEl.classList.toggle('hidden', shouldHideSetupOptions);
-            if (setupEl) setupEl.classList.toggle('hidden', shouldHideChrome);
-            if (compactBar) compactBar.classList.toggle('hidden', !shouldHideChrome);
+        function updateAvatarReadySummaryUI() {
+            const summaryEl = document.getElementById('avatarReadySummary');
+            if (!summaryEl || !state.workout) return;
+            const dur = formatDuration(state.workout.totalDuration);
+            const tol = getAccuracyToleranceWatts();
+            summaryEl.textContent = `${state.workout.name} (${dur}) • FTP ${state.ftp}W • ±${tol}W Gate`;
+        }
+
+        function updateHeaderAndSetupVisibility() {
+            const current = VALID_SCREENS.includes(state.currentScreen) ? state.currentScreen : 'splash';
+            const screenMap = {
+                splash: document.getElementById('screenSplash'),
+                pairing: document.getElementById('screenPairing'),
+                training: document.getElementById('screenTraining'),
+                avatar: document.getElementById('screenAvatar'),
+                game: document.getElementById('screenGame'),
+                summary: document.getElementById('summaryModal')
+            };
+
+            Object.entries(screenMap).forEach(([name, el]) => {
+                if (!el) return;
+                const active = name === current;
+                el.classList.toggle('hidden', !active);
+                el.classList.toggle('flex', active);
+            });
+
+            const wizardBar = document.getElementById('wizardHeaderBar');
+            const showWizard = current === 'pairing' || current === 'training' || current === 'avatar';
+            if (wizardBar) {
+                wizardBar.classList.toggle('hidden', !showWizard);
+            }
+
+            const returnBtn = document.getElementById('wizardReturnToGameBtn');
+            if (returnBtn) {
+                returnBtn.classList.toggle('hidden', !state.hasStartedSession);
+            }
+
+            document.querySelectorAll('[data-step-nav]').forEach((btn) => {
+                const step = btn.getAttribute('data-step-nav');
+                if (step === current) {
+                    btn.className = 'px-2.5 sm:px-3 py-1 rounded-xl text-xs font-black transition cursor-pointer border bg-amber-500/20 text-amber-300 border-amber-400/50 shadow';
+                } else {
+                    btn.className = 'px-2.5 sm:px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer border bg-gray-900/80 hover:bg-gray-800 text-gray-300 border-gray-800';
+                }
+            });
+
+            const fireContainer = document.getElementById('fireBreathContainer');
+            if (fireContainer) {
+                fireContainer.classList.toggle('hidden', !state.renderObstacles);
+            }
+
+            updateAvatarReadySummaryUI();
+        }
+
+        function setScreen(screenName) {
+            const target = VALID_SCREENS.includes(screenName) ? screenName : 'splash';
+            state.currentScreen = target;
+            state.steerLeftPressed = false;
+            state.steerRightPressed = false;
+            updateHeaderAndSetupVisibility();
+            requestAnimationFrame(() => {
+                updateLiveHud();
+            });
         }
 
         function estimateSpeedMpsFromWatts(watts) {
@@ -8435,10 +8968,10 @@
             ctx.restore();
         }
 
-        function drawWorkoutTimeline() {
-            const canvas = document.getElementById('timelineCanvas');
+        function drawWorkoutTimelineOnCanvas(canvas) {
             if (!canvas || !state.workout) return;
             const rect = canvas.getBoundingClientRect();
+            if (rect.width < 20 || rect.height < 20) return;
             if (canvas.width !== Math.floor(rect.width) || canvas.height !== Math.floor(rect.height)) {
                 canvas.width = Math.max(300, Math.floor(rect.width));
                 canvas.height = Math.max(70, Math.floor(rect.height));
@@ -8596,6 +9129,11 @@
             }
         }
 
+        function drawWorkoutTimeline() {
+            drawWorkoutTimelineOnCanvas(document.getElementById('timelineCanvas'));
+            drawWorkoutTimelineOnCanvas(document.getElementById('trainingPreviewCanvas'));
+        }
+
         // =========================================================================
         // 9. LIVE HUD UPDATER & 1HZ WORKOUT TICK
         // =========================================================================
@@ -8642,11 +9180,9 @@
             };
             const gradModeTagEl = document.getElementById('gradientModeTag');
             if (gradModeTagEl) gradModeTagEl.textContent = modeLabels[state.resistanceMode] || 'Easy (0% Flat)';
-            const compactTitleEl = document.getElementById('compactWorkoutTitle');
-            if (compactTitleEl) compactTitleEl.textContent = state.workout.name;
-            const compactResEl = document.getElementById('compactResistanceLabel');
-            if (compactResEl) compactResEl.textContent = `${modeLabels[state.resistanceMode]} • ${formattedSlope}`;
 
+            const tlTitleEl = document.getElementById('timelineWorkoutTitle');
+            if (tlTitleEl && state.workout) tlTitleEl.textContent = state.workout.name;
             const tlModeEl = document.getElementById('timelineResistanceModeBadge');
             if (tlModeEl) tlModeEl.textContent = shortModeLabels[state.resistanceMode] || 'Easy';
             const tlValEl = document.getElementById('timelineResistanceValue');
@@ -8985,24 +9521,32 @@
             const compactPauseResumeBtn = document.getElementById('compactPauseResumeBtn');
 
             if (state.isRunning) {
-                startBtnText.textContent = 'Pause Flight';
-                startWorkoutBtn.className =
-                    'px-5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-gray-950 font-black text-xs sm:text-sm tracking-wide uppercase flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow-lg shadow-amber-500/25 transition';
-                compactPauseResumeText.textContent = 'Pause Flight';
-                compactPauseResumeBtn.className =
-                    'px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-gray-950 font-black text-xs uppercase tracking-wide flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow transition';
+                if (startBtnText) startBtnText.textContent = 'Pause Flight';
+                if (startWorkoutBtn) {
+                    startWorkoutBtn.className =
+                        'px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-gray-950 font-black text-xs tracking-wide uppercase flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow-lg shadow-amber-500/25 transition';
+                }
+                if (compactPauseResumeText) compactPauseResumeText.textContent = 'Pause Flight';
+                if (compactPauseResumeBtn) {
+                    compactPauseResumeBtn.className =
+                        'px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-gray-950 font-black text-xs uppercase tracking-wide flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow transition';
+                }
             } else {
                 const label = state.hasStartedSession ? 'Resume Flight' : 'Start Flight';
-                startBtnText.textContent = label;
-                startWorkoutBtn.className =
-                    'px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-400 hover:from-emerald-400 hover:to-green-300 text-gray-950 font-black text-xs sm:text-sm tracking-wide uppercase flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow-lg shadow-emerald-500/25 transition';
-                compactPauseResumeText.textContent = label;
-                compactPauseResumeBtn.className =
-                    'px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-400 hover:from-emerald-400 hover:to-green-300 text-gray-950 font-black text-xs uppercase tracking-wide flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow transition';
+                if (startBtnText) startBtnText.textContent = label;
+                if (startWorkoutBtn) {
+                    startWorkoutBtn.className =
+                        'px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-400 hover:from-emerald-400 hover:to-green-300 text-gray-950 font-black text-xs tracking-wide uppercase flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow-lg shadow-emerald-500/25 transition';
+                }
+                if (compactPauseResumeText) compactPauseResumeText.textContent = label;
+                if (compactPauseResumeBtn) {
+                    compactPauseResumeBtn.className =
+                        'px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-400 hover:from-emerald-400 hover:to-green-300 text-gray-950 font-black text-xs uppercase tracking-wide flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow transition';
+                }
             }
 
-            document.getElementById('skipSegmentBtn').disabled = !state.hasStartedSession;
-            document.getElementById('finishWorkoutBtn').disabled = !state.hasStartedSession;
+            const finishBtn = document.getElementById('finishWorkoutBtn');
+            if (finishBtn) finishBtn.disabled = !state.hasStartedSession;
             const accSliderEl = document.getElementById('accuracyToleranceSlider');
             const accInputEl = document.getElementById('accuracyToleranceInput');
             if (accSliderEl) accSliderEl.disabled = state.hasStartedSession;
@@ -9016,6 +9560,9 @@
             if (!state.workout) return;
 
             if (!state.isRunning) {
+                if (state.currentScreen !== 'game') {
+                    setScreen('game');
+                }
                 if (state.elapsedSec >= state.workout.totalDuration) {
                     resetWorkoutSession();
                 }
@@ -9135,23 +9682,88 @@
             document.getElementById('summaryAvgCadence').textContent = Math.round(metrics.avgCadence);
 
             syncSummaryScreenshotDialogUI();
-
-            const modal = document.getElementById('summaryModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+            setScreen('summary');
 
             soundEngine.playFinishFanfare();
             fxEngine.spawnAccuracyBurst(window.innerWidth * 0.35, window.innerHeight * 0.35, 1, true);
             fxEngine.spawnAccuracyBurst(window.innerWidth * 0.65, window.innerHeight * 0.35, 1, true);
         }
 
-        function loadWorkoutFromXml(xmlString) {
+        let parsedPresetsCache = null;
+        function getParsedPresets() {
+            if (!parsedPresetsCache) {
+                parsedPresetsCache = Object.entries(PRESET_WORKOUTS).map(([key, xml]) => ({
+                    key,
+                    workout: parseZwiftWorkoutXml(xml)
+                }));
+            }
+            return parsedPresetsCache;
+        }
+
+        function renderPresetWorkoutCards() {
+            const grid = document.getElementById('presetCardsGrid');
+            if (!grid) return;
+            const presets = getParsedPresets();
+            grid.innerHTML = '';
+            presets.forEach(({ key, workout }) => {
+                const { expectedAvgWatts, expectedTss } = computeExpectedWorkoutMetrics(workout, state.ftp);
+                const isSelected = state.selectedPresetKey === key;
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.setAttribute('data-preset-card', key);
+                card.className = isSelected
+                    ? 'text-left rounded-2xl p-3 border transition cursor-pointer bg-amber-500/15 border-amber-400/60 shadow-md shadow-amber-500/10 flex flex-col justify-between gap-1.5'
+                    : 'text-left rounded-2xl p-3 border transition cursor-pointer bg-gray-900/80 hover:bg-gray-800/90 border-gray-800 hover:border-gray-700 flex flex-col justify-between gap-1.5';
+
+                const topRow = document.createElement('div');
+                topRow.className = 'flex items-start justify-between gap-2';
+                const titleSpan = document.createElement('span');
+                titleSpan.className = isSelected ? 'text-xs font-black text-amber-300 leading-snug' : 'text-xs font-bold text-gray-100 leading-snug';
+                titleSpan.textContent = workout.name;
+                const durSpan = document.createElement('span');
+                durSpan.className = 'px-1.5 py-0.5 rounded bg-gray-950 border border-gray-800 text-[10px] font-mono font-bold text-emerald-300 shrink-0';
+                durSpan.textContent = formatDuration(workout.totalDuration);
+                topRow.appendChild(titleSpan);
+                topRow.appendChild(durSpan);
+
+                const descP = document.createElement('p');
+                descP.className = 'text-[11px] text-gray-400 line-clamp-2 leading-snug';
+                descP.textContent = workout.description || '';
+
+                const metricsDiv = document.createElement('div');
+                metricsDiv.className = 'flex items-center gap-2 text-[10px] font-mono text-gray-300 pt-1 border-t border-gray-800/80';
+                metricsDiv.textContent = `Avg ${Math.round(expectedAvgWatts)}W • TSS ${expectedTss.toFixed(1)} • ${workout.segments.length} blocks`;
+
+                card.appendChild(topRow);
+                card.appendChild(descP);
+                card.appendChild(metricsDiv);
+
+                card.addEventListener('click', () => {
+                    const sel = document.getElementById('presetWorkoutSelect');
+                    if (sel) sel.value = key;
+                    loadWorkoutFromXml(PRESET_WORKOUTS[key], key);
+                });
+                grid.appendChild(card);
+            });
+        }
+
+        function loadWorkoutFromXml(xmlString, presetKey = null) {
             const parsed = parseZwiftWorkoutXml(xmlString);
             state.workout = parsed;
+            state.selectedPresetKey = presetKey;
             const titleEl = document.getElementById('workoutTitleLabel');
             if (titleEl) titleEl.textContent = parsed.name;
+            const tlTitleEl = document.getElementById('timelineWorkoutTitle');
+            if (tlTitleEl) tlTitleEl.textContent = parsed.name;
             const authorEl = document.getElementById('workoutAuthorLabel');
             if (authorEl) authorEl.textContent = parsed.author || 'Zwift Workout';
+            const descEl = document.getElementById('workoutDescriptionLabel');
+            if (descEl) descEl.textContent = parsed.description || 'Structured target-watt flight through 3D Sky Donut Gates.';
+            const durEl = document.getElementById('workoutDurationLabel');
+            if (durEl) durEl.textContent = formatDuration(parsed.totalDuration);
+            const zwoBadge = document.getElementById('customZwoBadge');
+            if (zwoBadge) zwoBadge.classList.toggle('hidden', Boolean(presetKey));
+            renderPresetWorkoutCards();
             resetWorkoutSession();
         }
 
@@ -9205,6 +9817,8 @@
                     dragon3D.gates.forEach(g => dragon3D.syncGateToDesiredWatts(g));
                 }
                 updateExpectedWorkoutMetricsUI();
+                renderPresetWorkoutCards();
+                updateAvatarReadySummaryUI();
                 updateLiveHud();
             }
         }
@@ -9222,7 +9836,24 @@
             if (state.renderObstacles && dragon3D) {
                 dragon3D.seedInitialGatesAndObstacles();
             }
+            updateHeaderAndSetupVisibility();
         });
+
+        const fireBreathBtnEl = document.getElementById('fireBreathBtn');
+        if (fireBreathBtnEl) {
+            fireBreathBtnEl.addEventListener('click', () => {
+                if (dragon3D) dragon3D.triggerDragonFireBreath();
+            });
+        }
+
+        function syncAvatarCardsUI() {
+            document.querySelectorAll('[data-avatar-card]').forEach((card) => {
+                const active = card.getAttribute('data-avatar-card') === state.avatarType;
+                card.className = active
+                    ? 'text-left rounded-2xl p-3 border-2 transition cursor-pointer flex flex-col justify-between gap-1 bg-amber-500/20 border-amber-400 shadow-lg shadow-amber-500/20'
+                    : 'text-left rounded-2xl p-3 border transition cursor-pointer flex flex-col justify-between gap-1 bg-gray-900/80 hover:bg-gray-800 border-gray-800 hover:border-gray-700';
+            });
+        }
 
         function setAvatarType(avatarType) {
             const validAvatars = ['aero_wyvern', 'fuchur', 'et_bike', 'delorean', 'mars_ufo', 'paramotor'];
@@ -9235,12 +9866,19 @@
             const compactSel = document.getElementById('compactAvatarSelect');
             if (mainSel) mainSel.value = chosen;
             if (compactSel) compactSel.value = chosen;
+            syncAvatarCardsUI();
 
             if (dragon3D) {
                 dragon3D.buildActiveAvatar(chosen);
             }
             updateLiveHud();
         }
+
+        document.querySelectorAll('[data-avatar-card]').forEach((card) => {
+            card.addEventListener('click', () => {
+                setAvatarType(card.getAttribute('data-avatar-card'));
+            });
+        });
 
         const avatarSelectEl = document.getElementById('avatarSelect');
         if (avatarSelectEl) {
@@ -9256,6 +9894,15 @@
             });
         }
 
+        function syncCameraPillsUI() {
+            document.querySelectorAll('[data-camera-pill]').forEach((pill) => {
+                const active = parseInt(pill.getAttribute('data-camera-pill'), 10) === state.cameraView;
+                pill.className = active
+                    ? 'px-2.5 py-1 rounded-lg text-xs font-black border transition cursor-pointer bg-sky-500/25 text-sky-200 border-sky-400/60 shadow'
+                    : 'px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer bg-gray-900/80 hover:bg-gray-800 text-gray-300 border-gray-800';
+            });
+        }
+
         function setCameraView(view) {
             const chosen = CAMERA_VIEWS[view] ? Number(view) : 1;
             state.cameraView = chosen;
@@ -9264,7 +9911,14 @@
                 const sel = document.getElementById(id);
                 if (sel) sel.value = String(chosen);
             });
+            syncCameraPillsUI();
         }
+
+        document.querySelectorAll('[data-camera-pill]').forEach((pill) => {
+            pill.addEventListener('click', () => {
+                setCameraView(parseInt(pill.getAttribute('data-camera-pill'), 10));
+            });
+        });
 
         ['cameraViewSelect', 'compactCameraViewSelect'].forEach((id) => {
             const sel = document.getElementById(id);
@@ -9272,6 +9926,23 @@
                 sel.addEventListener('change', (e) => setCameraView(parseInt(e.target.value, 10)));
             }
         });
+
+        function setSimAutoFollow(checked) {
+            state.simAutoJitter = Boolean(checked);
+            ['simAutoFollowCheck', 'gameSimAutoFollowCheck'].forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) el.checked = state.simAutoJitter;
+            });
+            if (state.simAutoJitter && state.workout) {
+                const targetW = getTargetWattsAtSecond(state.workout, state.elapsedSec, state.ftp);
+                state.actualWatts = targetW;
+                const slider = document.getElementById('simWattSlider');
+                const readout = document.getElementById('simWattReadout');
+                if (slider) slider.value = targetW;
+                if (readout) readout.textContent = `${targetW} W`;
+                updateLiveHud();
+            }
+        }
 
         function setSteeringEnabled(enabled) {
             state.steeringEnabled = Boolean(enabled);
@@ -9285,15 +9956,8 @@
             const compactLabel = document.getElementById('compactSteeringToggleLabel');
             if (mainCheck) mainCheck.checked = state.steeringEnabled;
             if (compactCheck) compactCheck.checked = state.steeringEnabled;
-            const statusText = state.steeringEnabled ? 'Steering: ON' : 'Steering: OFF (Auto-Fly Gates)';
-            if (mainLabel) mainLabel.textContent = statusText;
-            if (compactLabel) compactLabel.textContent = statusText;
-
-            const steerBtnIds = ['steerLeftBtn', 'steerCenterBtn', 'steerRightBtn'];
-            steerBtnIds.forEach((id) => {
-                const btn = document.getElementById(id);
-                if (btn) btn.disabled = !state.steeringEnabled;
-            });
+            if (mainLabel) mainLabel.textContent = state.steeringEnabled ? 'Steering: ON' : 'Steering: OFF (Auto-Fly Gates)';
+            if (compactLabel) compactLabel.textContent = state.steeringEnabled ? 'Steering: ON' : 'Steering: OFF';
 
             if (!state.steeringEnabled) {
                 state.dragonSteerOffsetX = 0;
@@ -9325,13 +9989,20 @@
 
         // Spacebar handler to destroy incoming 3D obstacles with Dragon Fire & Left/Right keyboard bindings to steer the dragon
         window.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+            if (state.currentScreen === 'splash' && (e.code === 'Enter' || e.code === 'Space')) {
+                e.preventDefault();
+                soundEngine.init();
+                setScreen('pairing');
+                return;
+            }
             const cameraKeyMatch = /^(?:Digit|Numpad)([1-5])$/.exec(e.code);
-            if (cameraKeyMatch && !e.ctrlKey && !e.altKey && !e.metaKey) {
+            if (cameraKeyMatch && !e.ctrlKey && !e.altKey && !e.metaKey && (state.currentScreen === 'game' || state.currentScreen === 'avatar')) {
                 e.preventDefault();
                 setCameraView(parseInt(cameraKeyMatch[1], 10));
                 return;
             }
+            if (state.currentScreen !== 'game') return;
             if (e.code === 'Space') {
                 e.preventDefault();
                 if (dragon3D) {
@@ -9350,8 +10021,7 @@
                 const min = parseInt(slider.min, 10) || 0;
                 const max = parseInt(slider.max, 10) || 600;
                 const newWatts = Math.max(min, Math.min(max, (state.actualWatts || 0) + step));
-                state.simAutoJitter = false;
-                document.getElementById('simAutoFollowCheck').checked = false;
+                setSimAutoFollow(false);
                 state.actualWatts = newWatts;
                 slider.value = newWatts;
                 document.getElementById('simWattReadout').textContent = `${newWatts} W`;
@@ -9371,54 +10041,6 @@
             state.steerLeftPressed = false;
             state.steerRightPressed = false;
         });
-
-        function bindSteerButton(btnId, direction) {
-            const btn = document.getElementById(btnId);
-            if (!btn) return;
-            const startSteer = (e) => {
-                e.preventDefault();
-                if (!state.steeringEnabled) return;
-                if (direction === 'left') state.steerLeftPressed = true;
-                if (direction === 'right') state.steerRightPressed = true;
-            };
-            const stopSteer = () => {
-                if (direction === 'left') state.steerLeftPressed = false;
-                if (direction === 'right') state.steerRightPressed = false;
-            };
-            btn.addEventListener('mousedown', startSteer);
-            btn.addEventListener('touchstart', startSteer, { passive: false });
-            btn.addEventListener('mouseup', stopSteer);
-            btn.addEventListener('mouseleave', stopSteer);
-            btn.addEventListener('touchend', stopSteer);
-            btn.addEventListener('touchcancel', stopSteer);
-        }
-
-        bindSteerButton('steerLeftBtn', 'left');
-        bindSteerButton('steerRightBtn', 'right');
-
-        const steerCenterBtn = document.getElementById('steerCenterBtn');
-        if (steerCenterBtn) {
-            steerCenterBtn.addEventListener('click', () => {
-                if (bleSteeringSensor.connected) {
-                    bleSteeringSensor.recenter();
-                }
-                if (phoneSteeringSensor.connected) {
-                    phoneSteeringSensor.recenter();
-                }
-                state.dragonSteerOffsetX = 0;
-                if (dragon3D) {
-                    const centerZ = dragon3D.flightZ || 0;
-                    dragon3D.dragonSteerOffsetX = 0;
-                    dragon3D.dragonHeadingVelocity = 0;
-                    dragon3D.dragonLateralVelocityX = 0;
-                    dragon3D.wallContactSide = 0;
-                    dragon3D.dragonWorldX = getSimulatedTurnOffsetX(centerZ);
-                    dragon3D.dragonHeadingAngle = Math.atan(-getSimulatedTurnDerivativeX(centerZ));
-                    state.dragonWorldX = dragon3D.dragonWorldX;
-                    state.dragonHeadingAngle = dragon3D.dragonHeadingAngle;
-                }
-            });
-        }
 
         function isBlePairingCancelledError(err) {
             if (!err) return false;
@@ -9693,6 +10315,7 @@
             if (dragon3D) {
                 dragon3D.gates.forEach(g => dragon3D.syncGateToDesiredWatts(g));
             }
+            updateAvatarReadySummaryUI();
             updateLiveHud();
         }
 
@@ -9748,8 +10371,7 @@
         document.getElementById('simToggleBtn').addEventListener('click', () => toggleSimMode());
 
         document.getElementById('simWattSlider').addEventListener('input', (e) => {
-            state.simAutoJitter = false;
-            document.getElementById('simAutoFollowCheck').checked = false;
+            setSimAutoFollow(false);
             state.actualWatts = parseInt(e.target.value, 10) || 0;
             document.getElementById('simWattReadout').textContent = `${state.actualWatts} W`;
             updateLiveHud();
@@ -9763,45 +10385,72 @@
             updateLiveHud();
         });
 
-        document.getElementById('simAutoFollowCheck').addEventListener('change', (e) => {
-            state.simAutoJitter = e.target.checked;
-            if (state.simAutoJitter && state.workout) {
-                const targetW = getTargetWattsAtSecond(state.workout, state.elapsedSec, state.ftp);
-                state.actualWatts = targetW;
-                document.getElementById('simWattSlider').value = targetW;
-                document.getElementById('simWattReadout').textContent = `${targetW} W`;
-                updateLiveHud();
+        ['simAutoFollowCheck', 'gameSimAutoFollowCheck'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('change', (e) => {
+                    setSimAutoFollow(e.target.checked);
+                });
             }
         });
 
-        document.getElementById('soundToggleBtn').addEventListener('click', () => {
+        function syncSoundButtonsUI() {
+            ['soundOnIcon', 'wizardSoundOnIcon'].forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) el.classList.toggle('hidden', !soundEngine.enabled);
+            });
+            ['soundOffIcon', 'wizardSoundOffIcon'].forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) el.classList.toggle('hidden', soundEngine.enabled);
+            });
+            ['musicToggleBtn', 'wizardMusicToggleBtn'].forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) el.disabled = !soundEngine.enabled;
+            });
+        }
+
+        function handleSoundToggle() {
             soundEngine.enabled = !soundEngine.enabled;
-            document.getElementById('soundOnIcon').classList.toggle('hidden', !soundEngine.enabled);
-            document.getElementById('soundOffIcon').classList.toggle('hidden', soundEngine.enabled);
-            document.getElementById('musicToggleBtn').disabled = !soundEngine.enabled;
+            syncSoundButtonsUI();
             if (soundEngine.enabled) soundEngine.init();
             // Muting sound also silences music; the saved music preference is restored on unmute.
             applyMusicEnabled(localStorage.getItem('performed_music_enabled') !== 'false', false);
+        }
+
+        ['soundToggleBtn', 'wizardSoundToggleBtn'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('click', handleSoundToggle);
         });
 
         function applyMusicEnabled(enabled, persist = true) {
             if (persist) localStorage.setItem('performed_music_enabled', String(enabled));
             const active = enabled && soundEngine.enabled;
             musicEngine.setEnabled(active);
-            document.getElementById('musicOnIcon').classList.toggle('hidden', !active);
-            document.getElementById('musicOffIcon').classList.toggle('hidden', active);
+            ['musicOnIcon', 'wizardMusicOnIcon'].forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) el.classList.toggle('hidden', !active);
+            });
+            ['musicOffIcon', 'wizardMusicOffIcon'].forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) el.classList.toggle('hidden', active);
+            });
         }
 
-        document.getElementById('musicToggleBtn').addEventListener('click', () => {
+        function handleMusicToggle() {
             if (!soundEngine.enabled) return;
             soundEngine.init();
             applyMusicEnabled(!musicEngine.enabled);
+        }
+
+        ['musicToggleBtn', 'wizardMusicToggleBtn'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('click', handleMusicToggle);
         });
 
         document.getElementById('presetWorkoutSelect').addEventListener('change', (e) => {
             const key = e.target.value;
             if (PRESET_WORKOUTS[key]) {
-                loadWorkoutFromXml(PRESET_WORKOUTS[key]);
+                loadWorkoutFromXml(PRESET_WORKOUTS[key], key);
             }
         });
 
@@ -9811,7 +10460,7 @@
             const reader = new FileReader();
             reader.onload = (ev) => {
                 try {
-                    loadWorkoutFromXml(ev.target.result);
+                    loadWorkoutFromXml(ev.target.result, null);
                 } catch (err) {
                     alert('Failed to parse Zwift workout file: ' + err.message);
                 }
@@ -9824,34 +10473,13 @@
             startOrPauseWorkout();
         });
 
-        document.getElementById('compactPauseResumeBtn').addEventListener('click', () => {
-            soundEngine.init();
-            startOrPauseWorkout();
-        });
-
-        function handleSkipSegment() {
-            if (!state.workout) return;
-            const seg = getActiveSegmentAtSecond(state.workout, state.elapsedSec);
-            if (seg && seg.endSec < state.workout.totalDuration) {
-                state.elapsedSec = seg.endSec;
-                syncGradientAtSecond(state.elapsedSec);
-                if (state.simMode && state.simAutoJitter) {
-                    const targetW = getTargetWattsAtSecond(state.workout, state.elapsedSec, state.ftp);
-                    state.actualWatts = targetW;
-                    document.getElementById('simWattSlider').value = targetW;
-                    document.getElementById('simWattReadout').textContent = `${targetW} W`;
-                }
-                if (dragon3D) {
-                    dragon3D.seedInitialGatesAndObstacles(true);
-                }
-                updateLiveHud();
-            } else {
-                finishWorkoutAndShowSummary();
-            }
+        const compactPauseResumeBtnEl = document.getElementById('compactPauseResumeBtn');
+        if (compactPauseResumeBtnEl) {
+            compactPauseResumeBtnEl.addEventListener('click', () => {
+                soundEngine.init();
+                startOrPauseWorkout();
+            });
         }
-
-        document.getElementById('skipSegmentBtn').addEventListener('click', handleSkipSegment);
-        document.getElementById('compactSkipSegmentBtn').addEventListener('click', handleSkipSegment);
 
         function updateScreenshotButtonsUI(justCaptured = false) {
             const hasScreenshot = Boolean(state.preparedScreenshotDataUrl);
@@ -9875,7 +10503,7 @@
                 if (previewEl) previewEl.src = state.preparedScreenshotDataUrl;
                 if (timestampEl) timestampEl.textContent = state.preparedScreenshotTimestamp || '';
             } else {
-                if (previewEl) previewEl.src = '';
+                if (previewEl) previewEl.removeAttribute('src');
                 if (timestampEl) timestampEl.textContent = '';
             }
         }
@@ -9984,13 +10612,57 @@
         document.getElementById('finishWorkoutBtn').addEventListener('click', () => {
             finishWorkoutAndShowSummary();
         });
-        document.getElementById('compactFinishWorkoutBtn').addEventListener('click', () => {
-            finishWorkoutAndShowSummary();
-        });
+        const compactFinishWorkoutBtnEl = document.getElementById('compactFinishWorkoutBtn');
+        if (compactFinishWorkoutBtnEl) {
+            compactFinishWorkoutBtnEl.addEventListener('click', () => {
+                finishWorkoutAndShowSummary();
+            });
+        }
 
         document.getElementById('compactShowSettingsBtn').addEventListener('click', () => {
-            state.forceShowSetupDuringTraining = true;
-            updateHeaderAndSetupVisibility();
+            if (state.isRunning) {
+                startOrPauseWorkout();
+            }
+            setScreen('pairing');
+        });
+
+        // Screen Wizard Navigation Event Listeners
+        document.getElementById('splashStartBtn').addEventListener('click', () => {
+            soundEngine.init();
+            setScreen('pairing');
+        });
+        document.getElementById('wizardLogoBtn').addEventListener('click', () => {
+            setScreen('splash');
+        });
+        document.getElementById('wizardReturnToGameBtn').addEventListener('click', () => {
+            setScreen('game');
+        });
+        document.querySelectorAll('[data-step-nav]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                setScreen(btn.getAttribute('data-step-nav'));
+            });
+        });
+        document.getElementById('backToSplashBtn').addEventListener('click', () => {
+            setScreen('splash');
+        });
+        document.getElementById('toTrainingScreenBtn').addEventListener('click', () => {
+            setScreen('training');
+        });
+        document.getElementById('backToPairingBtn').addEventListener('click', () => {
+            setScreen('pairing');
+        });
+        document.getElementById('toAvatarScreenBtn').addEventListener('click', () => {
+            setScreen('avatar');
+        });
+        document.getElementById('backToTrainingBtn').addEventListener('click', () => {
+            setScreen('training');
+        });
+        document.getElementById('avatarStartFlightBtn').addEventListener('click', () => {
+            soundEngine.init();
+            setScreen('game');
+            if (!state.isRunning) {
+                startOrPauseWorkout();
+            }
         });
 
         document.getElementById('timelineCanvas').addEventListener('click', (e) => {
@@ -10035,19 +10707,25 @@
             setTimeout(() => URL.revokeObjectURL(url), 5000);
         });
 
-        function closeSummaryModalAndStartNewSession() {
-            const modal = document.getElementById('summaryModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+        function closeSummaryAndGoTo(targetScreen) {
             resetWorkoutSession();
+            setScreen(targetScreen);
         }
 
-        document.getElementById('closeSummaryBtn').addEventListener('click', closeSummaryModalAndStartNewSession);
-
-        document.getElementById('summaryModal').addEventListener('click', (e) => {
-            if (e.target.id === 'summaryModal') {
-                closeSummaryModalAndStartNewSession();
-            }
+        document.getElementById('closeSummaryBtn').addEventListener('click', () => {
+            closeSummaryAndGoTo('splash');
+        });
+        document.getElementById('summaryPairingBtn').addEventListener('click', () => {
+            closeSummaryAndGoTo('pairing');
+        });
+        document.getElementById('summaryChangeTrainingBtn').addEventListener('click', () => {
+            closeSummaryAndGoTo('training');
+        });
+        document.getElementById('summaryFlyAgainBtn').addEventListener('click', () => {
+            resetWorkoutSession();
+            soundEngine.init();
+            setScreen('game');
+            startOrPauseWorkout();
         });
 
         // Initialize stored FTP, default workout, Three.js 3D Dragon Engine, 1Hz game loop & 60fps render loop
@@ -10078,14 +10756,16 @@
                 applyConfigurableAccuracyTolerance(state.accuracyToleranceWatts);
             }
             const savedSteering = localStorage.getItem('performed_steering_enabled');
+            syncSoundButtonsUI();
             applyMusicEnabled(localStorage.getItem('performed_music_enabled') !== 'false');
             if (savedSteering === 'false') {
                 setSteeringEnabled(false);
             } else {
                 setSteeringEnabled(true);
             }
-            loadWorkoutFromXml(PRESET_WORKOUTS.kickr_arcade);
+            loadWorkoutFromXml(PRESET_WORKOUTS.kickr_arcade, 'kickr_arcade');
             toggleSimMode(true);
+            setScreen('splash');
 
             dragon3D = new DragonSky3DEngine(document.getElementById('threeCanvasContainer'));
 

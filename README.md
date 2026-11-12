@@ -2,7 +2,7 @@
 
 Performed 3D is a browser-based 3D cycling game for structured indoor cycling workouts. A workout profile sets power targets; power from a connected trainer is measured and its resistance is controlled according to the selected mode. At the same time, an avatar flies through an animated sky filled with donut gates. Optionally, you can shoot obstacles and steer manually.
 
-![Start screen with workout selection and settings](docs/screenshots/01-start.png)
+![Dragon splashscreen](docs/screenshots/01-start.png)
 
 ## Quick start
 
@@ -17,7 +17,12 @@ There is no build step or package installation. Node.js 18 or newer is required 
 
    To change the port or origin, copy `.env.example` to `.env`, edit it, and load it first (`set -a; . ./.env; set +a`).
 3. Open <http://localhost:8000/performed3d.html> in your browser.
-4. Choose a workout and resistance mode, set your FTP and accuracy, then click **Start Flight**.
+4. Step through the setup screens and take off:
+   - **Splashscreen:** Click **Start Setup** from the dragon hero screen.
+   - **1 · Pairing & Rules:** Pair Bluetooth devices (or enable the Virtual Trainer Simulator and **Auto-Fly Target Gate**), toggle steering and 3D obstacles, and set **Donut Gate Accuracy** (`40 W` by default).
+   - **2 · Training Selection:** Pick one of the 14 built-in presets or upload a Zwift `.zwo` file, set your FTP, and choose a resistance/wind mode.
+   - **3 · Avatar Selection:** Choose your 3D avatar and camera view over a live sky preview, then click **Start Flight**.
+   - **4 · Flight & Summary:** Fly through the target-watt donut gates and finish to view the **Workout Summary** screen (`.fit` and `.png` export).
 
 Simulation mode is enabled by default, so you can try the game without a trainer. Bluetooth requires a compatible browser; the Web Bluetooth API is supported by browsers such as current versions of Chrome and Edge. Bluetooth is available only in a secure context (for example, `localhost` or HTTPS).
 
@@ -25,7 +30,7 @@ For an HTTPS deployment behind a reverse proxy, set `APP_ORIGIN` to the public o
 
 ## Gameplay and workout controls
 
-Your current power is compared with the workout's target power. The game displays power accuracy, workout intervals, and progress in the HUD. FTP (200 W by default; adjustable from 50 to 600 W) is used to calculate power targets specified as a percentage of FTP. Use **Donut / Accuracy** to set the allowed power deviation (30 W by default).
+Your current power is compared with the workout's target power. The game displays power accuracy, workout intervals, and progress in the HUD. FTP (200 W by default; adjustable from 50 to 600 W) is used to calculate power targets specified as a percentage of FTP. Use **Donut Gate Accuracy** on the **Pairing & Rules** screen to set the allowed power deviation (40 W by default).
 
 Available workouts include:
 
@@ -35,7 +40,7 @@ Available workouts include:
 - Longer profiles such as **Harmonic Wave & Step Matrix**, **Sweet Spot Precision**, and **Pro Criterium Corner Sprints**
 - Custom Zwift workouts in `.zwo` format
 
-Resistance modes are **Easy**, **Medium**, **Difficult**, and **ERG Lock**. In **Medium** and **Difficult** modes, simulated upwind thermals and downwind drafts are shown directly on upcoming donut gates with animated emerald lift or amber draft 3D chevrons, flanking wind halos, and slope badges. Use **Next Block** to skip to the next interval. **Start Flight** pauses or resumes the workout. You can also end a workout early.
+Resistance modes are **Easy**, **Medium**, **Difficult**, and **ERG Lock**. In **Medium** and **Difficult** modes, simulated upwind thermals and downwind drafts are shown directly on upcoming donut gates with animated emerald lift or amber draft 3D chevrons, flanking wind halos, and slope badges. **Start Flight** pauses or resumes the workout. You can also end a workout early.
 
 ### Adaptive music
 
@@ -62,7 +67,7 @@ Transitions are smoothed so short target changes don't toggle the music. The mus
 | `↑` / `↓` | Increase/decrease power by 10 W in simulation mode |
 | `Shift` + `↑` / `↓` | Increase/decrease power by 25 W in simulation mode |
 
-You can turn off manual steering to have the avatar automatically steer through the gates. The left, right, and center buttons in the compact control bar are alternatives to the keyboard. Obstacles can be enabled or disabled with the corresponding option.
+You can turn off manual steering to have the avatar automatically steer through the gates. Obstacles can be enabled or disabled with the corresponding option.
 
 ## Avatars and cameras
 
