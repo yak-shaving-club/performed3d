@@ -9,6 +9,11 @@ Performed 3D is a browser-based 3D cycling game for structured indoor cycling wo
 - Ghost ride
 - Multiplay
 - Settings GUI (GUI Cleanup)
+•⁠  ⁠splashscreen
+•⁠  ⁠pairing-screen
+•⁠  ⁠avatar uswahl
+•⁠  ⁠game
+•⁠  ⁠summary
 -- Optimize screen to see current watt and cadence more performant
 - Ranking server
 
