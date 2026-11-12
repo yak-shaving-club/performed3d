@@ -676,6 +676,23 @@
                         <span>Upload Zwift (.zwo)</span>
                         <input id="zwoFileInput" type="file" accept=".zwo,.xml,text/xml,application/xml" class="hidden">
                     </label>
+
+                    <!-- Ghost Ride: load a previously saved ride and race against it -->
+                    <div class="flex items-center gap-1.5">
+                        <label for="ghostFileInput"
+                               class="px-4 py-2.5 rounded-xl bg-gray-900/90 hover:bg-gray-800 border border-cyan-400/50 text-cyan-200 font-extrabold text-xs flex items-center gap-1.5 cursor-pointer transition"
+                               title="Load a saved ghost ride (.ghost.json) and race against it. The ghost's workout is loaded too.">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 3a7 7 0 00-7 7v10l2.5-2 2.5 2 2-2 2 2 2.5-2 2.5 2V10a7 7 0 00-7-7zM9.5 10h.01M14.5 10h.01"/>
+                            </svg>
+                            <span>Load Ghost</span>
+                            <input id="ghostFileInput" type="file" accept=".json,application/json" class="hidden">
+                        </label>
+                        <span id="ghostStatusChip" class="hidden items-center gap-1 bg-cyan-500/15 border border-cyan-400/40 rounded-xl pl-2.5 pr-1 py-1.5 text-[11px] font-semibold text-cyan-200">
+                            <span id="ghostStatusLabel" class="max-w-[180px] truncate">Ghost</span>
+                            <button id="clearGhostBtn" type="button" class="px-1 rounded-md hover:bg-cyan-500/25 text-cyan-100 cursor-pointer" title="Remove ghost" aria-label="Remove ghost">✕</button>
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -1116,6 +1133,14 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Ghost Ride Comparison Row (visible only while a ghost is loaded) -->
+                    <div id="ghostHudRow" class="hidden items-center justify-between gap-2 mt-2 pt-2 border-t border-cyan-400/25 text-cyan-200" title="Comparison with the loaded ghost ride">
+                        <span class="text-[10px] sm:text-[11px] uppercase tracking-wider font-extrabold text-cyan-300">Ghost</span>
+                        <span id="ghostGapDisplay" class="text-xs sm:text-sm font-black tabular-nums">±0 m</span>
+                        <span class="text-[10px] sm:text-xs tabular-nums text-cyan-300/90"><span id="ghostWattsDisplay">0</span> W</span>
+                        <span id="ghostScoreDeltaDisplay" class="text-[10px] sm:text-xs font-black tabular-nums">±0 pts</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1183,6 +1208,7 @@
                     <p class="text-xs sm:text-sm text-gray-400 mt-0.5" id="summarySubtitle">
                         Awesome flight! Here is your complete 3D gate accuracy, obstacle defense &amp; power breakdown.
                     </p>
+                    <p id="summaryGhostResult" class="hidden text-xs sm:text-sm font-bold text-cyan-300 mt-1"></p>
                 </div>
                 <div class="text-right">
                     <div class="text-xs uppercase font-bold text-amber-400">Rank</div>
@@ -1276,6 +1302,15 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                         </svg>
                         <span>Download .FIT File (Strava / Garmin)</span>
+                    </button>
+
+                    <button id="saveGhostBtn" type="button"
+                            class="w-full sm:w-auto px-5 py-3 rounded-xl bg-gray-800 hover:bg-gray-700 border border-cyan-400/50 text-cyan-200 font-black text-sm flex items-center justify-center gap-2 cursor-pointer transition"
+                            title="Save this ride as a ghost (.ghost.json) to race against it later">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 3a7 7 0 00-7 7v10l2.5-2 2.5 2 2-2 2 2 2.5-2 2.5 2V10a7 7 0 00-7-7zM9.5 10h.01M14.5 10h.01"/>
+                        </svg>
+                        <span>Save Ghost Ride</span>
                     </button>
 
                     <button id="downloadScreenshotBtn" type="button"
@@ -4208,7 +4243,9 @@
             samples: [],
             lastSummary: null,
             preparedScreenshotDataUrl: null,
-            preparedScreenshotTimestamp: null
+            preparedScreenshotTimestamp: null,
+            workoutXml: null,
+            ghost: null
         };
 
         function generateTerrainGradientProfile(totalDurationSec, mode) {
@@ -4596,6 +4633,10 @@
         }
 
         const CANYON_MAX_STEER_OFFSET_X = 24.0;
+        // Ghost ride rendering: flies beside the course centerline; the distance gap is shown as a clamped forward/backward offset
+        const GHOST_LATERAL_OFFSET_X = 9.0;
+        const GHOST_WORLD_UNITS_PER_METER = 1.5;
+        const GHOST_MAX_Z_OFFSET = 60.0;
         const DRAGON_STEER_SPEED_X = 20.0;
         const DRAGON_HEADING_TURN_RATE = 1.15; // radians/sec yaw rate when steering left/right like a plane
         const DRAGON_MAX_HEADING_ANGLE = 0.72; // max heading angle (~41 degrees)
@@ -6806,6 +6847,86 @@
             }
 
             /**
+             * Builds a translucent cyan copy of the active avatar for the loaded ghost ride.
+             * The avatar builders store animation parts on the engine, so the ghost is a static clone
+             * instead of a second build.
+             */
+            rebuildGhostModel() {
+                if (this.ghostGroup) {
+                    this.scene.remove(this.ghostGroup);
+                    this.ghostGroup.traverse((obj) => {
+                        if (!obj.material) return;
+                        (Array.isArray(obj.material) ? obj.material : [obj.material]).forEach((mat) => mat.dispose());
+                    });
+                    this.ghostGroup = null;
+                }
+                if (!state.ghost || !this.dragonGroup || !this.scene) return;
+
+                const ghost = this.dragonGroup.clone(true);
+                const lights = [];
+                const toGhostMaterial = (mat) => {
+                    const ghostMat = mat.clone();
+                    ghostMat.transparent = true;
+                    ghostMat.opacity = (typeof mat.opacity === 'number' ? mat.opacity : 1) * 0.38;
+                    ghostMat.depthWrite = false;
+                    if (ghostMat.emissive) {
+                        ghostMat.emissive = new THREE.Color(0x22d3ee);
+                        ghostMat.emissiveIntensity = 0.6;
+                    } else if (ghostMat.color) {
+                        ghostMat.color.lerp(new THREE.Color(0x67e8f9), 0.5);
+                    }
+                    return ghostMat;
+                };
+                ghost.traverse((obj) => {
+                    if (obj.isLight) lights.push(obj);
+                    if (obj.material) {
+                        obj.material = Array.isArray(obj.material)
+                            ? obj.material.map(toGhostMaterial)
+                            : toGhostMaterial(obj.material);
+                    }
+                    obj.castShadow = false;
+                    obj.receiveShadow = false;
+                    obj.renderOrder = 2;
+                });
+                lights.forEach((light) => light.parent && light.parent.remove(light));
+
+                this.ghostCurrentY = this.dragonCurrentY;
+                this.ghostGroup = ghost;
+                this.scene.add(ghost);
+                this.updateGhost(0);
+            }
+
+            updateGhost(dt) {
+                if (!this.ghostGroup) return;
+                if (!state.ghost) {
+                    this.ghostGroup.visible = false;
+                    return;
+                }
+                const sec = state.elapsedSec;
+                const subSec = state.isRunning ? Math.max(0, Math.min(1, this.subSec || 0)) : 0;
+                const before = getGhostRideTotalsAfterSecond(sec - 1);
+                const after = getGhostRideTotalsAfterSecond(sec);
+                const ghostDistance = before.distance + (after.distance - before.distance) * subSec;
+                const ownDistance = state.totalDistanceMeters + (state.isRunning ? (state.speedKmh / 3.6) * subSec : 0);
+                const zOffset = Math.max(-GHOST_MAX_Z_OFFSET, Math.min(GHOST_MAX_Z_OFFSET, (ghostDistance - ownDistance) * GHOST_WORLD_UNITS_PER_METER));
+                const ghostZ = this.flightZ - zOffset;
+
+                const desiredY = wattsToSkyAltitudeY(getGhostRideWattsAtSecond(sec), state.ftp, state.currentGradientPct);
+                if (typeof this.ghostCurrentY !== 'number' || isNaN(this.ghostCurrentY)) {
+                    this.ghostCurrentY = desiredY;
+                } else {
+                    this.ghostCurrentY += (desiredY - this.ghostCurrentY) * Math.min(1, dt * 2.5);
+                }
+                const bob = Math.sin(performance.now() * 0.003) * 0.15;
+                const heading = Math.atan(-getSimulatedTurnDerivativeX(ghostZ));
+
+                this.ghostGroup.visible = true;
+                this.ghostGroup.position.set(getSimulatedTurnOffsetX(ghostZ) + GHOST_LATERAL_OFFSET_X, this.ghostCurrentY + bob, ghostZ);
+                this.ghostGroup.rotation.order = 'YXZ';
+                this.ghostGroup.rotation.set(0, -heading, 0);
+            }
+
+            /**
              * Positions the camera according to state.cameraView (keys 1-5):
              * 1 chase, 2 far chase, 3 top-down, 4 front close, 5 front far.
              * Front views sit ahead of the avatar and retreat with it while looking back at it.
@@ -8092,6 +8213,8 @@
                     verticalVelocity: this.dragonVelocityY || 0
                 });
 
+                this.updateGhost(stepDt);
+
                 const tolW = getAccuracyToleranceWatts();
 
                 // Chase Camera follows behind and slightly above the dragon, keeping the dragon in view while reflecting its heading and 3D position
@@ -8442,7 +8565,8 @@
             if (!summaryEl || !state.workout) return;
             const dur = formatDuration(state.workout.totalDuration);
             const tol = getAccuracyToleranceWatts();
-            summaryEl.textContent = `${state.workout.name} (${dur}) • FTP ${state.ftp}W • ±${tol}W Gate`;
+            const ghostSuffix = state.ghost ? ` • Ghost ${formatSwissNumber(state.ghost.finalScore)} pts` : '';
+            summaryEl.textContent = `${state.workout.name} (${dur}) • FTP ${state.ftp}W • ±${tol}W Gate${ghostSuffix}`;
         }
 
         function updateHeaderAndSetupVisibility() {
@@ -9139,6 +9263,7 @@
         // =========================================================================
         function updateLiveHud() {
             if (!state.workout) return;
+            updateGhostHud();
             const tolW = getAccuracyToleranceWatts();
             const targetWatts = getTargetWattsAtSecond(state.workout, state.elapsedSec, state.ftp);
 
@@ -9483,7 +9608,8 @@
                 gradientPct: state.currentGradientPct,
                 inZone: evalRes.inZone,
                 isBullseye: evalRes.isBullseye,
-                points: evalRes.points
+                points: evalRes.points,
+                totalScore: state.totalScore
             });
 
             state.elapsedSec += 1;
@@ -9681,6 +9807,10 @@
             document.getElementById('summaryWorkKj').textContent = (metrics.totalWorkJoules / 1000).toFixed(1);
             document.getElementById('summaryAvgCadence').textContent = Math.round(metrics.avgCadence);
 
+            const ghostResultEl = document.getElementById('summaryGhostResult');
+            ghostResultEl.textContent = getGhostRaceResultText();
+            ghostResultEl.classList.toggle('hidden', !state.ghost);
+
             syncSummaryScreenshotDialogUI();
             setScreen('summary');
 
@@ -9751,6 +9881,10 @@
             const parsed = parseZwiftWorkoutXml(xmlString);
             state.workout = parsed;
             state.selectedPresetKey = presetKey;
+            state.workoutXml = xmlString;
+            if (state.ghost && state.ghost.workoutXml !== xmlString) {
+                clearGhostRide();
+            }
             const titleEl = document.getElementById('workoutTitleLabel');
             if (titleEl) titleEl.textContent = parsed.name;
             const tlTitleEl = document.getElementById('timelineWorkoutTitle');
@@ -9765,6 +9899,199 @@
             if (zwoBadge) zwoBadge.classList.toggle('hidden', Boolean(presetKey));
             renderPresetWorkoutCards();
             resetWorkoutSession();
+        }
+
+        // =========================================================================
+        // GHOST RIDES: save a finished ride and race against it later
+        // =========================================================================
+        const GHOST_FILE_FORMAT = 'performed3d-ghost';
+        const GHOST_FILE_VERSION = 1;
+        const GHOST_MAX_SECONDS = 6 * 3600;
+
+        function buildGhostRideFile() {
+            return {
+                format: GHOST_FILE_FORMAT,
+                version: GHOST_FILE_VERSION,
+                recordedAt: new Date(state.lastSummary.startTimeMs || Date.now()).toISOString(),
+                workoutName: state.workout.name,
+                workoutXml: state.workoutXml,
+                ftp: state.ftp,
+                avatarType: state.avatarType,
+                finalScore: Math.round(state.totalScore),
+                distanceMeters: Math.round(state.totalDistanceMeters),
+                // Per recorded second: [workoutSecond, watts, cumulativeDistanceMeters, cumulativeScore]
+                samples: state.samples.map((s) => [
+                    s.elapsedSec,
+                    Math.round(s.actualWatts),
+                    Math.round((s.distanceMeters || 0) * 10) / 10,
+                    Math.round(s.totalScore || 0)
+                ])
+            };
+        }
+
+        function parseGhostRideFile(text) {
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (err) {
+                throw new Error('The file is not valid JSON.');
+            }
+            if (!data || data.format !== GHOST_FILE_FORMAT || data.version !== GHOST_FILE_VERSION) {
+                throw new Error('This is not a Performed 3D ghost ride file.');
+            }
+            if (typeof data.workoutXml !== 'string' || !data.workoutXml.trim()) {
+                throw new Error('The ghost ride does not contain its workout.');
+            }
+            if (!Array.isArray(data.samples) || data.samples.length > GHOST_MAX_SECONDS) {
+                throw new Error('The ghost ride has no valid samples.');
+            }
+            const rows = data.samples
+                .filter((row) => Array.isArray(row) && row.length >= 4 && row.slice(0, 4).every(Number.isFinite)
+                    && Number.isInteger(row[0]) && row[0] >= 0 && row[0] < GHOST_MAX_SECONDS)
+                .sort((a, b) => a[0] - b[0]);
+            if (rows.length === 0) {
+                throw new Error('The ghost ride has no valid samples.');
+            }
+
+            const lastSec = rows[rows.length - 1][0];
+            const watts = new Float32Array(lastSec + 1);
+            const distance = new Float32Array(lastSec + 1);
+            const score = new Float32Array(lastSec + 1);
+            let rowIdx = 0;
+            let current = [0, 0, 0, 0];
+            for (let sec = 0; sec <= lastSec; sec++) {
+                let hasSample = false;
+                while (rowIdx < rows.length && rows[rowIdx][0] === sec) {
+                    current = rows[rowIdx];
+                    rowIdx += 1;
+                    hasSample = true;
+                }
+                // Seconds without a sample (paused or skipped) carry distance/score forward at zero watts
+                watts[sec] = hasSample ? Math.max(0, current[1]) : 0;
+                distance[sec] = Math.max(0, current[2]);
+                score[sec] = current[3];
+            }
+
+            return {
+                name: String(data.workoutName || 'Ghost Ride').slice(0, 80),
+                recordedAt: typeof data.recordedAt === 'string' ? data.recordedAt : null,
+                workoutXml: data.workoutXml,
+                watts,
+                distance,
+                score,
+                lastSec,
+                finalScore: score[lastSec],
+                finalDistance: distance[lastSec]
+            };
+        }
+
+        // Ghost totals after the given workout second has been completed
+        function getGhostRideTotalsAfterSecond(sec) {
+            const ghost = state.ghost;
+            if (!ghost || sec < 0) return { distance: 0, score: 0, finished: false };
+            const idx = Math.min(sec, ghost.lastSec);
+            return { distance: ghost.distance[idx], score: ghost.score[idx], finished: sec >= ghost.lastSec };
+        }
+
+        function getGhostRideWattsAtSecond(sec) {
+            const ghost = state.ghost;
+            if (!ghost || sec < 0 || sec > ghost.lastSec) return 0;
+            return ghost.watts[sec];
+        }
+
+        function formatSignedGhostValue(value, unit) {
+            const rounded = Math.round(value);
+            const sign = rounded > 0 ? '+' : (rounded < 0 ? '−' : '±');
+            return `${sign}${formatSwissNumber(Math.abs(rounded))} ${unit}`;
+        }
+
+        function updateGhostUI() {
+            const chip = document.getElementById('ghostStatusChip');
+            const label = document.getElementById('ghostStatusLabel');
+            const hudRow = document.getElementById('ghostHudRow');
+            const hasGhost = Boolean(state.ghost);
+            chip.classList.toggle('hidden', !hasGhost);
+            chip.classList.toggle('flex', hasGhost);
+            hudRow.classList.toggle('hidden', !hasGhost);
+            hudRow.classList.toggle('flex', hasGhost);
+            if (hasGhost) {
+                const recorded = state.ghost.recordedAt ? new Date(state.ghost.recordedAt) : null;
+                const dateText = recorded && !isNaN(recorded) ? ` · ${recorded.toLocaleDateString()}` : '';
+                label.textContent = `Ghost: ${formatSwissNumber(state.ghost.finalScore)} pts${dateText}`;
+                chip.title = `Racing against a ghost ride of "${state.ghost.name}"${dateText}`;
+            }
+            updateAvatarReadySummaryUI();
+            updateGhostHud();
+        }
+
+        function updateGhostHud() {
+            if (!state.ghost) return;
+            const totals = getGhostRideTotalsAfterSecond(state.elapsedSec - 1);
+            const gapMeters = state.totalDistanceMeters - totals.distance;
+            const scoreDelta = state.totalScore - totals.score;
+            const gapEl = document.getElementById('ghostGapDisplay');
+            const scoreEl = document.getElementById('ghostScoreDeltaDisplay');
+            gapEl.textContent = formatSignedGhostValue(gapMeters, 'm');
+            gapEl.className = `text-xs sm:text-sm font-black tabular-nums ${gapMeters >= 0 ? 'text-emerald-300' : 'text-rose-300'}`;
+            scoreEl.textContent = formatSignedGhostValue(scoreDelta, 'pts');
+            scoreEl.className = `text-[10px] sm:text-xs font-black tabular-nums ${scoreDelta >= 0 ? 'text-emerald-300' : 'text-rose-300'}`;
+            document.getElementById('ghostWattsDisplay').textContent = Math.round(getGhostRideWattsAtSecond(state.elapsedSec));
+        }
+
+        function getGhostRaceResultText() {
+            if (!state.ghost) return '';
+            const totals = getGhostRideTotalsAfterSecond(state.elapsedSec - 1);
+            const scoreDelta = Math.round(state.totalScore - totals.score);
+            const gapMeters = Math.round(state.totalDistanceMeters - totals.distance);
+            const gapText = `${formatSignedGhostValue(gapMeters, 'm')} distance`;
+            if (scoreDelta > 0) return `Ghost race: you beat the ghost by ${formatSwissNumber(scoreDelta)} pts (${gapText}).`;
+            if (scoreDelta < 0) return `Ghost race: the ghost won by ${formatSwissNumber(-scoreDelta)} pts (${gapText}).`;
+            return `Ghost race: tied with the ghost (${gapText}).`;
+        }
+
+        function setGhostRide(ghost) {
+            state.ghost = ghost;
+            if (dragon3D) dragon3D.rebuildGhostModel();
+            updateGhostUI();
+            updateLiveHud();
+        }
+
+        function clearGhostRide() {
+            setGhostRide(null);
+        }
+
+        function selectPresetMatchingXml(xmlString) {
+            const presetKey = Object.keys(PRESET_WORKOUTS).find((key) => PRESET_WORKOUTS[key] === xmlString) || null;
+            if (presetKey) {
+                const sel = document.getElementById('presetWorkoutSelect');
+                if (sel) sel.value = presetKey;
+            }
+            return presetKey;
+        }
+
+        function loadGhostRideFromText(text) {
+            const ghost = parseGhostRideFile(text);
+            const presetKey = selectPresetMatchingXml(ghost.workoutXml);
+            loadWorkoutFromXml(ghost.workoutXml, presetKey);
+            setGhostRide(ghost);
+        }
+
+        function downloadGhostRide() {
+            if (!state.lastSummary || !state.workoutXml || state.samples.length === 0) return;
+            const json = JSON.stringify(buildGhostRideFile());
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const safeName = (state.lastSummary.workoutName || 'performed3d_ride')
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '_');
+            const dateStr = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = `${safeName}_${dateStr}.ghost.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
         }
 
         function toggleSimMode(forceState) {
@@ -9870,6 +10197,7 @@
 
             if (dragon3D) {
                 dragon3D.buildActiveAvatar(chosen);
+                dragon3D.rebuildGhostModel();
             }
             updateLiveHud();
         }
@@ -10467,6 +10795,30 @@
             };
             reader.readAsText(file);
         });
+
+        document.getElementById('ghostFileInput').addEventListener('change', (e) => {
+            const input = e.target;
+            const file = input.files && input.files[0];
+            if (!file) return;
+            if (state.hasStartedSession) {
+                alert('Finish or close the current ride before loading a ghost.');
+                input.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    loadGhostRideFromText(ev.target.result);
+                } catch (err) {
+                    alert('Failed to load ghost ride: ' + err.message);
+                }
+                input.value = '';
+            };
+            reader.readAsText(file);
+        });
+
+        document.getElementById('clearGhostBtn').addEventListener('click', clearGhostRide);
+        document.getElementById('saveGhostBtn').addEventListener('click', downloadGhostRide);
 
         document.getElementById('startWorkoutBtn').addEventListener('click', () => {
             soundEngine.init();

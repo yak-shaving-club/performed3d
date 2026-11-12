@@ -4,6 +4,14 @@ Performed 3D is a browser-based 3D cycling game for structured indoor cycling wo
 
 ![Dragon splashscreen](docs/screenshots/01-start.png)
 
+## Feature Requests
+
+- Ghost ride
+- Multiplay
+- Settings GUI (GUI Cleanup)
+-- Optimize screen to see current watt and cadence more performant
+- Ranking server
+
 ## Quick start
 
 There is no build step or package installation. Node.js 18 or newer is required to run the local web server. The page loads Three.js and Tailwind CSS at runtime from CDNs, so an internet connection is required.
@@ -20,9 +28,9 @@ There is no build step or package installation. Node.js 18 or newer is required 
 4. Step through the setup screens and take off:
    - **Splashscreen:** Click **Start Setup** from the dragon hero screen.
    - **1 · Pairing & Rules:** Pair Bluetooth devices (or enable the Virtual Trainer Simulator and **Auto-Fly Target Gate**), toggle steering and 3D obstacles, and set **Donut Gate Accuracy** (`40 W` by default).
-   - **2 · Training Selection:** Pick one of the 14 built-in presets or upload a Zwift `.zwo` file, set your FTP, and choose a resistance/wind mode.
+   - **2 · Training Selection:** Pick one of the 14 built-in presets, upload a Zwift `.zwo` file, or load a saved `.ghost.json` ghost ride, then set your FTP and choose a resistance/wind mode.
    - **3 · Avatar Selection:** Choose your 3D avatar and camera view over a live sky preview, then click **Start Flight**.
-   - **4 · Flight & Summary:** Fly through the target-watt donut gates and finish to view the **Workout Summary** screen (`.fit` and `.png` export).
+   - **4 · Flight & Summary:** Fly through the target-watt donut gates and finish to view the **Workout Summary** screen (`.fit`, `.ghost.json`, and `.png` export).
 
 Simulation mode is enabled by default, so you can try the game without a trainer. Bluetooth requires a compatible browser; the Web Bluetooth API is supported by browsers such as current versions of Chrome and Edge. Bluetooth is available only in a secure context (for example, `localhost` or HTTPS).
 
@@ -112,6 +120,7 @@ Without this flag, devices must be paired manually after every page load. Messag
 - **Save a FIT file:** After the workout, download the recorded activity as a `.fit` file from the summary and import it into Strava, Garmin Connect, or another training platform.
 - **Garmin Connect:** Direct activity uploads require access to Garmin's Business Developer Program Activity API, which provides push access. Garmin's personal API access is pull-only. Until business access is available, download the FIT file and import it into Garmin Connect manually.
 - **Save a screenshot:** Capture a screenshot before or during a workout; it will be available to download from the summary.
+- **Ghost rides:** Click **Save Ghost Ride** in the summary to download the ride as a `.ghost.json` file. The file contains the workout plus your watts, distance, and score for every second. Before starting a ride, click **Load Ghost** on the **Training Selection** screen to race against a saved ride; its workout is loaded automatically. A translucent cyan copy of your avatar flies beside you. Its altitude follows the ghost's watts, and it moves ahead or behind according to the distance gap. The HUD shows your distance gap, the ghost's watts, and your score difference, and the summary reports who won. Selecting a different workout removes the ghost; you can also remove it with **✕** next to its status chip.
 
 ## Screenshots
 
