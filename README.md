@@ -28,7 +28,7 @@ There is no build step or package installation. Node.js 18 or newer is required 
 4. Step through the setup screens and take off:
    - **Splashscreen:** Click **Start Setup** from the dragon hero screen.
    - **1 · Pairing & Rules:** Pair Bluetooth devices (or enable the Virtual Trainer Simulator and **Auto-Fly Target Gate**), toggle steering and 3D obstacles, and set **Donut Gate Accuracy** (`40 W` by default).
-   - **2 · Training Selection:** Pick one of the 14 built-in presets, upload a Zwift `.zwo` file, or load a saved `.ghost.json` ghost ride, then set your FTP and choose a resistance/wind mode.
+   - **2 · Training Selection:** Filter the 26 built-in presets by duration (`≤15m`, `16–30m`, `30m+`) and intensity (`Endurance`, `Sweet Spot`, `Threshold`, `VO2max / HIIT`, `FTP Test`), upload a Zwift `.zwo` file, or load a saved `.ghost.json` ghost ride, then set your FTP, preview expected **Avg** watts / **IF** / **TSS**, and choose a resistance/wind mode.
    - **3 · Avatar Selection:** Choose your 3D avatar and camera view over a live sky preview, then click **Start Flight**.
    - **4 · Flight & Summary:** Fly through the target-watt donut gates and finish to view the **Workout Summary** screen (`.fit`, `.ghost.json`, and `.png` export).
 
@@ -38,17 +38,17 @@ For an HTTPS deployment behind a reverse proxy, set `APP_ORIGIN` to the public o
 
 ## Gameplay and workout controls
 
-Your current power is compared with the workout's target power. The game displays power accuracy, workout intervals, and progress in the HUD. FTP (200 W by default; adjustable from 50 to 600 W) is used to calculate power targets specified as a percentage of FTP. Use **Donut Gate Accuracy** on the **Pairing & Rules** screen to set the allowed power deviation (40 W by default).
+Your current power is compared with the workout's target power. The game displays power accuracy, workout intervals, and progress in the HUD. Clearing consecutive donut gates in-zone builds your combo multiplier and awards tiered **Ring Streak** bonuses every 15 rings (`+250` points per tier, from *Nice Streak!* to *Legendary!*) with visual splash banners and ascending arpeggios. FTP (200 W by default; adjustable from 50 to 600 W) is used to calculate power targets specified as a percentage of FTP. Use **Donut Gate Accuracy** on the **Pairing & Rules** screen to set the allowed power deviation (40 W by default).
 
-Available workouts include:
+Available workouts can be filtered by duration and physiological intensity:
 
-- **KICKR Arcade Pyramid** and **Quick 3-Minute Accuracy Sprint** for short accuracy challenges
-- Ramp and elevation profiles such as **Sky Serpent**, **Alpine Switchback**, **Mach Canyon**, and **Dragon Boss Mega-Ramp**
-- Interval workouts such as **30/15 VO2max Micro-Burst Storm**, **Dragon Fire Tabata Inferno**, and **Over-Under Surge Blitz**
-- Longer profiles such as **Harmonic Wave & Step Matrix**, **Sweet Spot Precision**, and **Pro Criterium Corner Sprints**
-- Custom Zwift workouts in `.zwo` format
+- **Arcade & Ramp Challenges:** **KICKR Arcade Pyramid**, **Quick 3-Minute Accuracy Sprint**, **Sky Serpent Up & Down Ramps**, **Alpine Switchback Double Ramps**, **Mach Canyon Dive & Climb Level**, **Dragon Boss Mega-Ramp Gauntlet**, **Dragon Canyon Rollercoaster**, and **Alpine Sawtooth Multi-Peak**
+- **Physiologically Structured Workouts:** **Active Recovery Flush (Z1)**, **Mitochondrial Zone 2 Base**, **Polarized LT1 Aerobic Cruiser**, **2×12m Sweet Spot Builder**, **Muscular Force Tempo (SE)**, **MCT1 Lactate Shuttle Over-Unders**, **2×15m MLSS Threshold Cruise**, **Rønnestad 30/15 VO2max Blocks**, **Norwegian 4×4m VO2max Cardiac**, and **Billat Fast-Start VO2 Kinetics**
+- **HIIT & Race Simulations:** **30/15 VO2max Micro-Burst Storm**, **Dragon Fire Tabata Inferno**, **Over-Under Surge Blitz**, **Harmonic Wave & Step Matrix**, **Sweet Spot Precision**, and **Pro Criterium Corner Sprints**
+- **FTP Ramp Tests:** **Standard MAP / FTP Ramp Test** (`+20 W/min` up to `580 W`) and **Lite / Finer-Step FTP Ramp Test (+10W)** (`+10 W/min` up to `560 W`) — progressive 1-minute fixed-watt ramps ridden to exhaustion, estimating FTP values past `400 W` regardless of your prior FTP setting. An active FTP Test badge is shown in the HUD, and stopping pedaling for 5 seconds automatically finishes the flight, displays your calculated FTP (`75%` of best 1-minute average power) prominently in the summary, and saves it to `localStorage` as your default FTP for future trainings.
+- **Custom Zwift workouts** in `.zwo` format
 
-Resistance modes are **Easy**, **Medium**, **Difficult**, and **ERG Lock**. In **Medium** and **Difficult** modes, simulated upwind thermals and downwind drafts are shown directly on upcoming donut gates with animated emerald lift or amber draft 3D chevrons, flanking wind halos, and slope badges. **Start Flight** pauses or resumes the workout. You can also end a workout early.
+Resistance modes are **Easy**, **Medium**, **Difficult**, and **ERG Lock** (with a button to re-roll the session's random wind profile). In **Medium** and **Difficult** modes, simulated upwind thermals and downwind drafts are shown directly on upcoming donut gates with animated emerald lift or amber draft 3D chevrons, flanking wind halos, and slope badges. During a flight, **Pause Flight** / **Resume Flight** pauses or resumes the workout, and **Finish & Summary** ends a workout early.
 
 ### Adaptive music
 
@@ -116,16 +116,20 @@ Without this flag, devices must be paired manually after every page load. Messag
 
 ## Custom workouts and results
 
-- **Load a Zwift workout:** Select a `.zwo` file using **Upload Zwift (.zwo)**. Supported interval types include SteadyState, Warmup, Cooldown, Ramp, IntervalsT, FreeRide, and MaxEffort.
-- **Save a FIT file:** After the workout, download the recorded activity as a `.fit` file from the summary and import it into Strava, Garmin Connect, or another training platform.
+- **Load a Zwift workout:** Select a `.zwo` file using **Upload Zwift (.zwo)**. Supported interval types include SteadyState, Warmup, Cooldown, Ramp, IntervalsT, FreeRide, and MaxEffort (plus `<ftpTest>true</ftpTest>` or "Ramp Test" / "FTP Test" in `<name>` for custom FTP tests).
+- **Save a FIT file:** After the workout, review your rank, gate accuracy, and power metrics (**Avg Power**, **TSS**, **NP**, **IF**, **Work**), then click **Download .FIT** to export the recorded activity for Strava, Garmin Connect, or another training platform.
 - **Garmin Connect:** Direct activity uploads require access to Garmin's Business Developer Program Activity API, which provides push access. Garmin's personal API access is pull-only. Until business access is available, download the FIT file and import it into Garmin Connect manually.
-- **Save a screenshot:** Capture a screenshot before or during a workout; it will be available to download from the summary.
-- **Ghost rides:** Click **Save Ghost Ride** in the summary to download the ride as a `.ghost.json` file. The file contains the workout plus your watts, distance, and score for every second. Before starting a ride, click **Load Ghost** on the **Training Selection** screen to race against a saved ride; its workout is loaded automatically. A translucent cyan copy of your avatar flies beside you. Its altitude follows the ghost's watts, and it moves ahead or behind according to the distance gap. The HUD shows your distance gap, the ghost's watts, and your score difference, and the summary reports who won. Selecting a different workout removes the ghost; you can also remove it with **✕** next to its status chip.
+- **Save a screenshot:** An in-game screenshot (including the HUD and bottom workout timeline overlay) is captured automatically at the end of a flight or anytime via **Screenshot**, and can be downloaded from the summary via **Save .PNG**.
+- **Ghost rides:** Click **Save Ghost** in the summary to download the ride as a `.ghost.json` file. The file contains the workout plus your watts, distance, and score for every second. Before starting a ride, click **Load Ghost** on the **Training Selection** screen to race against a saved ride; its workout is loaded automatically. A translucent cyan copy of your avatar flies beside you. Its altitude follows the ghost's watts, and it moves ahead or behind according to the distance gap. The HUD shows your distance gap, the ghost's watts, and your score difference, and the summary reports who won. Selecting a different workout removes the ghost; you can also remove it with **✕** next to its status chip.
 
 ## Screenshots
 
 | View | Screenshot |
 | --- | --- |
+| Splashscreen | ![Dragon splashscreen](docs/screenshots/01-start.png) |
+| Step 1 · Pairing & Rules | ![Pairing devices and flight rules](docs/screenshots/01-pairing.png) |
+| Step 2 · Training Selection | ![Training workout selection and filters](docs/screenshots/01-training.png) |
+| Step 3 · Avatar Selection | ![3D avatar selection and sky preview](docs/screenshots/01-avatar.png) |
 | Flight | ![Flight through the 3D gates](docs/screenshots/02-flight.png) |
 | DeLorean avatar | ![DeLorean in flight](docs/screenshots/03-delorean.png) |
 | UFO, standard view | ![UFO in flight](docs/screenshots/04-ufo.png) |
