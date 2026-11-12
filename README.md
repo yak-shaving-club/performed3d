@@ -4,6 +4,14 @@ Performed 3D is a browser-based 3D cycling game for structured indoor cycling wo
 
 ![Start screen with workout selection and settings](docs/screenshots/01-start.png)
 
+## Feature Requests
+
+- Ghost ride
+- Multiplay
+- Settings GUI (GUI Cleanup)
+-- Optimize screen to see current watt and cadence more performant
+- Ranking server
+
 ## Quick start
 
 There is no build step or package installation. Node.js 18 or newer is required to run the local web server. The page loads Three.js and Tailwind CSS at runtime from CDNs, so an internet connection is required.
@@ -107,6 +115,7 @@ Without this flag, devices must be paired manually after every page load. Messag
 - **Save a FIT file:** After the workout, download the recorded activity as a `.fit` file from the summary and import it into Strava, Garmin Connect, or another training platform.
 - **Garmin Connect:** Direct activity uploads require access to Garmin's Business Developer Program Activity API, which provides push access. Garmin's personal API access is pull-only. Until business access is available, download the FIT file and import it into Garmin Connect manually.
 - **Save a screenshot:** Capture a screenshot before or during a workout; it will be available to download from the summary.
+- **Ghost rides:** Click **Save Ghost Ride** in the summary to download the ride as a `.ghost.json` file. The file contains the workout plus your watts, distance, and score for every second. Before starting a ride, click **Load Ghost** to race against a saved ride; its workout is loaded automatically. A translucent cyan copy of your avatar flies beside you. Its altitude follows the ghost's watts, and it moves ahead or behind according to the distance gap. The HUD shows your distance gap, the ghost's watts, and your score difference, and the summary reports who won. Selecting a different workout removes the ghost; you can also remove it with **✕** next to its status chip.
 
 ## Screenshots
 
