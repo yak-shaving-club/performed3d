@@ -18,9 +18,9 @@ No server or package installation is required. The page loads Three.js and Tailw
 3. Step through the setup screens and take off:
    - **Splashscreen:** Click **Start Setup** from the dragon hero screen.
    - **1 · Pairing & Rules:** Pair Bluetooth devices (or enable the Virtual Trainer Simulator and **Auto-Fly Target Gate**), toggle steering and 3D obstacles, and set **Donut Gate Accuracy** (`40 W` by default).
-   - **2 · Training Selection:** Filter the 26 built-in presets by duration (`≤15m`, `16–30m`, `30m+`) and intensity (`Endurance`, `Sweet Spot`, `Threshold`, `VO2max / HIIT`, `FTP Test`), upload a Zwift `.zwo` file, or load a saved `.ghost.json` ghost ride, then set your FTP, preview expected **Avg** watts / **IF** / **TSS**, and choose a resistance/wind mode.
+   - **2 · Training Selection:** Filter the 26 built-in presets by duration (`≤15m`, `16–30m`, `30m+`) and intensity (`Endurance`, `Sweet Spot`, `Threshold`, `VO2max / HIIT`, `FTP Test`), upload a Zwift `.zwo` file, or load a saved `.loop-kicker-journey-ghost.json` ghost ride, then set your FTP, preview expected **Avg** watts / **IF** / **TSS**, and choose a resistance/wind mode.
    - **3 · Avatar Selection:** Choose your 3D avatar and camera view over a live sky preview, then click **Start Flight**.
-   - **4 · Flight & Summary:** Fly through the target-watt donut gates and finish to view the **Workout Summary** screen (`.fit`, `.ghost.json`, and `.png` export).
+   - **4 · Flight & Summary:** Fly through the target-watt donut gates and finish to view the **Workout Summary** screen (`.fit`, `.loop-kicker-journey-ghost.json`, and `.png` export).
 
 Simulation mode is enabled by default, so you can try the game without a trainer. Bluetooth requires a compatible browser; the Web Bluetooth API is supported by browsers such as current versions of Chrome and Edge. Bluetooth is available only in a secure context (for example, `localhost` or HTTPS).
 
@@ -110,7 +110,7 @@ Without this flag, devices must be paired manually after every page load. Messag
 - **Save a FIT file:** After the workout, review your rank, gate accuracy, and power metrics (**Avg Power**, **TSS**, **NP**, **IF**, **Work**), then click **Download .FIT** to export the recorded activity for Strava, Garmin Connect, or another training platform.
 - **Garmin Connect:** Direct activity uploads require access to Garmin's Business Developer Program Activity API, which provides push access. Garmin's personal API access is pull-only. Until business access is available, download the FIT file and import it into Garmin Connect manually.
 - **Save a screenshot:** An in-game screenshot (including the HUD and bottom workout timeline overlay) is captured automatically at the end of a flight or anytime via **Screenshot**, and can be downloaded from the summary via **Save .PNG**.
-- **Ghost rides:** Click **Save Ghost** in the summary to download the ride as a `.loop-kicker-journey-ghost.json` file. The file contains the workout plus your watts, distance, and score for every second. Before starting a ride, click **Load Ghost** on the **Training Selection** screen to race against a saved ride; its workout is loaded automatically. A translucent cyan copy of your avatar flies beside you. Its altitude follows the ghost's watts, and it moves ahead or behind according to the distance gap. The HUD shows your distance gap, the ghost's watts, and your score difference, and the summary reports who won. Existing `.ghost.json` files remain supported.
+- **Ghost rides:** Click **Save Ghost** in the summary to download the ride as a `.loop-kicker-journey-ghost.json` file. The file contains the workout plus your watts, distance, and score for every second. Before starting a ride, click **Load Ghost** on the **Training Selection** screen to race against a saved ride; its workout is loaded automatically. A translucent cyan copy of your avatar flies beside you. Its altitude follows the ghost's watts, and it moves ahead or behind according to the distance gap. The HUD shows your distance gap, the ghost's watts, and your score difference, and the summary reports who won.
 
 ## Screenshots
 

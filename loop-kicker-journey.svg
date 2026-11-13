@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
     <title>Loop Kicker Journey</title>
     <defs>
-        <linearGradient id="p3d-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="lkj-bg" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stop-color="#0f172a"/>
             <stop offset="45%" stop-color="#1e1b4b"/>
             <stop offset="100%" stop-color="#047857"/>
@@ -18,7 +18,7 @@
     </defs>
 
     <!-- App Icon Rounded Background -->
-    <rect width="512" height="512" rx="140" fill="url(#p3d-bg)"/>
+    <rect width="512" height="512" rx="140" fill="url(#lkj-bg)"/>
 
     <!-- Sky Clouds -->
     <g fill="#ffffff" opacity="0.18">

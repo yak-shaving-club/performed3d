@@ -5,7 +5,7 @@ function applyFtpWatts(rawValue) {
     const val = parseInt(rawValue, 10);
     if (!isNaN(val) && val >= 50 && val <= 600) {
         state.ftp = val;
-        localStorage.setItem('performed_ftp', String(val));
+        localStorage.setItem('loop_kicker_journey_ftp', String(val));
         if (state.simMode && state.simAutoJitter) {
             const targetW = getTargetWattsAtSecond(state.workout, state.elapsedSec, state.ftp);
             state.actualWatts = targetW;
@@ -59,7 +59,7 @@ function setAvatarType(avatarType) {
     // Legacy saved value 'dragon' (removed avatar) and unknown values fall back to the Aero Wyvern
     const chosen = validAvatars.includes(avatarType) ? avatarType : 'aero_wyvern';
     state.avatarType = chosen;
-    localStorage.setItem('performed_avatar_type', chosen);
+    localStorage.setItem('loop_kicker_journey_avatar_type', chosen);
 
     const mainSel = document.getElementById('avatarSelect');
     const compactSel = document.getElementById('compactAvatarSelect');
@@ -106,7 +106,7 @@ function syncCameraPillsUI() {
 function setCameraView(view) {
     const chosen = CAMERA_VIEWS[view] ? Number(view) : 1;
     state.cameraView = chosen;
-    localStorage.setItem('performed_camera_view', String(chosen));
+    localStorage.setItem('loop_kicker_journey_camera_view', String(chosen));
     ['cameraViewSelect', 'compactCameraViewSelect'].forEach((id) => {
         const sel = document.getElementById(id);
         if (sel) sel.value = String(chosen);
@@ -146,7 +146,7 @@ function setSimAutoFollow(checked) {
 
 function setSteeringEnabled(enabled) {
     state.steeringEnabled = Boolean(enabled);
-    localStorage.setItem('performed_steering_enabled', state.steeringEnabled ? 'true' : 'false');
+    localStorage.setItem('loop_kicker_journey_steering_enabled', state.steeringEnabled ? 'true' : 'false');
     state.steerLeftPressed = false;
     state.steerRightPressed = false;
 
@@ -252,7 +252,7 @@ function isBlePairingCancelledError(err) {
         msg.includes('requestdevice() chooser');
 }
 
-const BLE_KNOWN_DEVICES_STORAGE_KEY = 'performed_ble_known_devices';
+const BLE_KNOWN_DEVICES_STORAGE_KEY = 'loop_kicker_journey_ble_known_devices';
 const bleRoles = {
     trainer: {
         sensor: bleTrainer, buttonId: 'connectBleBtn', idleLabel: 'Connect Wahoo KICKR',
@@ -399,7 +399,7 @@ Object.entries(bleRoles).forEach(([role, cfg]) => {
 autoConnectKnownBleDevices();
 
 function getDefaultPhoneControllerBaseUrl() {
-    const saved = localStorage.getItem('performed_phone_base_url');
+    const saved = localStorage.getItem('loop_kicker_journey_phone_base_url');
     if (saved) return saved;
     const url = new URL(window.location.href);
     url.search = '';
@@ -474,7 +474,7 @@ document.getElementById('connectPhoneSteerBtn').addEventListener('click', async 
 document.getElementById('phoneSteerBaseUrlInput').addEventListener('input', (e) => {
     const val = e.target.value.trim();
     if (val) {
-        localStorage.setItem('performed_phone_base_url', val);
+        localStorage.setItem('loop_kicker_journey_phone_base_url', val);
     }
     if (phoneSteeringSensor.peerId) {
         renderPhoneSteerQrCode(phoneSteeringSensor.peerId);
@@ -505,7 +505,7 @@ function applyConfigurableAccuracyTolerance(rawVal) {
     if (isNaN(parsed)) return;
     const clamped = Math.max(5, Math.min(50, parsed));
     state.accuracyToleranceWatts = clamped;
-    localStorage.setItem('performed_accuracy_tolerance_watts', String(clamped));
+    localStorage.setItem('loop_kicker_journey_accuracy_tolerance_watts', String(clamped));
     const sliderEl = document.getElementById('accuracyToleranceSlider');
     const inputEl = document.getElementById('accuracyToleranceInput');
     const badgeEl = document.getElementById('accuracyToleranceBadge');
@@ -614,7 +614,7 @@ function handleSoundToggle() {
     syncSoundButtonsUI();
     if (soundEngine.enabled) soundEngine.init();
     // Muting sound also silences music; the saved music preference is restored on unmute.
-    applyMusicEnabled(localStorage.getItem('performed_music_enabled') !== 'false', false);
+    applyMusicEnabled(localStorage.getItem('loop_kicker_journey_music_enabled') !== 'false', false);
 }
 
 ['soundToggleBtn', 'wizardSoundToggleBtn'].forEach((id) => {
@@ -623,7 +623,7 @@ function handleSoundToggle() {
 });
 
 function applyMusicEnabled(enabled, persist = true) {
-    if (persist) localStorage.setItem('performed_music_enabled', String(enabled));
+    if (persist) localStorage.setItem('loop_kicker_journey_music_enabled', String(enabled));
     const active = enabled && soundEngine.enabled;
     musicEngine.setEnabled(active);
     ['musicOnIcon', 'wizardMusicOnIcon'].forEach((id) => {
@@ -1147,30 +1147,30 @@ document.getElementById('summaryFlyAgainBtn').addEventListener('click', () => {
     if (urlParams.has('phone-steer') || urlParams.has('steer')) {
         return;
     }
-    if (localStorage.getItem('performed_phone_host_peer_id')) {
+    if (localStorage.getItem('loop_kicker_journey_phone_host_peer_id')) {
         phoneSteeringSensor.ensureHostPeer().catch(() => {});
     }
-    const savedAvatar = localStorage.getItem('performed_avatar_type');
+    const savedAvatar = localStorage.getItem('loop_kicker_journey_avatar_type');
     if (savedAvatar) {
         setAvatarType(savedAvatar);
     } else {
         setAvatarType('aero_wyvern');
     }
-    const savedFtp = parseInt(localStorage.getItem('performed_ftp'), 10);
-    setCameraView(parseInt(localStorage.getItem('performed_camera_view'), 10) || 1);
+    const savedFtp = parseInt(localStorage.getItem('loop_kicker_journey_ftp'), 10);
+    setCameraView(parseInt(localStorage.getItem('loop_kicker_journey_camera_view'), 10) || 1);
     if (!isNaN(savedFtp) && savedFtp >= 50 && savedFtp <= 600) {
         state.ftp = savedFtp;
         document.getElementById('ftpInput').value = savedFtp;
     }
-    const savedTol = parseInt(localStorage.getItem('performed_accuracy_tolerance_watts'), 10);
+    const savedTol = parseInt(localStorage.getItem('loop_kicker_journey_accuracy_tolerance_watts'), 10);
     if (!isNaN(savedTol) && savedTol >= 5 && savedTol <= 50) {
         applyConfigurableAccuracyTolerance(savedTol);
     } else {
         applyConfigurableAccuracyTolerance(state.accuracyToleranceWatts);
     }
-    const savedSteering = localStorage.getItem('performed_steering_enabled');
+    const savedSteering = localStorage.getItem('loop_kicker_journey_steering_enabled');
     syncSoundButtonsUI();
-    applyMusicEnabled(localStorage.getItem('performed_music_enabled') !== 'false');
+    applyMusicEnabled(localStorage.getItem('loop_kicker_journey_music_enabled') !== 'false');
     if (savedSteering === 'false') {
         setSteeringEnabled(false);
     } else {

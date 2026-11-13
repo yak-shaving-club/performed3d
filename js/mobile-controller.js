@@ -41,8 +41,8 @@
         }
     }
     if (debugLogEl) debugLogEl.textContent = '';
-    if (Array.isArray(window.__p3dEarlyLogs)) {
-        window.__p3dEarlyLogs.forEach((m) => logDiag(m));
+    if (Array.isArray(window.__lkjEarlyLogs)) {
+        window.__lkjEarlyLogs.forEach((m) => logDiag(m));
     }
     logDiag(`Origin: ${window.location.origin} (HTTPS=${window.isSecureContext})`);
     logDiag(`Target laptop peer: ${hostPeerId || '(none)'}`);

@@ -2,7 +2,6 @@
 // GHOST RIDES: save a finished ride and race against it later
 // =========================================================================
 const GHOST_FILE_FORMAT = 'loop-kicker-journey-ghost';
-const LEGACY_GHOST_FILE_FORMAT = 'performed3d-ghost';
 const GHOST_FILE_VERSION = 1;
 const GHOST_MAX_SECONDS = 6 * 3600;
 
@@ -34,7 +33,7 @@ function parseGhostRideFile(text) {
     } catch (err) {
         throw new Error('The file is not valid JSON.');
     }
-    if (!data || ![GHOST_FILE_FORMAT, LEGACY_GHOST_FILE_FORMAT].includes(data.format) || data.version !== GHOST_FILE_VERSION) {
+    if (!data || data.format !== GHOST_FILE_FORMAT || data.version !== GHOST_FILE_VERSION) {
         throw new Error('This is not a Loop Kicker Journey ghost ride file.');
     }
     if (typeof data.workoutXml !== 'string' || !data.workoutXml.trim()) {

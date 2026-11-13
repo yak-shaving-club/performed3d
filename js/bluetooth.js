@@ -344,18 +344,18 @@ class PhoneWebRtcSteeringSensor {
         }
         this.onStatus('connecting', 'Waiting for Phone...');
         return new Promise((resolve, reject) => {
-            let savedId = localStorage.getItem('performed_phone_host_peer_id');
-            if (!savedId || !savedId.startsWith('p3d-steer-')) {
+            let savedId = localStorage.getItem('loop_kicker_journey_phone_host_peer_id');
+            if (!savedId || !savedId.startsWith('lkj-steer-')) {
                 const randomSuffix = Math.random().toString(36).substring(2, 8);
-                savedId = `p3d-steer-${randomSuffix}`;
-                localStorage.setItem('performed_phone_host_peer_id', savedId);
+                savedId = `lkj-steer-${randomSuffix}`;
+                localStorage.setItem('loop_kicker_journey_phone_host_peer_id', savedId);
             }
             const peer = new Peer(savedId);
             this.peer = peer;
 
             peer.on('open', (id) => {
                 this.peerId = id;
-                localStorage.setItem('performed_phone_host_peer_id', id);
+                localStorage.setItem('loop_kicker_journey_phone_host_peer_id', id);
                 this.onStatus('connecting', `Waiting (${id})`);
                 resolve(id);
             });
@@ -398,7 +398,7 @@ class PhoneWebRtcSteeringSensor {
 
             peer.on('error', (err) => {
                 if (err && err.type === 'unavailable-id') {
-                    localStorage.removeItem('performed_phone_host_peer_id');
+                    localStorage.removeItem('loop_kicker_journey_phone_host_peer_id');
                     try { peer.destroy(); } catch (_) {}
                     this.peer = null;
                     this.ensureHostPeer().then(resolve).catch(reject);
@@ -439,7 +439,7 @@ class PhoneWebRtcSteeringSensor {
     }
 
     disconnect() {
-        localStorage.removeItem('performed_phone_host_peer_id');
+        localStorage.removeItem('loop_kicker_journey_phone_host_peer_id');
         const activeConn = this.conn;
         const activePeer = this.peer;
         this.conn = null;

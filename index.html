@@ -7,7 +7,7 @@
     <title>Loop Kicker Journey - 3D Cycling Game</title>
     <link rel="icon" href="loop-kicker-journey.svg" type="image/svg+xml">
     <script>
-        window.__p3dEarlyLogs = [];
+        window.__lkjEarlyLogs = [];
         window.addEventListener('error', (e) => {
             let msg;
             if (e.target && e.target !== window && (e.target.src || e.target.href)) {
@@ -15,13 +15,13 @@
             } else {
                 msg = `JS Error: ${e.message || e.type} (${e.filename ? e.filename.split('/').pop() : 'inline'}:${e.lineno || 0})`;
             }
-            window.__p3dEarlyLogs.push(msg);
+            window.__lkjEarlyLogs.push(msg);
             const el = document.getElementById('mobileDebugLog');
             if (el) el.textContent += `\n[ERR] ${msg}`;
         }, true);
         window.addEventListener('unhandledrejection', (e) => {
             const msg = `Promise Error: ${e.reason && (e.reason.message || e.reason)}`;
-            window.__p3dEarlyLogs.push(msg);
+            window.__lkjEarlyLogs.push(msg);
             const el = document.getElementById('mobileDebugLog');
             if (el) el.textContent += `\n[ERR] ${msg}`;
         });
@@ -1291,7 +1291,7 @@
                     <div class="flex items-center gap-1.5">
                         <label for="ghostFileInput"
                                class="px-4 py-2.5 rounded-xl bg-gray-900/90 hover:bg-gray-800 border border-cyan-400/50 text-cyan-200 font-extrabold text-xs flex items-center gap-1.5 cursor-pointer transition"
-                               title="Load a saved ghost ride (.ghost.json) and race against it. The ghost's workout is loaded too.">
+                               title="Load a saved ghost ride (.loop-kicker-journey-ghost.json) and race against it. The ghost's workout is loaded too.">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 3a7 7 0 00-7 7v10l2.5-2 2.5 2 2-2 2 2 2.5-2 2.5 2V10a7 7 0 00-7-7zM9.5 10h.01M14.5 10h.01"/>
                             </svg>
@@ -1988,7 +1988,7 @@
 
                     <button id="saveGhostBtn" type="button"
                             class="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 border border-cyan-400/50 text-cyan-200 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer transition"
-                            title="Save this ride as a ghost (.ghost.json) to race against it later">
+                            title="Save this ride as a ghost (.loop-kicker-journey-ghost.json) to race against it later">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 3a7 7 0 00-7 7v10l2.5-2 2.5 2 2-2 2 2 2.5-2 2.5 2V10a7 7 0 00-7-7zM9.5 10h.01M14.5 10h.01"/>
                         </svg>
