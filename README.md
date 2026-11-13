@@ -14,7 +14,7 @@ Loop Kicker Journey is a browser-based 3D cycling game for structured indoor cyc
 No server or package installation is required. The page loads Three.js and Tailwind CSS at runtime from CDNs, so an internet connection is required.
 
 1. Clone or download the repository.
-2. Open `loop-kicker-journey.html` directly in Chrome or another browser that supports Web Bluetooth.
+2. Open `index.html` directly in Chrome or another browser that supports Web Bluetooth.
 3. Step through the setup screens and take off:
    - **Splashscreen:** Click **Start Setup** from the dragon hero screen.
    - **1 · Pairing & Rules:** Pair Bluetooth devices (or enable the Virtual Trainer Simulator and **Auto-Fly Target Gate**), toggle steering and 3D obstacles, and set **Donut Gate Accuracy** (`40 W` by default).
@@ -131,7 +131,21 @@ Without this flag, devices must be paired manually after every page load. Messag
 
 ## Project files
 
-- [`loop-kicker-journey.html`](loop-kicker-journey.html) – User interface, game, workout logic, and Bluetooth integration
+- [`index.html`](index.html) – Page markup (screens, HUD, modals) and the ordered list of scripts
+- [`css/styles.css`](css/styles.css) – Custom animations and styles (Tailwind utility classes are used inline)
+- [`js/`](js/) – Application code as plain browser scripts (no build step). They share one global scope and are loaded in this order by `index.html`:
+  - [`mobile-controller.js`](js/mobile-controller.js) – Standalone phone steering controller (`?phone-steer=<id>`)
+  - [`workouts.js`](js/workouts.js) – Preset workouts and Zwift `.zwo` parser
+  - [`fit-encoder.js`](js/fit-encoder.js) – Binary `.fit` file export
+  - [`audio-synth.js`](js/audio-synth.js) / [`music.js`](js/music.js) – Sound effects and adaptive procedural music
+  - [`bluetooth.js`](js/bluetooth.js) – Web Bluetooth trainer, heart rate, speed/cadence, and steering devices
+  - [`particles.js`](js/particles.js) – Particle and overlay effects
+  - [`game-state.js`](js/game-state.js) – Main game state and scoring logic
+  - [`dragon-sky-3d.js`](js/dragon-sky-3d.js) – Three.js world, gates, obstacles, and avatars (`DragonSky3DEngine`)
+  - [`scoring-timeline.js`](js/scoring-timeline.js) – Scoring helpers and timeline canvas
+  - [`hud.js`](js/hud.js) – Live HUD and 1 Hz workout tick
+  - [`ghost-rides.js`](js/ghost-rides.js) – Saving and racing ghost rides
+  - [`main.js`](js/main.js) – Event listeners and initialization (must stay last)
 - [`server.js`](server.js) – Local static web server
 - [`.env.example`](.env.example) – Example server configuration
 - [`loop-kicker-journey-models.js`](loop-kicker-journey-models.js) – 3D models

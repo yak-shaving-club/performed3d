@@ -15,7 +15,8 @@ function sendJson(response, status, value) {
 }
 
 function getStaticFile(pathname) {
-    if (pathname === '/' || pathname === '/loop-kicker-journey.html' || pathname === '/performed3d.html') return 'loop-kicker-journey.html';
+    if (pathname === '/' || pathname === '/index.html' || pathname === '/loop-kicker-journey.html') return 'index.html';
+    if (/^\/js\/[a-z0-9-]+\.js$/i.test(pathname) || pathname === '/css/styles.css') return pathname.slice(1);
     if (
         pathname === '/loop-kicker-journey-models.js'
         || pathname === '/performed3d-models.js'
@@ -34,6 +35,7 @@ function getStaticFile(pathname) {
 function contentType(filePath) {
     if (filePath.endsWith('.html')) return 'text/html; charset=utf-8';
     if (filePath.endsWith('.js')) return 'text/javascript; charset=utf-8';
+    if (filePath.endsWith('.css')) return 'text/css; charset=utf-8';
     if (filePath.endsWith('.svg')) return 'image/svg+xml';
     if (filePath.endsWith('.png')) return 'image/png';
     return 'application/octet-stream';

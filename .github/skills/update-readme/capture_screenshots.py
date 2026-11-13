@@ -376,7 +376,7 @@ def main():
     )
     args = parser.parse_args()
 
-    html_path = repo_root / "loop-kicker-journey.html"
+    html_path = repo_root / "index.html"
     out_dir = args.out_dir.resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
 

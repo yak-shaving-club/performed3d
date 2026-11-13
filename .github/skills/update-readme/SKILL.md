@@ -5,7 +5,7 @@ description: Regenerate the 12 Loop Kicker Journey application screenshots in do
 
 # Update README & Screenshots Skill (`update-readme`)
 
-**IMPORTANT — Explicit Invocation Only**: Only run this skill when the user **explicitly** asks for it (for example, by invoking `/update-readme` or explicitly requesting to regenerate screenshots or update `README.md`). Never invoke this skill automatically after editing `loop-kicker-journey.html` or other project files.
+**IMPORTANT — Explicit Invocation Only**: Only run this skill when the user **explicitly** asks for it (for example, by invoking `/update-readme` or explicitly requesting to regenerate screenshots or update `README.md`). Never invoke this skill automatically after editing `index.html`, `js/`, or other project files.
 
 ## Screenshot Specifications & Requirements
 
@@ -65,6 +65,6 @@ python3 .github/skills/update-readme/capture_screenshots.py
    - `06-summary.png` displays the post-flight Workout Summary screen (`#summaryModal`).
 
 ### 3. Sync `README.md` Documentation
-Review recent changes in `loop-kicker-journey.html` (e.g., via `git log -n 5` or `git diff`) and ensure `README.md` accurately documents:
+Review recent changes in `index.html`, `css/`, and `js/` (e.g., via `git log -n 5` or `git diff`) and ensure `README.md` accurately documents:
 - All Screenshot Gallery entries (`docs/screenshots/01-start.png`, `01-pairing.png`, `01-training.png`, `01-avatar.png`, `02-flight.png` through `05-paramotor.png`, and `06-summary.png`).
 - Multi-step setup wizard screens, Bluetooth/wireless devices (FTMS Smart Trainer, Concept2 PM5, BLE Heart Rate, Cadence/Speed sensors, Elite Sterzo/Rizer & Phone QR steering, Elite Aria smart fan), avatars, camera views, resistance modes, and `.fit` / `.png` exports.
