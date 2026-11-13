@@ -15,11 +15,29 @@ function sendJson(response, status, value) {
 }
 
 function getStaticFile(pathname) {
-    if (pathname === '/' || pathname === '/loop-kicker-journey.html' || pathname === '/performed3d.html') return 'loop-kicker-journey.html';
+    if (
+        pathname === '/'
+        || pathname === '/index.html'
+        || pathname === '/loop-kicker-journey.html'
+        || pathname === '/performed3d.html'
+    ) return 'index.html';
     if (
         pathname === '/loop-kicker-journey-models.js'
         || pathname === '/performed3d-models.js'
         || pathname === '/sterzo-challenge-codes.js'
+        || pathname === '/js/early-bootstrap.js'
+        || pathname === '/js/mobile-controller-bootstrap.js'
+        || pathname === '/js/workouts.js'
+        || pathname === '/js/fit-export.js'
+        || pathname === '/js/audio.js'
+        || pathname === '/js/bluetooth.js'
+        || pathname === '/js/effects.js'
+        || pathname === '/js/game-state.js'
+        || pathname === '/js/dragon-engine.js'
+        || pathname === '/js/scoring.js'
+        || pathname === '/js/game-hud.js'
+        || pathname === '/js/event-handlers.js'
+        || pathname === '/styles/app.css'
         || pathname === '/loop-kicker-journey.svg'
         || pathname === '/performed3d.svg'
     ) {
@@ -34,9 +52,26 @@ function getStaticFile(pathname) {
 function contentType(filePath) {
     if (filePath.endsWith('.html')) return 'text/html; charset=utf-8';
     if (filePath.endsWith('.js')) return 'text/javascript; charset=utf-8';
+    if (filePath.endsWith('.css')) return 'text/css; charset=utf-8';
     if (filePath.endsWith('.svg')) return 'image/svg+xml';
     if (filePath.endsWith('.png')) return 'image/png';
     return 'application/octet-stream';
+}
+
+async function expandHtmlIncludes(content) {
+    const includePattern = /<!-- @include (partials\/[a-z0-9-]+\.html) -->/g;
+    const includes = [...content.matchAll(includePattern)];
+
+    for (const include of includes) {
+        const partial = await readFile(path.join(ROOT, include[1]), 'utf8');
+        content = content.replace(include[0], partial);
+    }
+
+    if (/<!-- @include\b/.test(content)) {
+        throw new Error('Unresolved HTML partial include.');
+    }
+
+    return content;
 }
 
 async function handleRequest(request, response) {
@@ -66,7 +101,10 @@ async function handleRequest(request, response) {
             sendJson(response, 404, { error: 'Not found.' });
             return;
         }
-        const content = await readFile(filePath);
+        let content = await readFile(filePath);
+        if (filePath.endsWith('.html')) {
+            content = await expandHtmlIncludes(content.toString());
+        }
         response.writeHead(200, {
             'Cache-Control': 'no-cache',
             'Content-Type': contentType(filePath),

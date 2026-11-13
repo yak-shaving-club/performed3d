@@ -1,0 +1,222 @@
+    <!-- =========================================================================
+         SCREEN 2: PAIRING & GAMEPLAY SETTINGS SCREEN
+         ========================================================================= -->
+    <section id="screenPairing" data-screen="pairing"
+             class="hidden fixed inset-x-0 top-16 bottom-0 z-20 flex-col items-center justify-start px-3 sm:px-5 pb-5 pt-2 overflow-y-auto">
+        <div class="max-w-5xl w-full bg-gray-950/85 backdrop-blur-xl border border-gray-800/90 rounded-3xl p-4 sm:p-6 shadow-2xl my-auto">
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-gray-800">
+                <div>
+                    <span class="text-[11px] font-black uppercase tracking-widest text-blue-400">Step 1 of 3</span>
+                    <h2 class="text-xl sm:text-2xl font-black text-white">Pair Devices &amp; Flight Rules</h2>
+                    <p class="text-xs text-gray-400 mt-0.5">Connect Bluetooth trainers, sensors, or handlebar steering and configure gate accuracy &amp; simulator options.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4">
+                <!-- Left Column: Bluetooth & Wireless Sensors -->
+                <div id="blePairingButtonsGroup" class="lg:col-span-7 bg-gray-900/70 border border-gray-800 rounded-2xl p-4 flex flex-col gap-2.5">
+                    <div class="flex items-center justify-between gap-2 mb-0.5">
+                        <h3 class="text-xs font-black uppercase tracking-wider text-blue-300 flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7l10 10-5 5V2l5 5L7 17"/>
+                            </svg>
+                            <span>Bluetooth &amp; Wireless Devices</span>
+                        </h3>
+                        <span class="text-[11px] text-gray-400">Auto-reconnects permitted sensors</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <!-- Wahoo KICKR / FTMS Smart Trainer -->
+                        <div class="flex flex-col justify-between gap-2 bg-gray-950/80 border border-gray-800 rounded-xl p-2.5">
+                            <div>
+                                <div class="text-xs font-bold text-gray-100">Smart Trainer</div>
+                                <div class="text-[11px] text-gray-400">KICKR / FTMS Power &amp; ERG</div>
+                            </div>
+                            <button id="connectBleBtn" type="button"
+                                    class="w-full px-3 py-1.5 rounded-xl font-bold text-xs flex items-center justify-between gap-1.5 transition cursor-pointer shadow-md bg-blue-600 hover:bg-blue-500 text-white border border-blue-400/30">
+                                <span id="bleStatusText">Connect Wahoo KICKR</span>
+                                <span id="bleStatusDot" class="w-2 h-2 rounded-full bg-gray-300 shrink-0"></span>
+                            </button>
+                        </div>
+
+                        <!-- Concept2 PM5 -->
+                        <div class="flex flex-col justify-between gap-2 bg-gray-950/80 border border-gray-800 rounded-xl p-2.5">
+                            <div>
+                                <div class="text-xs font-bold text-gray-100">Concept2 PM5</div>
+                                <div class="text-[11px] text-gray-400">RowErg / SkiErg / BikeErg</div>
+                            </div>
+                            <button id="connectRowerBleBtn" type="button"
+                                    class="w-full px-3 py-1.5 rounded-xl font-bold text-xs flex items-center justify-between gap-1.5 transition cursor-pointer shadow-md bg-sky-700/80 hover:bg-sky-600 text-white border border-sky-400/30"
+                                    title="Connect Concept2 RowErg / SkiErg / BikeErg (PM5) as power source; stroke rate is shown as cadence">
+                                <span id="bleRowerStatusText">Connect Concept2</span>
+                                <span id="bleRowerStatusDot" class="w-2 h-2 rounded-full bg-gray-300 shrink-0"></span>
+                            </button>
+                        </div>
+
+                        <!-- Heart Rate Monitor -->
+                        <div class="flex flex-col justify-between gap-2 bg-gray-950/80 border border-gray-800 rounded-xl p-2.5">
+                            <div>
+                                <div class="text-xs font-bold text-gray-100">Heart Rate</div>
+                                <div class="text-[11px] text-gray-400">BLE Chest / Arm HRM</div>
+                            </div>
+                            <button id="connectHrmBleBtn" type="button"
+                                    class="w-full px-3 py-1.5 rounded-xl font-bold text-xs flex items-center justify-between gap-1.5 transition cursor-pointer shadow-md bg-rose-700/80 hover:bg-rose-600 text-white border border-rose-400/30"
+                                    title="Pair BLE Heart Rate Monitor (e.g. Garmin HRM 200)">
+                                <span id="bleHrmStatusText">Pair HRM</span>
+                                <span id="bleHrmStatusDot" class="w-2 h-2 rounded-full bg-gray-300 shrink-0"></span>
+                            </button>
+                        </div>
+
+                        <!-- Elite Aria Smart Fan -->
+                        <div class="flex flex-col justify-between gap-2 bg-gray-950/80 border border-gray-800 rounded-xl p-2.5">
+                            <div>
+                                <div class="text-xs font-bold text-gray-100">Elite Aria Fan</div>
+                                <div class="text-[11px] text-gray-400">HR-adaptive airflow</div>
+                            </div>
+                            <button id="connectAriaBleBtn" type="button"
+                                    class="w-full px-3 py-1.5 rounded-xl font-bold text-xs flex items-center justify-between gap-1.5 transition cursor-pointer shadow-md bg-orange-700/80 hover:bg-orange-600 text-white border border-orange-400/30"
+                                    title="Pair Elite Aria Smart Fan; fan speed follows heart rate (80-180 bpm)">
+                                <span id="bleAriaStatusText">Pair Elite Aria</span>
+                                <span id="bleAriaStatusDot" class="w-2 h-2 rounded-full bg-gray-300 shrink-0"></span>
+                            </button>
+                        </div>
+
+                        <!-- Cadence Sensor -->
+                        <div class="flex flex-col justify-between gap-2 bg-gray-950/80 border border-gray-800 rounded-xl p-2.5">
+                            <div>
+                                <div class="text-xs font-bold text-gray-100">Cadence Sensor</div>
+                                <div class="text-[11px] text-gray-400">BLE Crank RPM</div>
+                            </div>
+                            <button id="connectCadenceBleBtn" type="button"
+                                    class="w-full px-3 py-1.5 rounded-xl font-bold text-xs flex items-center justify-between gap-1.5 transition cursor-pointer shadow-md bg-emerald-700/80 hover:bg-emerald-600 text-white border border-emerald-400/30"
+                                    title="Pair BLE Cadence Sensor">
+                                <span id="bleCadenceStatusText">Pair Cadence</span>
+                                <span id="bleCadenceStatusDot" class="w-2 h-2 rounded-full bg-gray-300 shrink-0"></span>
+                            </button>
+                        </div>
+
+                        <!-- Speed Sensor -->
+                        <div class="flex flex-col justify-between gap-2 bg-gray-950/80 border border-gray-800 rounded-xl p-2.5">
+                            <div>
+                                <div class="text-xs font-bold text-gray-100">Speed Sensor</div>
+                                <div class="text-[11px] text-gray-400">BLE Wheel Speed</div>
+                            </div>
+                            <button id="connectSpeedBleBtn" type="button"
+                                    class="w-full px-3 py-1.5 rounded-xl font-bold text-xs flex items-center justify-between gap-1.5 transition cursor-pointer shadow-md bg-cyan-700/80 hover:bg-cyan-600 text-white border border-cyan-400/30"
+                                    title="Pair BLE Speed Sensor">
+                                <span id="bleSpeedStatusText">Pair Speed</span>
+                                <span id="bleSpeedStatusDot" class="w-2 h-2 rounded-full bg-gray-300 shrink-0"></span>
+                            </button>
+                        </div>
+
+                        <!-- Elite Sterzo / Rizer -->
+                        <div class="flex flex-col justify-between gap-2 bg-gray-950/80 border border-gray-800 rounded-xl p-2.5">
+                            <div>
+                                <div class="text-xs font-bold text-gray-100">BLE Steering</div>
+                                <div class="text-[11px] text-gray-400">Elite Sterzo / Rizer</div>
+                            </div>
+                            <button id="connectSteerBleBtn" type="button"
+                                    class="w-full px-3 py-1.5 rounded-xl font-bold text-xs flex items-center justify-between gap-1.5 transition cursor-pointer shadow-md bg-purple-700/80 hover:bg-purple-600 text-white border border-purple-400/30"
+                                    title="Pair Elite Sterzo Smart or Elite Rizer for BLE Steering">
+                                <span id="bleSteerStatusText">Pair Sterzo / Rizer</span>
+                                <span id="bleSteerStatusDot" class="w-2 h-2 rounded-full bg-gray-300 shrink-0"></span>
+                            </button>
+                        </div>
+
+                        <!-- Phone Handlebar Steering (QR) -->
+                        <div class="flex flex-col justify-between gap-2 bg-gray-950/80 border border-gray-800 rounded-xl p-2.5">
+                            <div>
+                                <div class="text-xs font-bold text-gray-100">Phone Steering</div>
+                                <div class="text-[11px] text-gray-400">QR WebRTC Handlebar</div>
+                            </div>
+                            <button id="connectPhoneSteerBtn" type="button"
+                                    class="w-full px-3 py-1.5 rounded-xl font-bold text-xs flex items-center justify-between gap-1.5 transition cursor-pointer shadow-md bg-indigo-700/80 hover:bg-indigo-600 text-white border border-indigo-400/30"
+                                    title="Scan QR code to use your mobile phone on the handlebar as a wireless steering controller">
+                                <span id="phoneSteerStatusText">Phone Steer (QR)</span>
+                                <span id="phoneSteerStatusDot" class="w-2 h-2 rounded-full bg-gray-300 shrink-0"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Gameplay Rules, Donut Accuracy & Simulator Controls -->
+                <div class="lg:col-span-5 bg-gray-900/70 border border-gray-800 rounded-2xl p-4 flex flex-col justify-between gap-3">
+                    <div class="flex flex-col gap-2.5">
+                        <h3 class="text-xs font-black uppercase tracking-wider text-emerald-300">
+                            Gameplay &amp; Simulator Configuration
+                        </h3>
+
+                        <!-- Donut Accuracy Tolerance (Default 40W) -->
+                        <div class="bg-gray-950/85 border border-emerald-500/40 rounded-xl p-3">
+                            <div class="flex items-center justify-between gap-2 mb-1.5">
+                                <label for="accuracyToleranceSlider" class="text-xs font-bold text-gray-100">
+                                    Donut Gate Accuracy
+                                </label>
+                                <span id="accuracyToleranceBadge" class="text-sm font-mono font-black text-emerald-400">±40W</span>
+                            </div>
+                            <div class="flex items-center gap-2.5">
+                                <input id="accuracyToleranceSlider" type="range" min="5" max="50" step="1" value="40"
+                                       class="flex-grow accent-emerald-400 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+                                <input id="accuracyToleranceInput" type="number" min="5" max="50" step="1" value="40"
+                                       class="w-12 bg-gray-800 text-emerald-300 font-mono font-bold text-xs text-center rounded-lg px-1.5 py-1 border border-gray-700 focus:outline-none focus:border-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed">
+                            </div>
+                            <p class="text-[11px] text-gray-400 mt-1">Allowed power deviation (5W tight to 50W wide; default 40W).</p>
+                        </div>
+
+                        <!-- Steering Enabled Toggle -->
+                        <label for="steeringToggleCheck"
+                               class="flex items-center justify-between gap-3 bg-gray-950/85 hover:bg-gray-900 border border-cyan-500/35 rounded-xl p-3 cursor-pointer transition select-none">
+                            <div>
+                                <div id="steeringToggleLabel" class="text-xs font-bold text-cyan-300">Steering: ON</div>
+                                <div class="text-[11px] text-gray-400">Steer manually or turn OFF to auto-align with gates</div>
+                            </div>
+                            <input id="steeringToggleCheck" type="checkbox" checked class="w-4 h-4 accent-cyan-400 rounded cursor-pointer shrink-0">
+                        </label>
+
+                        <!-- Sky Obstacles Toggle -->
+                        <label for="obstaclesToggleCheck"
+                               class="flex items-center justify-between gap-3 bg-gray-950/85 hover:bg-gray-900 border border-rose-500/35 rounded-xl p-3 cursor-pointer transition select-none">
+                            <div>
+                                <div class="text-xs font-bold text-rose-300">3D Sky Obstacles (Spacebar)</div>
+                                <div class="text-[11px] text-gray-400">Spawn aerial hazards — blast them with Dragon Fire</div>
+                            </div>
+                            <input id="obstaclesToggleCheck" type="checkbox" class="w-4 h-4 accent-rose-500 rounded cursor-pointer shrink-0">
+                        </label>
+
+                        <!-- Sim Mode Toggle & Auto-Fly Target Gate -->
+                        <div class="bg-gray-950/85 border border-amber-500/35 rounded-xl p-3 flex flex-col gap-2.5">
+                            <div class="flex items-center justify-between gap-2">
+                                <div>
+                                    <div class="text-xs font-bold text-amber-300">Virtual Trainer Simulator</div>
+                                    <div class="text-[11px] text-gray-400">Ride without a Bluetooth trainer</div>
+                                </div>
+                                <button id="simToggleBtn" type="button"
+                                        class="px-2.5 py-2 rounded-xl font-semibold text-xs flex items-center gap-1.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 transition cursor-pointer shrink-0">
+                                    <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                    </svg>
+                                    <span id="simToggleText">Sim Mode: ON</span>
+                                </button>
+                            </div>
+
+                            <label for="simAutoFollowCheck" class="flex items-center justify-between gap-2 pt-2 border-t border-gray-800/80 text-xs text-gray-200 cursor-pointer select-none">
+                                <div>
+                                    <span class="font-bold text-emerald-300">Auto-Fly Target Gate</span>
+                                    <span class="block text-[11px] text-gray-400">Automatically match target watts in Sim Mode</span>
+                                </div>
+                                <input id="simAutoFollowCheck" type="checkbox" class="w-4 h-4 accent-emerald-500 rounded cursor-pointer shrink-0">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step Footer -->
+            <div class="mt-5 pt-4 border-t border-gray-800 flex items-center justify-end gap-3">
+                <button id="toTrainingScreenBtn" type="button"
+                        class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-gray-950 font-black text-xs sm:text-sm uppercase tracking-wide cursor-pointer shadow-lg shadow-orange-500/25 transition">
+                    Next: Training Selection →
+                </button>
+            </div>
+        </div>
+    </section>

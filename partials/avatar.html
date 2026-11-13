@@ -1,0 +1,119 @@
+    <!-- =========================================================================
+         SCREEN 4: AVATAR SELECTION SCREEN (LIVE 3D PREVIEW)
+         ========================================================================= -->
+    <section id="screenAvatar" data-screen="avatar"
+             class="hidden fixed inset-x-0 top-16 bottom-0 z-20 flex-col justify-between px-3 sm:px-5 pb-4 pt-2 pointer-events-none overflow-y-auto">
+        <!-- Top Camera Perspective Selector Over Live 3D Stage -->
+        <div class="max-w-5xl w-full mx-auto bg-gray-950/80 backdrop-blur-xl border border-gray-800/90 rounded-2xl px-4 py-2.5 shadow-xl flex flex-wrap items-center justify-between gap-2.5 pointer-events-auto">
+            <div>
+                <span class="text-[11px] font-black uppercase tracking-widest text-emerald-400">Step 3 of 3</span>
+                <h2 class="text-base sm:text-xl font-black text-white">Choose Your 3D Flying Avatar</h2>
+            </div>
+
+            <!-- Synced Select + Camera Perspective Buttons -->
+            <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-xs font-semibold text-gray-400 mr-1">Camera:</span>
+                <select id="cameraViewSelect" class="hidden">
+                    <option value="1">1 · Chase</option>
+                    <option value="2">2 · Far Chase</option>
+                    <option value="3">3 · Top-Down</option>
+                    <option value="4">4 · Front</option>
+                    <option value="5">5 · Front Far</option>
+                </select>
+                <button type="button" data-camera-pill="1" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer">1 · Chase</button>
+                <button type="button" data-camera-pill="2" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer">2 · Far</button>
+                <button type="button" data-camera-pill="3" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer">3 · Top</button>
+                <button type="button" data-camera-pill="4" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer">4 · Front</button>
+                <button type="button" data-camera-pill="5" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer">5 · Front Far</button>
+            </div>
+        </div>
+
+        <!-- Open Center Window Showcasing the Live 3D Avatar in Flight -->
+        <div class="flex-1 min-h-[160px] pointer-events-none"></div>
+
+        <!-- Bottom Dock: 6 Avatar Cards + Flight Launch CTA -->
+        <div class="max-w-5xl w-full mx-auto bg-gray-950/85 backdrop-blur-xl border border-gray-800/90 rounded-3xl p-4 sm:p-5 shadow-2xl pointer-events-auto">
+            <select id="avatarSelect" class="hidden">
+                <option value="aero_wyvern">Aero Wyvern (Realistic Flight)</option>
+                <option value="fuchur">Fuchur (Unendliche Geschichte)</option>
+                <option value="et_bike">Boy with Bicycle &amp; E.T.</option>
+                <option value="delorean">DeLorean (Back to the Future)</option>
+                <option value="mars_ufo">UFO (Mars Attacks!)</option>
+                <option value="paramotor">Paramotor (Phi Maestro Light 3)</option>
+            </select>
+
+            <div id="avatarCardsGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+                <button type="button" data-avatar-card="aero_wyvern"
+                        class="text-left rounded-2xl p-3 border transition cursor-pointer flex flex-col justify-between gap-1">
+                    <span class="text-lg">🐉</span>
+                    <div>
+                        <div class="text-xs font-black text-white leading-tight">Aero Wyvern</div>
+                        <div class="text-[11px] text-gray-400 leading-snug mt-0.5">Realistic Winged Dragon</div>
+                    </div>
+                </button>
+
+                <button type="button" data-avatar-card="fuchur"
+                        class="text-left rounded-2xl p-3 border transition cursor-pointer flex flex-col justify-between gap-1">
+                    <span class="text-lg">✨</span>
+                    <div>
+                        <div class="text-xs font-black text-white leading-tight">Fuchur</div>
+                        <div class="text-[11px] text-gray-400 leading-snug mt-0.5">Pearly Luckdragon</div>
+                    </div>
+                </button>
+
+                <button type="button" data-avatar-card="et_bike"
+                        class="text-left rounded-2xl p-3 border transition cursor-pointer flex flex-col justify-between gap-1">
+                    <span class="text-lg">🚲</span>
+                    <div>
+                        <div class="text-xs font-black text-white leading-tight">BMX &amp; E.T.</div>
+                        <div class="text-[11px] text-gray-400 leading-snug mt-0.5">Sky Basket Bicycle</div>
+                    </div>
+                </button>
+
+                <button type="button" data-avatar-card="delorean"
+                        class="text-left rounded-2xl p-3 border transition cursor-pointer flex flex-col justify-between gap-1">
+                    <span class="text-lg">⚡</span>
+                    <div>
+                        <div class="text-xs font-black text-white leading-tight">DeLorean</div>
+                        <div class="text-[11px] text-gray-400 leading-snug mt-0.5">Hover Time Machine</div>
+                    </div>
+                </button>
+
+                <button type="button" data-avatar-card="mars_ufo"
+                        class="text-left rounded-2xl p-3 border transition cursor-pointer flex flex-col justify-between gap-1">
+                    <span class="text-lg">🛸</span>
+                    <div>
+                        <div class="text-xs font-black text-white leading-tight">Mars UFO</div>
+                        <div class="text-[11px] text-gray-400 leading-snug mt-0.5">Martian Flying Saucer</div>
+                    </div>
+                </button>
+
+                <button type="button" data-avatar-card="paramotor"
+                        class="text-left rounded-2xl p-3 border transition cursor-pointer flex flex-col justify-between gap-1">
+                    <span class="text-lg">🪂</span>
+                    <div>
+                        <div class="text-xs font-black text-white leading-tight">Paramotor</div>
+                        <div class="text-[11px] text-gray-400 leading-snug mt-0.5">Phi Maestro Light 3</div>
+                    </div>
+                </button>
+            </div>
+
+            <div class="mt-4 pt-3.5 border-t border-gray-800 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <button id="backToTrainingBtn" type="button"
+                            class="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 font-bold text-xs border border-gray-700 cursor-pointer transition">
+                        ← Training
+                    </button>
+                    <span id="avatarReadySummary" class="text-xs text-gray-400 font-mono hidden sm:inline"></span>
+                </div>
+
+                <button id="avatarStartFlightBtn" type="button"
+                        class="px-7 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-green-400 hover:from-emerald-400 hover:to-green-300 text-gray-950 font-black text-xs sm:text-sm uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-xl shadow-emerald-500/30 transition">
+                    <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    <span>Start Flight</span>
+                </button>
+            </div>
+        </div>
+    </section>

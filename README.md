@@ -11,11 +11,12 @@ Loop Kicker Journey is a browser-based 3D cycling game for structured indoor cyc
 
 ## Quick start
 
-No server or package installation is required. The page loads Three.js and Tailwind CSS at runtime from CDNs, so an internet connection is required.
+The page loads Three.js and Tailwind CSS at runtime from CDNs, so an internet connection is required. Run the included Node server to assemble the HTML partials:
 
-1. Clone or download the repository.
-2. Open `loop-kicker-journey.html` directly in Chrome or another browser that supports Web Bluetooth.
-3. Step through the setup screens and take off:
+1. Clone or download the repository and open its directory in a terminal.
+2. Run `node server.js`.
+3. Open `http://localhost:8000` in Chrome or another browser that supports Web Bluetooth.
+4. Step through the setup screens and take off:
    - **Splashscreen:** Click **Start Setup** from the dragon hero screen.
    - **1 · Pairing & Rules:** Pair Bluetooth devices (or enable the Virtual Trainer Simulator and **Auto-Fly Target Gate**), toggle steering and 3D obstacles, and set **Donut Gate Accuracy** (`40 W` by default).
    - **2 · Training Selection:** Filter the 26 built-in presets by duration (`≤15m`, `16–30m`, `30m+`) and intensity (`Endurance`, `Sweet Spot`, `Threshold`, `VO2max / HIIT`, `FTP Test`), upload a Zwift `.zwo` file, or load a saved `.ghost.json` ghost ride, then set your FTP, preview expected **Avg** watts / **IF** / **TSS**, and choose a resistance/wind mode.
@@ -89,7 +90,7 @@ Use the BLE buttons to pair supported devices:
 - Heart rate monitors
 - Cadence and speed sensors
 - Elite Sterzo Smart or Elite Rizer (BLE steering)
-- Mobile phone handlebar steering via QR code (WebRTC peer-to-peer): Click **Phone Steer (QR)** on the desktop to display a QR code. Scanning it on your phone opens a minimalistic mobile steering controller page (`?phone-steer=<id>`) with sensor permission handling, live angle gauge, **Calibrate Center (0°)**, axis inversion, touch test slider, and a **Dragon Fire** button—without requiring `server.js` or typing IP addresses.
+- Mobile phone handlebar steering via QR code (WebRTC peer-to-peer): Click **Phone Steer (QR)** on the desktop to display a QR code. Scanning it on your phone opens a minimalistic mobile steering controller page (`?phone-steer=<id>`) with sensor permission handling, live angle gauge, **Calibrate Center (0°)**, axis inversion, touch test slider, and a **Dragon Fire** button—without a separate signaling server or typing IP addresses.
 - Elite Aria Smart Fan
 
 Bluetooth devices must be powered on and within range. Start pairing from the corresponding control in the interface. Without a trainer, use simulation mode; power can be adjusted with the slider or arrow keys.
@@ -131,7 +132,10 @@ Without this flag, devices must be paired manually after every page load. Messag
 
 ## Project files
 
-- [`loop-kicker-journey.html`](loop-kicker-journey.html) – User interface, game, workout logic, and Bluetooth integration
+- [`index.html`](index.html) – HTML shell that the local server assembles from feature partials
+- [`partials/`](partials/) – Screen and overlay markup, split by feature
+- [`styles/app.css`](styles/app.css) – Application styles
+- [`js/`](js/) – Early bootstrap, phone-controller bootstrap, and application logic
 - [`server.js`](server.js) – Local static web server
 - [`.env.example`](.env.example) – Example server configuration
 - [`loop-kicker-journey-models.js`](loop-kicker-journey-models.js) – 3D models

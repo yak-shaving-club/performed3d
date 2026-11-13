@@ -1,0 +1,156 @@
+    <!-- =========================================================================
+         SCREEN 3: TRAINING SELECTION SCREEN (.ZWO UPLOAD & PRESETS)
+         ========================================================================= -->
+    <section id="screenTraining" data-screen="training"
+             class="hidden fixed inset-x-0 top-16 bottom-0 z-20 flex-col items-center justify-start px-3 sm:px-5 pb-5 pt-2 overflow-y-auto">
+        <div class="max-w-5xl w-full bg-gray-950/85 backdrop-blur-xl border border-gray-800/90 rounded-3xl p-4 sm:p-6 shadow-2xl my-auto">
+            <!-- Header & Zwift Upload CTA -->
+            <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-800">
+                <div>
+                    <span class="text-[11px] font-black uppercase tracking-widest text-amber-400">Step 2 of 3</span>
+                    <h2 class="text-xl sm:text-2xl font-black text-white">Select Training Workout</h2>
+                    <p class="text-xs text-gray-400 mt-0.5">Choose a structured sky-gate preset or upload a custom Zwift <code class="text-amber-300 font-mono">.zwo</code> file.</p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <span id="customZwoBadge" class="hidden px-2.5 py-1 rounded-full bg-orange-500/20 border border-orange-400/40 text-orange-300 text-xs font-bold">
+                        Custom .ZWO Loaded
+                    </span>
+                    <label for="zwoFileInput"
+                           class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-gray-950 font-extrabold text-xs flex items-center gap-2 cursor-pointer shadow-lg shadow-orange-500/20 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                        </svg>
+                        <span>Upload Zwift (.zwo)</span>
+                        <input id="zwoFileInput" type="file" accept=".zwo,.xml,text/xml,application/xml" class="hidden">
+                    </label>
+
+                    <!-- Ghost Ride: load a previously saved ride and race against it -->
+                    <div class="flex items-center gap-1.5">
+                        <label for="ghostFileInput"
+                               class="px-4 py-2.5 rounded-xl bg-gray-900/90 hover:bg-gray-800 border border-cyan-400/50 text-cyan-200 font-extrabold text-xs flex items-center gap-1.5 cursor-pointer transition"
+                               title="Load a saved ghost ride (.ghost.json) and race against it. The ghost's workout is loaded too.">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 3a7 7 0 00-7 7v10l2.5-2 2.5 2 2-2 2 2 2.5-2 2.5 2V10a7 7 0 00-7-7zM9.5 10h.01M14.5 10h.01"/>
+                            </svg>
+                            <span>Load Ghost</span>
+                            <input id="ghostFileInput" type="file" accept=".json,application/json" class="hidden">
+                        </label>
+                        <span id="ghostStatusChip" class="hidden items-center gap-1 bg-cyan-500/15 border border-cyan-400/40 rounded-xl pl-2.5 pr-1 py-1.5 text-[11px] font-semibold text-cyan-200">
+                            <span id="ghostStatusLabel" class="max-w-[180px] truncate">Ghost</span>
+                            <button id="clearGhostBtn" type="button" class="px-1 rounded-md hover:bg-cyan-500/25 text-cyan-100 cursor-pointer" title="Remove ghost" aria-label="Remove ghost">✕</button>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rider FTP & Resistance/Wind Mode -->
+            <div class="mt-4 flex flex-wrap items-center gap-2.5 bg-gray-900/75 border border-gray-800 rounded-2xl p-3">
+                <!-- Rider FTP -->
+                <div class="flex items-center gap-1.5 bg-gray-950/90 border border-gray-800 rounded-xl px-2.5 py-1.5 text-xs">
+                    <label for="ftpInput" class="text-gray-400 font-semibold">FTP:</label>
+                    <input id="ftpInput" type="number" min="50" max="600" value="200"
+                           class="w-14 bg-gray-800 text-amber-300 font-bold text-center rounded px-1 py-0.5 border border-gray-700 focus:outline-none focus:border-orange-500">
+                    <span class="text-gray-500">W</span>
+                </div>
+
+                <!-- Resistance / Gradient Mode Setting -->
+                <div class="flex items-center gap-1.5 bg-gray-950/90 border border-gray-800 rounded-xl px-2.5 py-1.5">
+                    <label for="resistanceModeSelect" class="text-xs text-gray-400 font-medium">Mode:</label>
+                    <select id="resistanceModeSelect" class="bg-transparent text-xs font-bold text-emerald-400 focus:outline-none cursor-pointer">
+                        <option value="easy" class="bg-gray-900 text-emerald-400" selected>Easy (0% Flat)</option>
+                        <option value="medium" class="bg-gray-900 text-amber-300">Medium (Downwind / Upwind)</option>
+                        <option value="difficult" class="bg-gray-900 text-rose-400">Difficult (Strong Downwind / Upwind)</option>
+                        <option value="erg" class="bg-gray-900 text-cyan-300">ERG Lock</option>
+                    </select>
+                    <button id="rerollWindProfileBtn" type="button"
+                            class="ml-0.5 p-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-amber-300 hover:text-amber-200 border border-gray-700 transition cursor-pointer flex items-center justify-center"
+                            title="Generate a new random upwind/downwind simulation for the session">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Selected Workout Profile Preview Card -->
+            <div class="mt-3.5 bg-gray-900/80 border border-gray-800 rounded-2xl p-3.5">
+                <div class="flex items-start justify-between gap-3 mb-2">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h3 id="workoutTitleLabel" class="text-base sm:text-lg font-black text-amber-300 leading-tight truncate">KICKR Arcade Pyramid</h3>
+                            <!-- Selected Workout Category Tags -->
+                            <div id="selectedWorkoutTags" class="flex flex-wrap items-center gap-1.5 text-[11px]"></div>
+                        </div>
+                        <p id="workoutDescriptionLabel" class="text-xs text-gray-400 line-clamp-2 min-h-[2rem] leading-4 mt-0.5">Progressive watt accuracy pyramid flying through 3D Sky Donut Gates.</p>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs font-mono shrink-0">
+                        <span id="workoutDurationLabel" class="px-2 py-0.5 rounded-lg bg-gray-950 border border-gray-800 text-emerald-300 font-bold whitespace-nowrap">10:00</span>
+                    </div>
+                </div>
+                <div class="relative w-full h-24 sm:h-28 bg-gray-950/90 rounded-xl border border-gray-800 overflow-hidden">
+                    <canvas id="trainingPreviewCanvas" class="w-full h-full block"></canvas>
+                </div>
+                <!-- Expected Perfect Training Metrics (Avg Watts & TSS) -->
+                <div class="mt-2.5 flex flex-wrap items-center justify-between gap-2">
+                    <div id="expectedWorkoutMetricsBadge"
+                         class="flex flex-wrap items-center gap-2 bg-gray-950/90 border border-amber-500/30 rounded-xl px-3 py-1.5 text-xs whitespace-nowrap">
+                        <span class="text-gray-400 font-medium">Avg:</span>
+                        <span id="expectedAvgWattsLabel" class="font-mono font-bold text-amber-300">-- W</span>
+                        <span class="text-gray-600">•</span>
+                        <span class="text-gray-400 font-medium">IF:</span>
+                        <span id="expectedIfLabel" class="font-mono font-bold text-cyan-300">--</span>
+                        <span class="text-gray-600">•</span>
+                        <span class="text-gray-400 font-medium">TSS:</span>
+                        <span id="expectedTssLabel" class="font-mono font-bold text-orange-400">--</span>
+                    </div>
+                    <p id="workoutFtpTestHint" class="hidden text-[11px] text-fuchsia-300/90 font-medium">
+                        Pedal until exhaustion — stopping for 5s ends the flight &amp; auto-saves your new FTP (75% of best 1-min power).
+                    </p>
+                </div>
+            </div>
+
+            <!-- Interactive Preset Workout Cards Grid with Duration & Intensity Filters -->
+            <div class="mt-3.5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Workouts</span>
+                        <span id="presetCountBadge" class="px-2 py-0.5 rounded-full bg-gray-900 border border-gray-800 text-[10px] font-mono font-bold text-gray-400">0</span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- Duration Filter Pills -->
+                        <div id="durationFilterGroup" class="flex flex-wrap items-center gap-1 bg-gray-900/90 border border-gray-800 rounded-xl p-1" role="group" aria-label="Filter by workout duration">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 px-1.5">Duration:</span>
+                            <button type="button" data-duration-filter="all" class="px-2 py-0.5 rounded-lg text-[11px] font-bold transition cursor-pointer">All</button>
+                            <button type="button" data-duration-filter="short" class="px-2 py-0.5 rounded-lg text-[11px] font-bold transition cursor-pointer" title="Up to 15 minutes">≤15m</button>
+                            <button type="button" data-duration-filter="medium" class="px-2 py-0.5 rounded-lg text-[11px] font-bold transition cursor-pointer" title="16 to 30 minutes">16–30m</button>
+                            <button type="button" data-duration-filter="long" class="px-2 py-0.5 rounded-lg text-[11px] font-bold transition cursor-pointer" title="Over 30 minutes">30m+</button>
+                        </div>
+                        <!-- Intensity Filter Pills -->
+                        <div id="intensityFilterGroup" class="flex flex-wrap items-center gap-1 bg-gray-900/90 border border-gray-800 rounded-xl p-1" role="group" aria-label="Filter by workout intensity">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 px-1.5">Intensity:</span>
+                            <button type="button" data-intensity-filter="all" class="px-2 py-0.5 rounded-lg text-[11px] font-bold transition cursor-pointer">All</button>
+                            <button type="button" data-intensity-filter="low" class="px-2 py-0.5 rounded-lg text-[11px] font-bold transition cursor-pointer" title="Recovery &amp; Aerobic Endurance (Z1–Z2)">Endurance</button>
+                            <button type="button" data-intensity-filter="moderate" class="px-2 py-0.5 rounded-lg text-[11px] font-bold transition cursor-pointer" title="Tempo &amp; Sweet Spot (Z3–SS)">Sweet Spot</button>
+                            <button type="button" data-intensity-filter="threshold" class="px-2 py-0.5 rounded-lg text-[11px] font-bold transition cursor-pointer" title="Lactate Threshold &amp; Over-Unders (Z4)">Threshold</button>
+                            <button type="button" data-intensity-filter="high" class="px-2 py-0.5 rounded-lg text-[11px] font-bold transition cursor-pointer" title="VO2max &amp; Anaerobic HIIT (Z5–Z6)">VO2max / HIIT</button>
+                            <button type="button" data-intensity-filter="ftp_test" class="px-2 py-0.5 rounded-lg text-[11px] font-bold transition cursor-pointer" title="Maximal Ramp Tests to determine FTP">FTP Test</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="presetCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-60 overflow-y-auto pr-1"></div>
+            </div>
+
+            <!-- Step Footer -->
+            <div class="mt-5 pt-4 border-t border-gray-800 flex items-center justify-between gap-3">
+                <button id="backToPairingBtn" type="button"
+                        class="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 font-bold text-xs border border-gray-700 cursor-pointer transition">
+                    ← Pairing &amp; Rules
+                </button>
+                <button id="toAvatarScreenBtn" type="button"
+                        class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-gray-950 font-black text-xs sm:text-sm uppercase tracking-wide cursor-pointer shadow-lg shadow-orange-500/25 transition">
+                    Next: Avatar Selection →
+                </button>
+            </div>
+        </div>
+    </section>

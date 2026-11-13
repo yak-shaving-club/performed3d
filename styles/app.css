@@ -1,0 +1,89 @@
+        @keyframes float-up {
+            0% { transform: translateY(0) scale(0.8); opacity: 1; }
+            50% { transform: translateY(-28px) scale(1.1); opacity: 1; }
+            100% { transform: translateY(-56px) scale(0.95); opacity: 0; }
+        }
+        @keyframes glow-border {
+            0%, 100% { box-shadow: 0 0 18px rgba(74, 222, 128, 0.35), inset 0 0 15px rgba(74, 222, 128, 0.15); }
+            50% { box-shadow: 0 0 36px rgba(74, 222, 128, 0.75), inset 0 0 28px rgba(74, 222, 128, 0.3); }
+        }
+        @keyframes pulse-reticle {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.12); opacity: 1; }
+        }
+        .in-zone-glow {
+            animation: glow-border 1.4s infinite ease-in-out;
+        }
+        .bullseye-glow {
+            box-shadow: 0 0 42px rgba(250, 204, 21, 0.8), inset 0 0 30px rgba(74, 222, 128, 0.4);
+        }
+        .obstacle-hit-flash {
+            box-shadow: 0 0 55px rgba(239, 68, 68, 0.95), inset 0 0 45px rgba(239, 68, 68, 0.65) !important;
+        }
+        .floating-score {
+            animation: float-up 1.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            pointer-events: none;
+        }
+        .reticle-pulse {
+            animation: pulse-reticle 0.55s infinite ease-in-out;
+        }
+        @keyframes streak-splash {
+            0% { transform: translate(-50%, -50%) scale(0.3) rotate(-8deg); opacity: 0; }
+            15% { transform: translate(-50%, -50%) scale(1.25) rotate(3deg); opacity: 1; }
+            30% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+            80% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
+            100% { transform: translate(-50%, -80%) scale(1.4); opacity: 0; }
+        }
+        .streak-splash {
+            animation: streak-splash 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            pointer-events: none;
+        }
+        @keyframes hud-score-pop {
+            0% { transform: scale(1); }
+            40% { transform: scale(1.08); filter: brightness(1.25); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+        .hud-score-pop {
+            animation: hud-score-pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .arcade-hud-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.88) 0%, rgba(3, 7, 18, 0.94) 100%);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.85), 0 0 22px rgba(249, 115, 22, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.14);
+        }
+        .arcade-text-glow {
+            text-shadow: 0 0 12px rgba(251, 146, 60, 0.55), 0 2px 4px rgba(0, 0, 0, 0.9);
+        }
+        @keyframes dragon-hero-float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(-0.8deg); }
+        }
+        @keyframes fire-glow-pulse {
+            0%, 100% { opacity: 0.88; filter: drop-shadow(0 0 14px rgba(251, 146, 60, 0.75)); }
+            50% { opacity: 1; filter: drop-shadow(0 0 26px rgba(250, 204, 21, 0.95)); }
+        }
+        .dragon-hero-float {
+            animation: dragon-hero-float 4.2s ease-in-out infinite;
+            transform-origin: center;
+        }
+        .fire-glow-pulse {
+            animation: fire-glow-pulse 1.8s ease-in-out infinite;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.8); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(249, 115, 22, 0.8); }
+        html.phone-steer-mode,
+        html.phone-steer-mode body {
+            height: 100dvh;
+            max-height: 100dvh;
+            width: 100vw;
+            overflow: hidden;
+            overscroll-behavior: none;
+        }
+        html.phone-steer-mode body > *:not(#mobilePhoneControllerView):not(script) {
+            display: none !important;
+        }
+        html.phone-steer-mode #mobilePhoneControllerView {
+            display: flex !important;
+        }

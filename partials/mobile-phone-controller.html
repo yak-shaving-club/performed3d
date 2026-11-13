@@ -1,0 +1,65 @@
+    <!-- =========================================================================
+         MINIMALISTIC MOBILE PHONE HANDLEBAR CONTROLLER VIEW (?phone-steer=...)
+         ========================================================================= -->
+    <div id="mobilePhoneControllerView" class="hidden fixed inset-0 z-[100] h-[100dvh] max-h-[100dvh] w-screen bg-gray-950 text-gray-100 flex-col justify-between p-3 select-none touch-manipulation overflow-hidden">
+        <!-- Compact Top Status Bar -->
+        <div class="flex items-center justify-between border-b border-gray-800/80 pb-2 shrink-0">
+            <div class="flex items-center gap-2 min-w-0">
+                <span id="mobileConnDot" class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shrink-0"></span>
+                <p id="mobileConnStatus" class="text-xs font-bold text-amber-300 truncate">Connecting...</p>
+            </div>
+            <button id="mobileInvertToggleBtn" type="button"
+                    class="px-2.5 py-1 rounded-lg bg-gray-900 text-gray-300 border border-gray-700 text-[11px] font-bold shrink-0 cursor-pointer">
+                Axis: Normal
+            </button>
+        </div>
+
+        <!-- Central Steering Gauge & Angle Readout -->
+        <div class="flex-1 min-h-0 flex flex-col items-center justify-evenly gap-1.5 py-1 w-full max-w-sm mx-auto">
+            <button id="mobileEnableSensorBtn" type="button"
+                    class="w-full py-2 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-400 text-gray-950 font-black text-xs uppercase tracking-wider shadow-md active:scale-98 transition cursor-pointer shrink-0">
+                Tap to Enable Motion Sensors
+            </button>
+
+            <div class="text-center leading-tight">
+                <div id="mobileAngleDisplay" class="text-4xl font-black font-mono text-emerald-300 tabular-nums">0.0°</div>
+                <div id="mobileDirectionLabel" class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">CENTERED</div>
+            </div>
+
+            <!-- Visual Steering Bar -->
+            <div class="w-full">
+                <div class="relative h-4 bg-gray-900 border border-gray-800 rounded-full overflow-hidden">
+                    <div class="absolute inset-y-0 left-1/2 w-0.5 bg-gray-600 -translate-x-1/2 z-10"></div>
+                    <div id="mobileSteerBarFill" class="absolute top-0 bottom-0 left-1/2 w-0 bg-gradient-to-r from-cyan-400 to-emerald-400 transition-all duration-75"></div>
+                </div>
+                <div class="flex justify-between text-[10px] font-mono text-gray-500 mt-0.5 px-0.5">
+                    <span>-30° L</span>
+                    <span>0°</span>
+                    <span>R +30°</span>
+                </div>
+            </div>
+
+            <!-- Compact Fallback Touch Slider -->
+            <div class="w-full px-1">
+                <input id="mobileTouchSteerSlider" type="range" min="-30" max="30" step="0.5" value="0"
+                       aria-label="Touch steering slider"
+                       class="w-full accent-cyan-400 cursor-pointer block">
+            </div>
+
+            <!-- Live Connection Diagnostic Log -->
+            <pre id="mobileDebugLog"
+                 class="w-full h-24 max-h-24 overflow-y-auto rounded-lg bg-gray-900/95 border border-gray-800 p-2 text-[10px] leading-snug font-mono text-gray-300 whitespace-pre-wrap break-all select-text shrink-0">Initializing diagnostics...</pre>
+        </div>
+
+        <!-- Bottom Action Buttons: Calibrate Center & Fire Breath -->
+        <div class="grid grid-cols-2 gap-2.5 pt-2 border-t border-gray-800/80 shrink-0 w-full max-w-sm mx-auto">
+            <button id="mobileCalibrateBtn" type="button"
+                    class="py-2.5 px-3 rounded-xl bg-cyan-500/20 active:bg-cyan-500/40 text-cyan-200 border border-cyan-400/40 font-black text-xs uppercase tracking-wide cursor-pointer">
+                Calibrate 0°
+            </button>
+            <button id="mobileFireBtn" type="button"
+                    class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 active:from-orange-400 active:to-rose-400 text-gray-950 font-black text-xs uppercase tracking-wide shadow-md cursor-pointer">
+                🔥 Fire
+            </button>
+        </div>
+    </div>

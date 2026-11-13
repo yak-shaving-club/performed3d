@@ -1,0 +1,61 @@
+    <!-- =========================================================================
+         PHONE HANDLEBAR STEERING QR PAIRING MODAL (DESKTOP)
+         ========================================================================= -->
+    <div id="phoneSteerModal" class="hidden fixed inset-0 z-50 bg-gray-950/85 backdrop-blur-md items-center justify-center p-4">
+        <div class="bg-gray-900 border border-indigo-500/40 rounded-2xl max-w-md w-full p-5 shadow-2xl relative text-gray-100">
+            <div class="flex items-center justify-between gap-2 pb-3 border-b border-gray-800">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                    <h2 class="text-base font-black text-indigo-300 tracking-wide">Phone Handlebar Steering</h2>
+                </div>
+                <button id="closePhoneSteerModalBtn" type="button"
+                        class="text-gray-400 hover:text-white px-2 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-bold cursor-pointer">
+                    ✕
+                </button>
+            </div>
+
+            <div class="mt-4 flex flex-col items-center text-center gap-3">
+                <p class="text-xs text-gray-300 leading-relaxed">
+                    Attach your phone to your bike's handlebar and scan this QR code with your phone's camera. No server or IP configuration needed!
+                </p>
+
+                <div id="phoneSteerQrContainer" class="bg-white p-3 rounded-2xl shadow-inner flex items-center justify-center min-w-[200px] min-h-[200px]">
+                    <span class="text-xs text-gray-500 font-semibold">Generating QR code...</span>
+                </div>
+
+                <div class="w-full text-left bg-gray-950/80 border border-gray-800 rounded-xl p-2.5">
+                    <label for="phoneSteerBaseUrlInput" class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                        Controller Base URL (editable if opened via localhost / file)
+                    </label>
+                    <input id="phoneSteerBaseUrlInput" type="text"
+                           class="w-full bg-gray-900 text-indigo-200 font-mono text-xs px-2.5 py-1.5 rounded-lg border border-gray-700 focus:outline-none focus:border-indigo-400"
+                           placeholder="https://...">
+                    <p id="phoneSteerLocalWarning" class="hidden mt-1.5 text-[11px] text-amber-300 leading-snug">
+                        Tip: Replace <code class="text-amber-200">localhost</code> with your computer's LAN IP or hosted HTTPS URL so your phone can reach this page.
+                    </p>
+                </div>
+
+                <div class="w-full flex items-center justify-between bg-gray-950/90 border border-gray-800 rounded-xl px-3 py-2 text-xs">
+                    <span id="phoneSteerModalStatus" class="font-bold text-indigo-300">Waiting for phone to scan...</span>
+                    <span id="phoneSteerModalAngle" class="font-mono font-bold text-emerald-300">0.0°</span>
+                </div>
+
+                <div class="w-full flex items-center justify-between gap-2 pt-1">
+                    <button id="phoneSteerRecenterDesktopBtn" type="button"
+                            class="px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-cyan-300 font-bold text-xs border border-cyan-500/30 cursor-pointer transition">
+                        Calibrate Center (0°)
+                    </button>
+                    <button id="phoneSteerDisconnectBtn" type="button"
+                            class="hidden px-3 py-2 rounded-xl bg-rose-700/80 hover:bg-rose-600 text-white font-bold text-xs border border-rose-400/30 cursor-pointer transition">
+                        Disconnect Phone
+                    </button>
+                    <button id="phoneSteerDoneBtn" type="button"
+                            class="ml-auto px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs cursor-pointer transition">
+                        Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
